@@ -1,0 +1,29 @@
+name: Minimal Python binding
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: statistikat/kalos
+          ref: 4f0625cf44d9cba3c512fdd3d97e1ec4b10132da
+          path: core-build-tools
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install -y gfortran ninja-build
+      - run: python core-build-tools/tools/build-openblas.py --prefix "${{ runner.temp }}/openblas" --jobs 2
+      - run: python tools/sync-core.py --verify
+      - run: python -m pip install build
+      - run: python -m build
+        env:
+          CMAKE_ARGS: -DOpenBLAS_ROOT=${{ runner.temp }}/openblas
+      - run: python -m pip install --no-deps dist/*.whl
+      - run: python -m unittest discover -s tests -v
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '2'
