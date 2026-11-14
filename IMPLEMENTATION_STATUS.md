@@ -10,11 +10,6 @@ Updated: 2026-11-14. Minimal initial binding, as requested.
 - Owned input buffers, GIL release and calling-thread signal checks.
 - Small standard-library unittest smoke suite.
 
-## Validation pending
-
-Build a source distribution and local wheel, install the wheel, run smoke tests
-and compare its core revision/numerical result with R and standalone C++.
-
 ## Deferred deliberately
 
 Full estimation/preparation bindings, NumPy adapters, public binary wheels,
