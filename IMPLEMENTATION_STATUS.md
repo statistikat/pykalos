@@ -226,3 +226,26 @@ smoke tests pass; `ldd` still resolves `libopenblas.so.0` to the pinned
 external 0.3.34 provider; `core_version()['commit']` reports `f96603fac2f37…`.
 No new primitives are exposed to Python — `capabilities()['primitives']` is
 still `('convolve',)`; the bindings roadmap is unchanged.
+
+## M1 (follow-up): pin advanced to cd004b0 — 2026-11-15
+
+Kalos delivered `cd004b08bcb6cdf1e5b22b2cf34af721ccbaf06c` ("Make profiled
+variances binary64 quotients for bit-identical recomputation"), the last
+scratch-width divergence of the underflow-guard family, found by the rkalos
+re-qualification against the `f96603f` pin: both likelihood kernels produced
+the named `profiled_variance` as a once-rounded extended quotient while the
+prediction kernels divide the stored binary64 sum in binary64 — 1 ULP apart
+on x86-64. The pin moved `f96603f…` → `cd004b0…`; `sync-core.py --kind
+python` changed exactly `vendor/kalos/src/diffuse_state_space.cpp`,
+`vendor/kalos/src/regression_likelihood.cpp`, the regenerated `revision.hpp`
+and `core.lock.json`; `sync-core.py --verify` PASS (88 files).
+
+Wheel rebuilt with **only** `-DOpenBLAS_ROOT=/tmp/opencode/openblas` under
+`env -u LD_LIBRARY_PATH`: zero warnings,
+`pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`229f1fddd535d8f7e6972c80dded3c4817fe35df6c83ede643a998a927b758c8`; all
+**3** smoke tests pass; `core_version()['commit']` = `cd004b08…`; under
+`env -u LD_LIBRARY_PATH` the extension resolves `libopenblas.so.0` to the
+pinned `/tmp/opencode/openblas/lib` (with the ambient `LD_LIBRARY_PATH` the
+system 0.3.26 shadows the SONAME at load, per the known host hygiene note).
+No new Python surface exposed; bindings roadmap unchanged.

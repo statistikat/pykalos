@@ -450,8 +450,11 @@ static RegressionLikelihood regression_likelihood_impl(
     result.likelihood_status = result.observed_count == 0 ? "no_observations" : "available";
     result.profile_status = "no_finite_innovations";
     if (count > 0) {
-        result.profiled_variance = checked(squares / finite_count);
-        if (squares > 0 && result.profiled_variance == 0) throw std::underflow_error("profiled regression variance underflows");
+        // Same rule as the diffuse profiled variance: a binary64 division of
+        // the named binary64 sum so bit-identical recomputation holds in the
+        // prediction kernels; bounded by the finite sum, cannot overflow.
+        result.profiled_variance = result.sum_squared_standardized / static_cast<double>(count);
+        if (result.sum_squared_standardized > 0 && result.profiled_variance == 0) throw std::underflow_error("profiled regression variance underflows");
         if (result.profiled_variance == 0) {
             result.profile_status = "zero_scale_boundary";
             result.profiled_log_likelihood = std::numeric_limits<double>::infinity();
