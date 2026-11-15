@@ -150,3 +150,51 @@ import orders validated. manylinux_2_38 is also weak portability: build inside
 a manylinux container for a lower glibc baseline and reduce the
 `libgfortran`/`libgomp` vendoring surface. No provider binaries are vendored
 in this repository.
+
+## M1: core snapshot refresh — 2026-11-15
+
+The requested refresh target, kalos `8e91ee4268eadc434a92f235928f43d6e4edad1d`,
+is **provably unbuildable as a snapshot and was not adopted**: upstream's own
+`tools/source-files.json` core allowlist (83 entries, unchanged since
+`4f0625cf…`) was never extended when `0d20d21` added `src/x11_sigma.cpp` +
+`include/kalos/x11_sigma.hpp` and `8e91ee4` added `src/x11_replacement.cpp` +
+`include/kalos/x11_replacement.hpp`, yet both commits list the new sources in
+`CMakeLists.txt`. `sync-core.py` exports exactly the manifest, so a snapshot at
+those pins misses required sources — the wheel build fails at configure with
+`CMake Error at vendor/kalos/CMakeLists.txt:34 (add_library): Cannot find
+source file: src/x11_replacement.cpp`. Neither the vendor snapshot nor the
+lock was hand-patched to fake around it. With the orchestrator's approval the
+pin was refreshed instead to the newest self-consistent commit, kalos
+**`c6a1881c58968e919e0ed3d82b3f436af25ad47f`**, which carries both requested
+platform-independent pieces — the binary64 underflow-guard semantics
+(`0cbd012`) and the upstream `FindKalosOpenBLAS` explicit-`OpenBLAS_ROOT`
+precedence fix (`c6a1881`) — while the x11_sigma/x11_replacement numerical
+units remain excluded until upstream repairs its manifest (their contracts/
+fixtures are not part of the python-kind export anyway).
+
+Lock delta `4f0625cf…` → `c6a1881…`: **84 → 84 files, zero additions, zero
+removals**; 11 vendor files content-refreshed (9 numerics sources with the
+underflow guards, the regenerated `include/kalos/revision.hpp`, and the
+updated `cmake/FindKalosOpenBLAS.cmake`). `sync-core.py --verify` passes
+offline on the new pin.
+
+Finder compatibility: the refreshed snapshot finder (upstream rewrite) uses
+the same cache variables (`KalosOpenBLAS_INCLUDE_DIR`/`_LIBRARY`/`_FOUND`) and
+the same `Kalos::OpenBLAS` target as pykalos's shadow module, and its new
+explicit-root semantics agree with the shadow's; the shadow still runs first
+and the snapshot's `find_package` short-circuits on the cached result, so the
+upstream module never executes in a pykalos build (configure log shows exactly
+one `Found KalosOpenBLAS` and the shadow's `KalosOpenBLAS probe OK` line). No
+adaptation of the shadow module was required; it is kept because it is
+strictly stronger (root-containment `FATAL_ERROR`s and the LAPACKE
+`try_compile` probe versus upstream's warning-only check).
+
+Qualified on Linux x86_64 with **only** `-DOpenBLAS_ROOT=/tmp/opencode/openblas`
+under `env -u LD_LIBRARY_PATH` (no cache-pair overrides anymore): zero-warning
+wheel `pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`af6a53ba5323bf706a52f027202b99d0ffa65a5f7868094478fb055a596f80a6`; all **3**
+smoke tests pass; installed extension links the pinned external **0.3.34**
+provider (`ldd` → `/tmp/opencode/openblas/lib/libopenblas.so.0`, system
+`libgomp`); `core_version()` reports commit `c6a1881c…` with unchanged
+provider metadata. **No new Python surface was exposed** — the bindings
+roadmap (still `core_version`, `capabilities`, `convolve`) is unchanged.
