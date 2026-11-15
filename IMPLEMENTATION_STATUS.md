@@ -198,3 +198,31 @@ provider (`ldd` → `/tmp/opencode/openblas/lib/libopenblas.so.0`, system
 `libgomp`); `core_version()` reports commit `c6a1881c…` with unchanged
 provider metadata. **No new Python surface was exposed** — the bindings
 roadmap (still `core_version`, `capabilities`, `convolve`) is unchanged.
+
+## M1 (final): pin advanced to f96603f — 2026-11-15
+
+Upstream fixed the manifest gap proved above: kalos `f96603fac2f37ef62ebd637b455fed44ca7bad28`
+extends `tools/source-files.json` to 87 core entries (adding
+`src/x11_sigma.cpp`, `src/x11_replacement.cpp`, `include/kalos/x11_sigma.hpp`,
+`include/kalos/x11_replacement.hpp`; the same commit also grows the R-kind
+fixtures list to 132 entries) and adds `tools/check-manifest.py`, which fails
+upstream CI if a `CMakeLists.txt` source is not in the manifest. That guard is
+why advancing is now safe; pykalos's pin moved `c6a1881…` → `f96603f…`.
+
+`sync-core.py --kind python` refreshed the snapshot offline-verifiably:
+**84 → 88 vendor files** — exactly the four 22b.3 core files added, **zero
+removals** (plus content updates to `vendor/kalos/CMakeLists.txt` and the
+regenerated `revision.hpp`); the fixture entries stay out of the python-kind
+export as designed. `sync-core.py --verify`: PASS (88 files, `f96603f…`).
+
+Wheel evidence (Linux x86_64, venv, `env -u LD_LIBRARY_PATH`, **only**
+`-DOpenBLAS_ROOT=/tmp/opencode/openblas`): the pykalos shadow finder still
+runs first and the refreshed snapshot finder short-circuits (one
+`Found KalosOpenBLAS` + shadow `probe OK` in the configure log); the new
+`x11_sigma`/`x11_replacement` translation units compile into the core library;
+zero-warning wheel `pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`a8514c1588fe4259d5378708e5edab3114f22d24bcdc1f4d0eb148ef50edc249`; all **3**
+smoke tests pass; `ldd` still resolves `libopenblas.so.0` to the pinned
+external 0.3.34 provider; `core_version()['commit']` reports `f96603fac2f37…`.
+No new primitives are exposed to Python — `capabilities()['primitives']` is
+still `('convolve',)`; the bindings roadmap is unchanged.
