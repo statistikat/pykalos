@@ -249,3 +249,59 @@ Wheel rebuilt with **only** `-DOpenBLAS_ROOT=/tmp/opencode/openblas` under
 pinned `/tmp/opencode/openblas/lib` (with the ambient `LD_LIBRARY_PATH` the
 system 0.3.26 shadows the SONAME at load, per the known host hygiene note).
 No new Python surface exposed; bindings roadmap unchanged.
+
+## M2: NumPy interoperability qualification — 2026-11-16
+
+**Decision (minimal surface): the boundary was kept as-is.** The acceptance
+study against the pinned cd004b0 build (pybind11 3.1.0 `std::vector<double>`
+type caster) showed the "list-only" assumption wrong: `convolve` *already*
+accepts the full required interop set — Python sequences and iterables,
+float64 NumPy arrays and views (contiguous, strided, negative-stride),
+read-only buffers (`setflags(write=False)`, `memoryview` of `frombuffer`
+bytes), `memoryview` and narrower dtypes via per-element conversion. It
+rejects 2-D/0-D arrays, `bytes` and `str` with `TypeError`. NaN/Inf/empty
+inputs raise the core's own `ValueError` ("polynomial coefficients must be
+finite" / "…at least one coefficient") — the binding adds no policy, which is
+exactly the promised mirror of core statuses. Masked arrays are rejected:
+NumPy converts masked elements to NaN (with its own UserWarning) and the core
+refuses non-finite coefficients. Because every accepted path **copies into
+owned vectors before the GIL is released**, copy-in stays (zero-copy would let
+GIL-holding Python threads mutate caller memory that the lock-free
+computation still reads; the copy of 1M doubles costs milliseconds next to
+O(n·m) convolution). A custom caster replicating this would add risk without
+adding surface. The qualification therefore landed as: the boundary contract
+written into the `convolve` docstring (no behavior change), the interop test
+suite below, and the import-order study. `capabilities()['primitives']`
+remains `('convolve',)`.
+
+**Tests:** new `tests/test_numpy_interop.py` (9 tests, skips cleanly without
+numpy): float64 arrays, non-contiguous/negative-stride/row views, read-only
+buffers, dtype conversions (int64/float32/bool) and generators/tuples,
+non-vector rejection, NaN/Inf/empty core-policy `ValueError`s, masked-array
+rejection, copy-in non-aliasing (mutating the input after the call cannot
+change results), and 1M-element contiguous + 500k strided timing sanity. Full
+suite **12/12 OK** (3 smoke + 9 interop) in 0.17 s.
+
+**Import-order qualification (feeds the public-wheel work).** Environment:
+venv numpy 2.5.5 (bundles private-namespaced
+`numpy.libs/libscipy_openblas64_-4b78795a.so`), pinned provider
+`/tmp/opencode/openblas` (0.3.34), system `libopenblas.so.0` = Ubuntu 0.3.26
+NO_LAPACKE present on this host. Under `env -u LD_LIBRARY_PATH`,
+numpy-first, pykalos-first and interleaved use all pass; `/proc/self/maps`
+shows both BLAS libraries coexisting; NumPy results are bit-identical before
+and after loading pykalos — no interposition with PyPI NumPy. Two hazards
+were proven, not assumed: (1) an already-loaded *system* `libopenblas.so.0`
+(preloaded via `ctypes` with `RTLD_GLOBAL`, as a distro NumPy linking the
+system BLAS would do) satisfies pykalos' `NEEDED` by SONAME **before** the
+extension's RUNPATH is consulted, and import then fails with `undefined
+symbol: LAPACKE_dpotrf_work`; (2) the host's ambient `LD_LIBRARY_PATH`
+(system multiarch dir) likewise shadows the pinned SONAME at import. Both
+confirm that publishable wheels need the auditwheel-spiked private provider
+(namespaced symbols + names), as `dependencies/README.md` requires.
+
+Wheel evidence (rebuilt after the docstring change, only
+`-DOpenBLAS_ROOT=/tmp/opencode/openblas`, `env -u LD_LIBRARY_PATH`): zero
+warnings, `pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`c5df4a7d41e53fbc2f4a5cb772ed7d6f0c6390e37b92019c7419d3d3b6dac047`; installed
+extension resolves `libopenblas.so.0` → `/tmp/opencode/openblas/lib` and
+`libgomp` → system; `core_version()['commit']` remains `cd004b08…`.
