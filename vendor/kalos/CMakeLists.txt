@@ -59,6 +59,8 @@ add_library(kalos STATIC
   src/transforms.cpp
   src/vector_jacobian.cpp
   src/x11_b_pass.cpp
+  src/x11_c_pass.cpp
+  src/x11_d_pass.cpp
   src/x11_filters.cpp
   src/x11_initial.cpp
   src/x11_mean_endpoints.cpp
@@ -66,12 +68,15 @@ add_library(kalos STATIC
   src/x11_msr_selection.cpp
   src/x11_musgrave.cpp
   src/x11_normalization.cpp
+  src/x11_selection_pass.cpp
   src/x11_seasonal_endpoints.cpp
   src/x11_seasonal_plan.cpp
   src/x11_seasonal_processing.cpp
   src/x11_replacement.cpp
   src/x11_sigma.cpp
   src/x11_trend_selection.cpp
+  src/x13_allocation.cpp
+  src/x13_fit.cpp
   backends/openblas.cpp)
 add_library(kalos::kalos ALIAS kalos)
 set_target_properties(kalos PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -156,19 +161,27 @@ if(KALOS_BUILD_TESTS)
     test_transforms
     test_vector_jacobian
     test_x11_b_pass
+    test_x11_c_pass
+    test_x11_d_pass
     test_x11_filters
     test_x11_initial
+    test_x11_log_additive
     test_x11_mean_endpoints
     test_x11_msr
     test_x11_msr_selection
+    test_x11_multiplicative
     test_x11_musgrave
     test_x11_normalization
+    test_x11_pseudo_additive
+    test_x11_selection_pass
     test_x11_seasonal_endpoints
     test_x11_seasonal_plan
     test_x11_seasonal_processing
     test_x11_replacement
     test_x11_sigma
-    test_x11_trend_selection)
+    test_x11_trend_selection
+    test_x13_allocation
+    test_x13_fit)
     add_executable(${test_name} tests/${test_name}.cpp)
     target_link_libraries(${test_name} PRIVATE kalos::kalos)
     # These inherited harnesses use assert; keep assertions in Release builds.

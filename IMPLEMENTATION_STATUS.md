@@ -327,3 +327,28 @@ suite **12/12 OK** (3 smoke + 9 NumPy interop); `ldd` unchanged
 `core_version()['commit']` = `16f27859896cc…`. Surface unchanged:
 `capabilities()['primitives']` remains `('convolve',)`; the B-pass unit is in
 the pinned core but not exposed to Python.
+
+## M2: batched pin advance to 2b93ab0 — 2026-11-16
+
+Batched advance `16f2785…` → **`2b93ab00ab69708b2e5b871f313bed567a04a686`**
+(spanning allocation staging, all pseudo-additive/decomposition modes and the
+restricted fixed-model `x13_fit` composition + corpus); pykalos's pin is now
+**realigned with rkalos at 2b93ab0**. Pre-checked upstream: the manifest
+carries 101 core entries covering all 45 `CMakeLists.txt` sources; 243
+fixture entries stay R-kind. `sync-core.py --kind python`: **90 → 102 vendor
+files, zero removals** — 12 additions including the expected
+`include/kalos/x11_decomposition.hpp`, `src/x13_allocation.cpp`/`.hpp` and
+`src/x13_fit.cpp`/`.hpp` plus the intervening `x11_c_pass`, `x11_d_pass`,
+`x11_selection_pass` and `detail/x11_pinned.hpp` units; `x11_b_pass.*`,
+`CMakeLists.txt` and `revision.hpp` content-updated. `--verify` PASS offline
+(102 files).
+
+Wheel (bare `-DOpenBLAS_ROOT=/tmp/opencode/openblas`, `env -u
+LD_LIBRARY_PATH`): zero warnings, all five new core translation units
+compile, `pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`9e287af9cb895f3e98f44c204b13dd72b4fa4da65a7baa2b5e5bd7754751a052`; full
+suite **12/12 OK** (smoke + NumPy interop); linkage unchanged (pinned
+0.3.34 provider + system `libgomp`); `core_version()['commit']` =
+`2b93ab00ab697…`. **Surface unchanged**: `capabilities()['primitives']` is
+still `('convolve',)` — `x13_fit` exists in the pinned core but is **not**
+exposed to Python, per the bindings roadmap.
