@@ -305,3 +305,25 @@ warnings, `pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
 `c5df4a7d41e53fbc2f4a5cb772ed7d6f0c6390e37b92019c7419d3d3b6dac047`; installed
 extension resolves `libopenblas.so.0` → `/tmp/opencode/openblas/lib` and
 `libgomp` → system; `core_version()['commit']` remains `cd004b08…`.
+
+## M2: pin advanced to 16f2785 — 2026-11-16
+
+Routine pin advance `cd004b08…` → **`16f27859896cc2c2faae69e72e7c24e088f93153`**
+("Qualify the complete fixed additive B pass", 22b.4 S1 — the S1-equivalent
+upstream work including the B-pass sources, fixtures and manifest completion).
+Pre-checked upstream-side before syncing: its `tools/check-manifest.py`-guarded
+manifest now carries 89 core entries covering all 40 `CMakeLists.txt` sources.
+`sync-core.py --kind python`: **88 → 90 vendor files** — exactly
+`src/x11_b_pass.cpp` + `include/kalos/x11_b_pass.hpp` added, **zero removals**
+(fixtures stay R-kind), plus content updates to `vendor/kalos/CMakeLists.txt`
+and the regenerated `revision.hpp`; `--verify` PASS offline (90 files).
+
+Wheel rebuilt with only `-DOpenBLAS_ROOT=/tmp/opencode/openblas` under
+`env -u LD_LIBRARY_PATH`: zero warnings, the new `x11_b_pass.cpp` compiles
+into the core, `pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`df77fbfc102f672fa63a154725351fa762326ab9204ff2e1261849cc66d76936`; full
+suite **12/12 OK** (3 smoke + 9 NumPy interop); `ldd` unchanged
+(`libopenblas.so.0` → pinned `/tmp/opencode/openblas/lib`, system `libgomp`);
+`core_version()['commit']` = `16f27859896cc…`. Surface unchanged:
+`capabilities()['primitives']` remains `('convolve',)`; the B-pass unit is in
+the pinned core but not exposed to Python.
