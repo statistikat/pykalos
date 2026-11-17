@@ -383,3 +383,34 @@ compile, `pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
 `core_version()['commit']` = `e490169c95d28…`. **Surface unchanged**:
 `('convolve',)` — the 21-A estimator units are present in the pinned core but
 not exposed.
+
+## M2: pin advanced to e19df2c — 2026-11-17
+
+Pin `e490169…` → **`e19df2c7b7ded8fa90424a2945d48a2c43e676b9`** (21-B
+log/level transformation decision + 21-C outlier scoring/forward selection,
+plus three pinned-semantics fixes isolated in new R-unbound/C-unbound units
+with an append-only `estimation_control` warm-start entry). All kalos reads
+went through git objects at that commit (`git show/archive`), never its
+working tree, which another agent was editing concurrently. Upstream manifest:
+111 core entries covering all 50 `CMakeLists.txt` sources (guard-clean);
+fixtures 112 / evidence 150 stay R-kind.
+
+Delta inventory `e490169…` → `e19df2c…`: **106 → 112 vendor files, zero
+removals** — added `src/transformation_decision.cpp` + `.hpp`,
+`src/outlier_scoring.cpp` + `.hpp`, `src/outlier_scan_engine.cpp`,
+`src/outlier_detail.hpp`; content-updated: `estimation_control.{cpp,hpp}`
+(append-only), `CMakeLists.txt`, regenerated `revision.hpp`. Schema-2 lock
+with provenance `sections: ["core"]`; **zero fixture/evidence leakage**
+(path-prefix scan: none). `--verify` PASS pre (106 @ e490169) and post
+(112 @ e19df2c).
+
+Wheel (bare `-DOpenBLAS_ROOT=/tmp/opencode/openblas`, `env -u
+LD_LIBRARY_PATH`): zero warnings, all three new translation units compile,
+`pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`17295ddd08cd1b41df3042f309f1fb9e161397b0b48396844c6e244e761f030f`; suite
+**12/12 OK**; linkage unchanged (pinned external 0.3.34 provider, system
+`libgomp`); `core_version()['commit']` = full `e19df2c…` hash.
+**No surface change**: `capabilities()['primitives']` remains `('convolve',)`
+— the 21-B/21-C units are pinned in the core but deliberately unbound,
+mirroring rkalos: R/Python-boundary qualification of intermediate estimator
+units lands with the 21-G/H spec-level slices.
