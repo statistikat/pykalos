@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Export a committed, allowlisted Kalos snapshot, or verify one without Git."""
+"""Export a committed, allowlisted Kalos snapshot, or verify one without Git.
+
+Upstream tools/source-files.json is three-sectioned (core, fixtures,
+evidence). Lock schema 2 records, per snapshot, which upstream sections it
+was built from (provenance); the python kind exports the core section only,
+so fixtures and evidence can never leak into vendor/kalos. Lock schema 1 is
+still accepted by --verify for previously pinned snapshots.
+"""
 import argparse
 import hashlib
 import io
@@ -35,9 +42,15 @@ def verify(destination):
     if not lock_path.exists():
         lock_path = destination / "inst/core.lock.json"
     lock = json.loads(lock_path.read_text())
-    if lock["schema_version"] != 1:
+    if lock["schema_version"] not in (1, 2):
         raise ValueError("Unsupported source lock version")
     for section in lock["snapshots"]:
+        if lock["schema_version"] == 2:
+            sections = section.get("sections")
+            if (not isinstance(sections, list) or not sections
+                    or not all(isinstance(s, str) and s for s in sections)):
+                raise ValueError(
+                    f"Schema 2 snapshot {section['directory']!r} lacks section provenance")
         root = destination / safe_path(section["directory"])
         expected = section["files"]
         for path in expected:
@@ -71,19 +84,19 @@ def export(core, revision, kind, destination):
     core_files["include/kalos/revision.hpp"] = (
         f'// Generated from core.lock.json; do not edit.\n#define KALOS_CORE_REVISION "{commit}"\n'
     ).encode()
-    snapshots = [("src/kalos" if kind == "r" else "vendor/kalos", core_files)]
+    snapshots = [("src/kalos" if kind == "r" else "vendor/kalos", core_files, ["core"])]
     if kind == "r":
         snapshots.append(("inst/tinytest/fixtures", {
-            name.removeprefix("validation/fixtures/"): contents[name] for name in inventory["fixtures"]}))
+            name.removeprefix("validation/fixtures/"): contents[name] for name in inventory["fixtures"]}, ["fixtures"]))
     previous_path = destination / "core.lock.json"
     previous = json.loads(previous_path.read_text()) if previous_path.exists() else None
     if previous:
         verify(destination)  # Refuse to discard local or unexpected snapshot work.
-    lock = {"schema_version": 1, "repository": "https://github.com/statistikat/kalos",
+    lock = {"schema_version": 2, "repository": "https://github.com/statistikat/kalos",
             "commit": commit, "version": inventory["version"],
             "source_manifest_sha256": sha(git("show", commit + ":tools/source-files.json")),
             "generated_files": ["include/kalos/revision.hpp"], "snapshots": []}
-    for directory, files in snapshots:
+    for directory, files, sections in snapshots:
         root = destination / directory
         if root.exists() and not previous:
             # The extracted historical fixture directory already contains exact originals.
@@ -98,7 +111,7 @@ def export(core, revision, kind, destination):
             path = root / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
-        lock["snapshots"].append({"directory": directory,
+        lock["snapshots"].append({"directory": directory, "sections": sections,
             "files": {name: sha(data) for name, data in sorted(files.items())}})
     previous_path.write_text(json.dumps(lock, indent=2) + "\n")
     if kind == "r":
