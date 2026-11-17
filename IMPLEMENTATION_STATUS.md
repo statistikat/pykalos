@@ -352,3 +352,34 @@ suite **12/12 OK** (smoke + NumPy interop); linkage unchanged (pinned
 `2b93ab00ab697…`. **Surface unchanged**: `capabilities()['primitives']` is
 still `('convolve',)` — `x13_fit` exists in the pinned core but is **not**
 exposed to Python, per the bindings roadmap.
+
+## M2: pin advanced to e490169, lock schema 2 — 2026-11-17
+
+Pin `2b93ab0…` → **`e490169c95d287c1e66d0b930bf30ddc10a777e8`** (21-A
+estimator units: pinned estimation control + Hannan–Rissanen initializer).
+Upstream `tools/source-files.json` is now **three-sectioned** (`core: 105`,
+`fixtures: 112`, `evidence: 139` after the evidence-root restructure).
+pykalos's `tools/sync-core.py` was updated to match: exports still take the
+`core` section only for the python kind, and new locks are written as
+**schema 2** with per-snapshot **section provenance** (`"sections": ["core"]`
+for `vendor/kalos`); `--verify` accepts schema 1 (existing pins) and 2 and
+enforces provenance on new locks. Pre/post verification: schema-1 lock
+verified before the export (old and new tool agree), schema-2 lock verified
+after — `106 files` (`105` core + generated `revision.hpp`), **zero
+fixture/evidence leakage** into `vendor/kalos` (checked by path prefix).
+
+Lock delta `2b93ab0…` → `e490169…`: **102 → 106 vendor files, zero
+removals** — added `src/estimation_control.cpp`, `include/kalos/estimation_control.hpp`,
+`src/hannan_rissanen.cpp`, `include/kalos/hannan_rissanen.hpp`; ten
+content-updated files (CMakeLists, backend/lapack/linear-algebra headers,
+`x13_allocation.hpp`, `x13_fit.hpp`, `x11_replacement.cpp`, `x11_sigma.cpp`,
+`revision.hpp`).
+
+Wheel (bare `-DOpenBLAS_ROOT=/tmp/opencode/openblas`, `env -u
+LD_LIBRARY_PATH`): zero warnings, both new estimator translation units
+compile, `pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`9d671e48e136e8af332fbedb878db3e00ccd67860fe660393c9b417a8c90c5e2`; suite
+**12/12 OK**; linkage unchanged (pinned 0.3.34 provider, system `libgomp`);
+`core_version()['commit']` = `e490169c95d28…`. **Surface unchanged**:
+`('convolve',)` — the 21-A estimator units are present in the pinned core but
+not exposed.
