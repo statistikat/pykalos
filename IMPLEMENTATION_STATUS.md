@@ -445,3 +445,43 @@ LD_LIBRARY_PATH`): zero warnings, all five new translation units compile,
 **No surface change**: `capabilities()['primitives']` remains `('convolve',)`
 — the 21-D units are pinned in the core but deliberately unbound until the
 spec-level slices, mirroring the rkalos decision.
+
+## M2: pin advanced to 0930c9b — 2026-11-18
+
+Pin `2170435…` → **`0930c9b153928735b80a0f4150373216544aeca7`**, advancing
+**directly past the intermediate `7200a56`** so one pin covers both item 21-E
+(initial ARMA identification) and item 21-F (ARMA refinement/comparison).
+Kalos reads exclusively via git objects at `0930c9b` (working tree
+mid-next-slice elsewhere). Manifest: core **126** covering all 57
+`CMakeLists.txt` sources; fixtures 112 / evidence 170 R-kind only.
+
+Delta inventory `2170435…` → `0930c9b…`: **123 → 127 vendor files, zero
+removals** — added `src/initial_arma_identification.cpp` + `.hpp` and
+`src/arma_refinement.cpp` + `.hpp`; content-updated: `CMakeLists.txt`,
+`include/kalos/differencing_decision.hpp` and regenerated `revision.hpp`.
+Correction to the handoff brief: the 21-D deterministic record-initialization
+fix landed in **`differencing_decision.hpp`** (verified `2170435..0930c9b`
+diff: header 21+/15−; the `.cpp` is unchanged), and the HR transcription fixes
+are now four slices back. Schema-2 lock, provenance `["core"]`, **zero
+fixture/evidence leakage**; `--verify` PASS pre (123) and post (127).
+Both behavior changes are **non-surface**: none of the 21-E/21-F/21-D units
+is bound to Python; `capabilities()['primitives']` remains `('convolve',)`
+(21-E/21-F pinned but deliberately unbound, mirroring rkalos until the
+spec-level boundary slices).
+
+Wheel (bare `-DOpenBLAS_ROOT=/tmp/opencode/openblas`, `env -u
+LD_LIBRARY_PATH`): sha256
+`e97c67065ad98def55577a791b297eb333f79dad3c0a57c90ce911716eea366b`; both new
+translation units compile; suite **12/12 OK**; linkage unchanged (pinned
+external 0.3.34 provider + system `libgomp`); `core_version()['commit']` =
+full `0930c9b…`.
+
+**Upstream warning flagged (not pykalos-fixable, vendor is read-only):** the
+wheel build emitted **22 `-Wc++20-extensions` warnings**, all from
+`vendor/kalos/src/initial_arma_identification.cpp` (lines 516–524), which
+uses C++20 designated initializers in a target that declares
+`cxx_std_17`; g++ 13 accepts them as GNU extensions but MSVC/`-pedantic-errors`
+would reject them. Zero warnings originate from pykalos-owned code.
+Recommendation: upstream should either bump the core to `cxx_std_20` or
+rewrite those initializers positionally; rkalos compiles the same snapshot
+and will see the same noise.
