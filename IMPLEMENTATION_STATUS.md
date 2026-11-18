@@ -414,3 +414,34 @@ LD_LIBRARY_PATH`): zero warnings, all three new translation units compile,
 — the 21-B/21-C units are pinned in the core but deliberately unbound,
 mirroring rkalos: R/Python-boundary qualification of intermediate estimator
 units lands with the 21-G/H spec-level slices.
+
+## M2: pin advanced to 2170435 — 2026-11-18
+
+Pin `e19df2c…` → **`21704352cfc8c6af45e68041e42a9e7eb6d4f44d`** (item 21-D:
+differencing decision + support cluster). Kalos was mid-next-slice in its
+working tree; all upstream reads went through git objects at that commit
+only. Manifest pre-check (git show): core **122** entries covering all 55
+`CMakeLists.txt` sources; fixtures 112 / evidence 154 remain R-kind.
+
+Delta inventory `e19df2c…` → `2170435…`: **112 → 123 vendor files, zero
+removals** — added `src/differencing_decision.cpp` + `.hpp`,
+`src/fdlibm.cpp` + `detail/fdlibm.hpp`, `src/ssq_levmar.cpp` +
+`detail/ssq_levmar.hpp`, `src/ssq_deviances.cpp` + `detail/ssq_deviances.hpp`,
+`src/sarima_stabilization.cpp` + `detail/sarima_stabilization.hpp`, and
+`detail/hannan_rissanen_pipeline.hpp`; content-updated: `CMakeLists.txt`,
+`estimation_control.{cpp,hpp}` (EstimationSolver seam), `hannan_rissanen.cpp`
+(HR refactor with the four transcription fixes — a core **behavior change but
+non-surface**: HR is not bound to Python, and the pinned smoke/interop suite
+is unaffected), regenerated `revision.hpp`. Schema-2 lock, provenance
+`["core"]`, **zero fixture/evidence leakage**. `--verify` PASS pre (112 @
+e19df2c) and post (123 @ 2170435).
+
+Wheel (bare `-DOpenBLAS_ROOT=/tmp/opencode/openblas`, `env -u
+LD_LIBRARY_PATH`): zero warnings, all five new translation units compile,
+`pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`f7bbeee6cd24c42c5a5b7cead17d327ef43cfb0777d533a779bd7947192d7b6e`; suite
+**12/12 OK**; linkage unchanged (pinned external 0.3.34 provider, system
+`libgomp`); `core_version()['commit']` = full `2170435…` hash.
+**No surface change**: `capabilities()['primitives']` remains `('convolve',)`
+— the 21-D units are pinned in the core but deliberately unbound until the
+spec-level slices, mirroring the rkalos decision.
