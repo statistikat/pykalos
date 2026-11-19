@@ -485,3 +485,26 @@ would reject them. Zero warnings originate from pykalos-owned code.
 Recommendation: upstream should either bump the core to `cxx_std_20` or
 rewrite those initializers positionally; rkalos compiles the same snapshot
 and will see the same noise.
+
+## M2: pin advanced to e7af23f — 2026-11-19
+
+Pin `0930c9b…` → **`e7af23f222315e320ab30338ff8188e74bd444ed`** (item 21-G
+regression stage tests + mean rules). Kalos read exclusively via git objects
+at that commit. Manifest: core **128** covering all 58 `CMakeLists.txt`
+sources; fixtures 112 / evidence 179 R-kind only. Delta: **127 → 129 vendor
+files, zero removals** — added `src/regression_variable_tests.cpp` +
+`include/kalos/regression_variable_tests.hpp`; content-updated
+`CMakeLists.txt` and `revision.hpp`. Schema-2 lock, provenance `["core"]`,
+zero fixture/evidence leakage; `--verify` PASS pre (127) and post (129).
+
+Wheel (bare `-DOpenBLAS_ROOT=/tmp/opencode/openblas`, `env -u
+LD_LIBRARY_PATH`): sha256
+`e920471adf080d5e5354b40d79fb28f9164235c60b008a053a5cde543d1f02d8`; the new
+translation unit compiles; suite **12/12 OK**; linkage unchanged (pinned
+external 0.3.34 provider + system `libgomp`); `core_version()['commit']` =
+full `e7af23f…`. The warning count is unchanged at the **22 known vendor
+`-Wc++20-extensions` occurrences** from `initial_arma_identification.cpp`
+(flagged upstream in the previous entry; no new warnings). **Surface
+unchanged**: `capabilities()['primitives']` = `('convolve',)` — the 21-G unit
+is pinned in the core but unbound like all other estimator units, mirroring
+rkalos.
