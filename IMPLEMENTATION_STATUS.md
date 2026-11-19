@@ -508,3 +508,34 @@ full `e7af23f…`. The warning count is unchanged at the **22 known vendor
 unchanged**: `capabilities()['primitives']` = `('convolve',)` — the 21-G unit
 is pinned in the core but unbound like all other estimator units, mirroring
 rkalos.
+
+## Ops: scratch root relocated — 2026-11-19
+
+The maintainer moved the scratch root: **`/tmp/opencode` is dead** (its
+symlink was intentionally deleted; a stray leftover directory exists there
+but holds no live provider/venv). All scratch now lives at
+**`/data/home/kowa/seasonaladjustment/tmp_opencode`** ("SCRATCH") — pinned
+provider `SCRATCH/openblas` (LP64 CBLAS/LAPACKE 0.3.34, unchanged build),
+venv `SCRATCH/venv-pykalos` (recreated; CPython 3.12.3; its `bin/*` script
+shebangs of moved origin are broken — invoke tools as
+`SCRATCH/venv-pykalos/bin/python -m pip/...`). Environment note for
+successors: build with
+`CMAKE_ARGS=-DOpenBLAS_ROOT=/data/home/kowa/seasonaladjustment/tmp_opencode/openblas`
+(still bare, shadow finder authoritative) under `env -u LD_LIBRARY_PATH`.
+
+Operational repair performed (no pin change, still `e7af23f222315…`): the
+previously installed wheel's embedded RUNPATH pointed at the dead
+`/tmp/opencode/openblas/lib`, so import failed with the system SONAME
+fallback (`undefined symbol: LAPACKE_dpotrf_work`). Rebuilt the wheel from
+HEAD against the SCRATCH provider:
+`pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`59328b286673b93e3e6a0e5e9d696fa028f109d5deb87ff315c607a3f905e08d`
+(22 warnings, all the known vendor `-Wc++20-extensions` occurrences, none
+new); reinstalled into SCRATCH/venv-pykalos; **12/12 suite OK**; `ldd`
+resolves `libopenblas.so.0 =>
+/data/home/kowa/seasonaladjustment/tmp_opencode/openblas/lib/libopenblas.so.0`
+(+ system `libgomp`); `core_version()['commit']` unchanged,
+`primitives` still `('convolve',)`. A repo scan for embedded `/tmp/opencode`
+paths found only the historical dated entries above (deliberately unedited);
+the pykalos-owned build tooling needed no change — README documents
+`/path/to/openblas` generically and the CI workflow uses `runner.temp`.
