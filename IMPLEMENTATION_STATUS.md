@@ -539,3 +539,72 @@ resolves `libopenblas.so.0 =>
 paths found only the historical dated entries above (deliberately unedited);
 the pykalos-owned build tooling needed no change — README documents
 `/path/to/openblas` generically and the CI workflow uses `runner.temp`.
+
+## M2: pin advanced to b773d27 — 2026-11-20
+
+Pin `e7af23f…` → **`b773d27a66ef2ee50445a6930c307111efc99ff8`** (the 21-H
+slice: stage-Z decision-unit qualification, 21-H.0 final-information
+producer, 21-H.1 automatic-pipeline driver, 21-H.2 JVM-oracle
+qualification, plus `3a54b95` replacing the C++20 designated initializers
+and `b773d27` pinning unfused FP semantics). Kalos reads exclusively via
+git objects at that commit (its working tree held untracked scratch files;
+tracked files equal the commit). Manifest pre-check: upstream
+`check-manifest.py` PASS at b773d27 — core **140** entries covering all
+add_library sources; fixtures 112 / evidence 190 stay R-kind.
+
+Delta inventory `e7af23f…` → `b773d27…`: **129 → 141 vendor files, zero
+removals** — added `src/x13_automatic.cpp` + `.hpp`,
+`src/final_estimator.cpp` + `include/kalos/final_estimator.hpp`,
+`src/final_information.cpp` + `.hpp`, `src/arma_diagnostics.cpp` + `.hpp`,
+`src/special_functions.cpp` + `include/kalos/detail/special_functions.hpp`,
+`include/kalos/detail/filter_utility.hpp`, `src/mlj_engine.hpp`;
+content-updated: `CMakeLists.txt` (adds the PUBLIC
+`-ffp-contract=off` block), `fdlibm.cpp`, `initial_arma_identification.cpp`
+(initializer cleanup), `outlier_scan_engine.cpp` (bulk extraction into the new `mlj_engine.hpp`),
+`ssq_levmar.cpp`, regenerated `revision.hpp`. Schema-2 lock, provenance
+`["core"]`, zero fixture/evidence leakage; `--verify` PASS pre (129 @
+e7af23f) and post (141 @ b773d27). The provider lock
+(`dependencies/openblas.lock.json`) is unchanged, so the SCRATCH OpenBLAS
+0.3.34 build was reused as-is — the pin machinery exports sources only.
+
+**FP-semantics pin verified end-to-end.** b773d27 adds
+`target_compile_options(kalos PUBLIC -ffp-contract=off)` (GNU/Clang;
+`/fp:precise` on MSVC). In the pykalos build it propagates via the
+INTERFACE of the `kalos::kalos` target consumed through
+`add_subdirectory(vendor/kalos)` + `target_link_libraries(_kalos …)`;
+verified `CMAKE_EXPORT_COMPILE_COMMANDS=ON` + a verbose clean rebuild:
+**all 65 translation units** — 64 vendor core objects **and the pykalos
+binding TU `bindings/module.cpp`** — carry `-ffp-contract=off` on their
+g++ command lines (e.g. `… -O3 -DNDEBUG -fPIC -fvisibility=hidden
+-flto=auto -fno-fat-lto-objects -ffp-contract=off -fopenmp …
+bindings/module.cpp`). This is what the 21-H.2 JVM goldens require
+(unfused `a*b+c`).
+
+Wheel (`SCRATCH/venv-pykalos`, `env -u LD_LIBRARY_PATH`, bare
+`-DOpenBLAS_ROOT=/data/home/kowa/seasonaladjustment/tmp_opencode/openblas`):
+**zero compiler warnings anywhere** — the 22 known vendor
+`-Wc++20-extensions` occurrences from `initial_arma_identification.cpp`
+(flagged since the 0930c9b entry) are gone via upstream `3a54b95`;
+`pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`a23593186cb71470717999c877e9672d76b39f01289d90b64f8991641994f5b6`;
+installed RUNPATH `$ORIGIN:…/tmp_opencode/openblas/lib` preserved and
+`ldd` (with `LD_LIBRARY_PATH` unset) resolves `libopenblas.so.0` →
+SCRATCH 0.3.34 provider + system `libgomp`.
+
+Suite: **12/12 OK** under `pytest` 9.2.0 (first pytest run — installed
+into the venv; the same 12 tests as the previous `unittest discover`
+checkpoints) with `LD_LIBRARY_PATH=SCRATCH/openblas/lib`;
+`core_version()['commit']` = full `b773d27…`.
+
+**Drift verdict: bit-identical.** A 7-case convolve corpus captured from
+the installed e7af23f wheel (smoke, unit, Henderson-symmetric, asymmetric
+linspace, 4096×257 seeded-RNG, subnormal 1e-300/3e-308, 1e150 large-scale)
+was re-run after reinstall: every output's sha256-over-binary64-bit-patterns
+matches exactly; `capabilities()` unchanged
+(`('convolve',)` — the entire 21-H automatic-pipeline surface is pinned in
+the core but deliberately unbound, mirroring rkalos). Only
+`core_version()['commit']` differs, as expected. This matches upstream's
+own local validation: the plain x86-64 baseline has no FMA to contract,
+so the flag changes nothing on this host — it pins the semantics for FMA
+machines (arm64, x86-64-v3 CI images) where the 21-H.2 goldens would
+otherwise drift.
