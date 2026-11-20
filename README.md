@@ -1,14 +1,18 @@
 # pykalos
 
 Minimal Python bindings calling [Kalos](https://github.com/statistikat/kalos).
-This initial structure deliberately exposes only `core_version()`,
-`capabilities()` and `convolve(left, right)`. It does not expose model fitting,
-R API parity or full seasonal adjustment.
+`core_version()`, `capabilities()` and `convolve(left, right)` are the raw
+surface; `x13_automatic(series, ...)` runs the qualified automatic-spec X-13
+preprocessing pipeline (item 21-H) through the same pinned core. Unrestricted
+fitting, the restricted fixed-coefficient fit and R API parity are not
+exposed here.
 
 ```python
 import pykalos
 pykalos.core_version()
 pykalos.convolve([1, -0.4], [1, 0.2])
+result = pykalos.x13_automatic(series, start_year=1990, start_period=1)
+result["status"]  # "available" or the verbatim fail-closed core status
 ```
 
 ## Local build

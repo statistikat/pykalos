@@ -3,9 +3,12 @@
 
 Upstream tools/source-files.json is three-sectioned (core, fixtures,
 evidence). Lock schema 2 records, per snapshot, which upstream sections it
-was built from (provenance); the python kind exports the core section only,
-so fixtures and evidence can never leak into vendor/kalos. Lock schema 1 is
-still accepted by --verify for previously pinned snapshots.
+was built from (provenance); the python kind exports the core section into
+vendor/kalos only, so fixtures and evidence can never leak into it, plus a
+separate allowlisted evidence snapshot (vendor/kalos-evidence, sections
+["evidence"]) holding the JVM corpora the Python boundary-qualification
+tests replay. Lock schema 1 is still accepted by --verify for previously
+pinned snapshots.
 """
 import argparse
 import hashlib
@@ -18,6 +21,13 @@ import tarfile
 
 def sha(data):
     return hashlib.sha256(data).hexdigest()
+
+
+# Directories of the upstream "evidence" section that the python kind vendors
+# (verbatim, under a separate vendor/kalos-evidence snapshot) for the Python
+# boundary-qualification tests. Keep this list minimal: every entry is test
+# data pinned by provenance, never a core input.
+EVIDENCE_ALLOWLIST = ("validation/evidence/native/x13-automatic/",)
 
 
 def safe_path(value):
@@ -71,6 +81,9 @@ def export(core, revision, kind, destination):
     commit = git("rev-parse", "--verify", revision + "^{commit}").decode().strip()
     inventory = json.loads(git("show", commit + ":tools/source-files.json"))
     selected = inventory["core"] + (inventory["fixtures"] if kind == "r" else [])
+    evidence = [name for name in inventory.get("evidence", [])
+                if name.startswith(EVIDENCE_ALLOWLIST)] if kind == "python" else []
+    selected += evidence
     for name in selected:
         safe_path(name)
     if len(set(selected)) != len(selected):
@@ -88,6 +101,9 @@ def export(core, revision, kind, destination):
     if kind == "r":
         snapshots.append(("inst/tinytest/fixtures", {
             name.removeprefix("validation/fixtures/"): contents[name] for name in inventory["fixtures"]}, ["fixtures"]))
+    else:
+        snapshots.append(("vendor/kalos-evidence", {
+            name.removeprefix("validation/evidence/"): contents[name] for name in evidence}, ["evidence"]))
     previous_path = destination / "core.lock.json"
     previous = json.loads(previous_path.read_text()) if previous_path.exists() else None
     if previous:

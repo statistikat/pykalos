@@ -608,3 +608,102 @@ own local validation: the plain x86-64 baseline has no FMA to contract,
 so the flag changes nothing on this host — it pins the semantics for FMA
 machines (arm64, x86-64-v3 CI images) where the 21-H.2 goldens would
 otherwise drift.
+
+## M4: automatic preprocessing bound at the Python boundary — 2026-11-20
+
+Pin `b773d27…` → **`b2573fc011aee37eced0e97ddfd86d88349887c2`** (item 21-H.3:
+the oracle closed at thirteen cases — airline-start ODM fix, JVM-surface
+AR/SAR export signs, landing-AICC adjusted log-likelihood, golden-generator
+factory-index ODM translation; upstream gates at that commit: oracle
+4637/0, sweep 71401/0, ctest 62/62 serial+OpenMP). Upstream
+`check-manifest.py` PASS first (140 core / 112 fixture / 190 evidence).
+Delta `b773d27…` → `b2573fc…`: **141 → 141 vendor core files, zero
+additions/removals** — content-only updates to `CMakeLists.txt`,
+`include/kalos/outlier_scoring.hpp`, `src/outlier_scoring.cpp`,
+`src/x13_automatic.cpp` + regenerated `revision.hpp`; schema-2 lock, `--verify`
+PASS pre (141 @ b773d27) and post (141 core + 6 evidence @ b2573fc).
+
+**Machine extension — the evidence snapshot.** The boundary tests replay the
+JVM-pinned corpus, and pykalos had no fixture convention (the convolve tests
+carry their data inline), so the pin machinery grew the one auditable
+mechanism the schema was designed for: for `--kind python`, the upstream
+`evidence` section is now exported for a minimal directory allowlist
+(`EVIDENCE_ALLOWLIST = validation/evidence/native/x13-automatic/` only) into
+a **separate `vendor/kalos-evidence` snapshot with provenance `["evidence"]`**
+(6 files: cases/inputs/oracle-events/oracle-facts CSVs + metadata.R +
+SHA256SUMS.csv, 775 KB). Nothing leaks into `vendor/kalos` (the core snapshot
+stays `["core"]`-only and the `--verify` exactness now covers both
+directories); sdist packaging extended accordingly.
+
+**The automatic capability.** `_kalos.x13_automatic_fit(request: dict) ->
+dict` binds the core entry verbatim: the raw layer REQUIRES every decoder
+scalar (missing key → KeyError; unknown enum name → ValueError) including the
+REQUIRED sigma policy (unset → the pinned
+`unsupported:x13 fit requires an explicit sigma policy`); the request dict is
+fully read into owned C++ before the GIL is released, the whole result graph
+(final description, coefficients, variables, landing stats, the complete
+pinned decision chain with each machine's projected record — scalars/notes
+kept verbatim as ordered pair lists — and the downstream composition with
+the three qualified tables) converts back to plain dicts. Shape violations
+map the core's `std::invalid_argument` onto ValueError. The product entry
+`pykalos.x13_automatic(series, *, frequency, start_year, start_period, mode,
+sigma, …, **module-scalar overrides)` applies the FAMILY decisions at this
+layer only: omitted `sigma` → the maintainer 2026-11-17 default `"legacy"`,
+echoed as `result["sigma_policy_provenance"]` = `"legacy (default)"` /
+`"legacy (explicit)"` / `"accurate (explicit)"`; the decoder-pinned module
+scalars (`_X13_AUTOMATIC_DEFAULTS`, JVM-corpus values incl. the module-space
+`ub1 = 1/1.0309278350515465` reciprocal doubles) and the decoder X-11 block
+(msr seasonal, automatic Henderson, `"undefined"` mode) default here and stay
+explicit toward the core. `capabilities()["primitives"]` is now
+`('convolve', 'x13_automatic')` plus an `automatic` block (schema 2,
+`sigma_policy_default: "legacy"`, envelope, deferred list).
+
+**Fail-closed matrix (verified in the suite, no silent fallback to the
+restricted fit — no restricted surface exists here):** Python `ValueError`/
+`TypeError` before the core call for unknown mode/policy/msr/seasonal/
+outlier-type names and any unexpected keyword (regression inputs have NO
+surface; the error says user-variable detection is deferred to 21-I); the
+core's verbatim statuses otherwise — non-monthly,
+non-finite input, `backcast/forecast != 0`, deferred
+calendar/easter/TD/user flags, outlier span narrower than the series
+(0-based endpoints), and the raw-entry missing policy; all keep
+`available=False` with the provenance echo.
+
+**Qualification.** `tests/test_x13_automatic.py` + `tests/x13auto_corpus.py`
+(the corpus reader mirrors the core's golden generator: `req`-echo request
+mirror with module-space reciprocal conversion, event kinds 1–5, `var`-fact
+identities, three tables; `test_evidence_sha256sums` hashes the vendored
+files against `SHA256SUMS.csv`). The full thirteen-case oracle ran in the
+foreground: **32 passed + 7 subtests, 6m53s; 4353 checks, 0 failures; all
+13 cases decision-bit-identical** — every case status `available`; final
+descriptions, `mode_effective`, neff, variable identities (name/type/
+position/regeffect), differencing triples, ARMA selections, panel
+membership, ODM picks and incoming cv bits, cascade remarks, chain counts:
+all exact (model-facts 92/92, variables 45/45, diff-decisions 39/39,
+arma-decisions 52/52, odm-decisions 20/20, chain-counts 52/52). Measured
+worsts vs the contract bands — **no relaxation**: tmean 7.423e-4 (1e-3,
+multi/diff0), panel BIC2 8.095e-3 (1e-2, ao_nodet — upstream's 8.1e-3),
+AICC display 3.418e-6 (1e-5), landing loglik/aicc/regcoef 4.482e-7 (2e-3),
+ARMA landing coefficients 9.747e-3 (1e-2, ao_nodet — upstream's 9.8e-3),
+tables 5.036e-7 (1e-6, multi/out[48] — upstream's 5.0e-7); the eight
+outlier-free cases' tables are bit-identical, the pinned deterministic-chain
+behaviour. Default `pytest tests` set = the 12 baseline tests + the corpus/
+boundary tests + the eight outlier-free cases: **27 passed** (the cheap tier
+upstream itself designates); detection-on cases run via
+`PYKALOS_X13AUTO_CASES`.
+
+Wheel (`env -u LD_LIBRARY_PATH`, bare
+`-DOpenBLAS_ROOT=SCRATCH/openblas`):
+`pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`3a1ff4a4f637ccdd28ebfc318f3e80f50fca438685d08a4dfa52387dec150af3`, **zero
+compiler warnings**, RUNPATH `$ORIGIN:SCRATCH/openblas/lib` intact (ldd with
+the ambient `LD_LIBRARY_PATH` unset resolves the pinned 0.3.34 provider +
+system `libgomp`), `core_version()['commit']` = full `b2573fc…`. Clean-tree
+`compile_commands.json` re-verified: **65/65 translation units carry
+`-ffp-contract=off`** (64 vendor + the binding TU `bindings/module.cpp`) —
+the PUBLIC propagation of the vendored CMakeLists survives the binding
+growth. **Drift verdict: none at the Python boundary** — decisions
+bit-identical to the JVM pins across the suite's two full 13-case
+executions; the sigma-default trio (`legacy (default)`/`legacy (explicit)`/
+`accurate (explicit)`) answers identically on quick, the convolve surface
+unchanged (baseline 12/12 green on the final wheel).

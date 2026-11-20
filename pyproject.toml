@@ -16,4 +16,4 @@ Repository = "https://github.com/statistikat/pykalos"
 [tool.scikit-build]
 cmake.build-type = "Release"
 wheel.packages = ["src/pykalos"]
-sdist.include = ["vendor/kalos/**", "core.lock.json", "tools/sync-core.py"]
+sdist.include = ["vendor/kalos/**", "vendor/kalos-evidence/**", "core.lock.json", "tools/sync-core.py"]
