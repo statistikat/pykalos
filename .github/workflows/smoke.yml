@@ -6,13 +6,13 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
           repository: statistikat/kalos
           ref: 4f0625cf44d9cba3c512fdd3d97e1ec4b10132da
           path: core-build-tools
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y gfortran ninja-build
