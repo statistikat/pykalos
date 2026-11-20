@@ -96,9 +96,13 @@ def x13_automatic(series, *, frequency=12, start_year=1970, start_period=1,
     out-of-envelope *request* answers the contract's verbatim core status in
     ``result["status"]`` ("unsupported:<...>" / "failed:<stage>") with
     ``result["available"] = False`` and the provenance echo intact
-    (non-monthly, non-finite input, nonzero horizons, missing policy on the
+    (non-monthly, non-finite input, missing policy on the
     raw entry, deferred calendar/easter/TD/user detection, outlier spans
-    narrower than the series, selection-pass refusals). The four forced
+    narrower than the series, selection-pass refusals). The X-11 horizons
+    (``backcast``/``forecast``, month counts; negative meaning |h| annual
+    frequencies, normalized by the driver) are IN envelope since item 21-H.4:
+    they extend the downstream composition only — estimation, the decision
+    chain and the landing coefficients are horizon-invariant. The four forced
     decomposition modes are additive/multiplicative/log_additive/
     pseudo_additive; regression inputs have no surface at all (user-variable
     detection is deferred to 21-I), so nothing outside the delivered scope

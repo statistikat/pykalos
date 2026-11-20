@@ -26,8 +26,11 @@ def sha(data):
 # Directories of the upstream "evidence" section that the python kind vendors
 # (verbatim, under a separate vendor/kalos-evidence snapshot) for the Python
 # boundary-qualification tests. Keep this list minimal: every entry is test
-# data pinned by provenance, never a core input.
-EVIDENCE_ALLOWLIST = ("validation/evidence/native/x13-automatic/",)
+# data pinned by provenance, never a core input. The x13-horizon captures
+# (item 21-H.4 JVM horizon corpus) entered the allowlist with the pin advance
+# to f500162, qualified by tests/test_x13_automatic_horizon.py.
+EVIDENCE_ALLOWLIST = ("validation/evidence/native/x13-automatic/",
+                      "validation/evidence/native/x13-horizon/")
 
 
 def safe_path(value):

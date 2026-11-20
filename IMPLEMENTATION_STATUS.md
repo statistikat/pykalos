@@ -707,3 +707,88 @@ bit-identical to the JVM pins across the suite's two full 13-case
 executions; the sigma-default trio (`legacy (default)`/`legacy (explicit)`/
 `accurate (explicit)`) answers identically on quick, the convolve surface
 unchanged (baseline 12/12 green on the final wheel).
+
+## M5: pin advanced to f500162 — horizon envelope extended and qualified — 2026-11-21
+
+Pin `b2573fc…` → **`f500162a3be1539803566f9bc8f071e0deb4f66b`** (item 21-H.4:
+the `arima_forecasts` unit plus the nonzero-horizon `initialStep` route wired
+into the automatic driver, incl. the estimation-block AR sign fix; the
+intervening `7564ce7` is workflow-only). Upstream `check-manifest.py` PASS at
+f500162 first (142 core / 112 fixture / 195 evidence). Vendor delta:
+**141 → 143 core files** — added `include/kalos/arima_forecasts.hpp` +
+`src/arima_forecasts.cpp`; content-updated `CMakeLists.txt`,
+`x13_allocation.hpp/.cpp`, `x13_automatic.hpp/.cpp` + regenerated
+`revision.hpp`.
+
+**Machine extension — evidence allowlist (maintainer decision, recorded).**
+The checkpoint STOP of 2026-11-20 escalated the discovery that 21-H.4
+deliberately deletes the core's zero-horizon refusal; the recorded decision is
+to advance the pin AND extend the horizon envelope, qualified against the
+upstream JVM horizon captures. `EVIDENCE_ALLOWLIST` in `tools/sync-core.py`
+grew from `x13-automatic/` only to also include
+`validation/evidence/native/x13-horizon/`: the vendored `vendor/kalos-evidence`
+mirror is now **11 files** (the six 21-H oracle files plus the five horizon
+captures — cases/inputs/oracle-facts CSVs + metadata.R + SHA256SUMS.csv, R
+4.5.1/JVM 21 double-captured on 2026-11-20, provenance `["evidence"]`, own
+SHA256SUMS gate). Nothing leaks into `vendor/kalos` (still `["core"]`-only).
+`--verify` PASS pre (141 core + 6 evidence @ b2573fc) and post
+(143 core + 11 evidence @ f500162).
+
+**The envelope change — horizons {0..N}, otherwise unchanged.** At b2573fc
+`src/x13_automatic.cpp` refused nonzero X-11 horizons
+(`unsupported:x13 fit requires zero horizons`); the driver at f500162 delivers
+the route instead: horizons are month counts (negative = |h| annual
+frequencies, normalized by the driver, echoed normalized in `fit`) and feed
+the downstream composition ONLY — estimation, the decision chain and the
+landing coefficients are horizon-invariant
+(x13-automatic-pipeline-contract.md, "Horizon extension (21-H.4)"). EVERY
+OTHER fail-closed pin stays verbatim: non-monthly, non-finite input, deferred
+calendar/easter/TD/user flags (21-I), outlier span < series, raw-entry missing
+sigma policy, unknown spec names, regression inputs. capabilities()
+`automatic` block bumps to **schema 3**: `zero_horizon_only` replaced by
+`horizon_envelope`; the raw-entry docstring and the wrapper docstring now say
+horizons `{0..N}`.
+
+**Re-pin and qualification.** The fail-closed matrix entries `backcast=1` and
+`forecast=2` are re-pinned to the new contract (accepted: `status available`,
+`available=True`, `fit` horizon echo, `out` length `n+bc+fc`). New
+`tests/test_x13_automatic_horizon.py` (+ `load_horizon_corpus()` in the corpus
+reader) replays the four JVM horizon captures through
+`pykalos.x13_automatic`. NO relaxation: at the boundary the exposed decisions
+are BIT (status, final description, `mode_effective`, variable identities,
+neff, horizon echo, table lengths) and numerics ride the upstream bands
+transcribed from `tests/jvm_x13_automatic_horizon.h` kCases at f500162 for the
+three boundary-exposed tables (`HZ_BANDS`, copied never widened; the bit-tier
+`a1`/`d18`/`d18a`/`d18b` claims live upstream — those tables do not cross the
+binding); landing coefficients and stats reuse the existing zero-horizon
+contract bands (1e-2/2e-3) because the horizon captures pin byte-identical
+landing facts. Case selection `PYKALOS_X13HZ_CASES`, default the
+detection-free `quick_h6`; `test_evidence_sha256sums` now verifies both
+captures.
+
+Wheel (`SCRATCH/venv-pykalos`, `env -u LD_LIBRARY_PATH`, bare
+`-DOpenBLAS_ROOT=SCRATCH/openblas`):
+`pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`97ae136e9585bf3b477c4cf9989e5f9b1f9c46d83b1b995fc2a326c6128857b4`, **zero
+compiler warnings**, **66/66 TUs carry `-ffp-contract=off`** (65 vendor — the
+64 + `arima_forecasts.cpp` — plus the binding TU), RUNPATH
+`$ORIGIN:SCRATCH/openblas/lib` intact (ldd with the ambient `LD_LIBRARY_PATH`
+unset resolves the pinned 0.3.34 provider + system `libgomp`),
+`core_version()['commit']` = full `f500162…`.
+
+Suites. Default `pytest tests`: **30 passed + 7 subtests** (27 + the two
+horizon shape tests + the `quick_h6` qualification; the re-pinned pair keeps
+the matrix 7/7 green). Full gate (both detection sets, `-s`, 11m09s):
+**38 passed + 7 subtests, 0 failures**. Zero-horizon oracle scoreboard
+**4353 checks / 0 failures — every measured worst byte-identical to the M4
+record** (tmean 7.423e-4, panel BIC2 8.095e-3, AICC display 3.418e-6, landing
+stats 4.482e-7, landing coefficients 9.747e-3, tables 5.036e-7). New horizon
+scoreboard **1287 checks / 0 failures**: all bit families exact
+(decisions/echo/lengths/variables/status), worsts well inside the transcribed
+bands — out 1.047e-6 (band 2e-5, so_h6), d11final 3.130e-7 (5e-6, so_h6),
+e11 3.763e-7 (5e-6, multi_b3h6), hz landing coefficients 3.003e-4 (1e-2),
+landing stats 3.507e-8 (2e-3). **Drift verdict: beyond the recorded contract
+change, none** — the zero-horizon surface is bit-stable and the horizon
+acceptance is JVM-qualified at the core's own tiers. CI note: the
+`smoke.yml` core-tools checkout ref `4f0625c` needs no move —
+`tools/build-openblas.py` is the identical blob (`69285ff…`) at f500162.

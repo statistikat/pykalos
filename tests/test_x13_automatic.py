@@ -26,7 +26,7 @@ import struct
 import unittest
 
 import pykalos
-from x13auto_corpus import EVIDENCE, load_corpus, verify_sha256sums
+from x13auto_corpus import EVIDENCE, HORIZON_EVIDENCE, load_corpus, verify_sha256sums
 
 CORPUS = load_corpus()
 DEFAULT_CASES = ",".join(sorted(cid for cid, c in CORPUS.items() if not c["outliers"]))
@@ -146,7 +146,8 @@ def entry_scalar(entry, key):
 
 class CorpusShapeTest(unittest.TestCase):
     def test_evidence_sha256sums(self):
-        verify_sha256sums(EVIDENCE)
+        verify_sha256sums(EVIDENCE)          # 21-H zero-horizon oracle corpus
+        verify_sha256sums(HORIZON_EVIDENCE)  # 21-H.4 JVM horizon captures
 
     def test_corpus_complete(self):
         self.assertEqual(len(CORPUS), 13)
@@ -162,10 +163,12 @@ class BoundarySurfaceTest(unittest.TestCase):
         self.assertEqual(caps["primitives"], ("convolve", "x13_automatic"))
         self.assertFalse(caps["fit"])
         auto = caps["automatic"]
+        self.assertEqual(auto["schema_version"], 3)  # 21-H.4: horizon envelope
         self.assertEqual(auto["sigma_policy_default"], "legacy")
         self.assertTrue(auto["x13_automatic_qualified"])
         self.assertTrue(auto["monthly_only"])
-        self.assertTrue(auto["zero_horizon_only"])
+        self.assertNotIn("zero_horizon_only", auto)  # b2573fc pin, deleted at f500162
+        self.assertIn("21-H.4", auto["horizon_envelope"])
         self.assertEqual(auto["frequency"], 12)
         self.assertEqual(auto["modes"],
                          ("additive", "multiplicative", "log_additive", "pseudo_additive"))
@@ -196,8 +199,6 @@ class BoundarySurfaceTest(unittest.TestCase):
         cases = [
             ({"frequency": 4, "seasonal": ["msr"] * 4},
              "unsupported:x13 automatic fit monthly series only"),
-            ({"backcast": 1}, "unsupported:x13 fit requires zero horizons"),
-            ({"forecast": 2}, "unsupported:x13 fit requires zero horizons"),
             ({"use_user_variables": True},
              "unsupported:x13 automatic fit defers calendar/easter/TD/user detection (21-I)"),
             ({"use_calendar_detection": True},
@@ -212,6 +213,21 @@ class BoundarySurfaceTest(unittest.TestCase):
                 result = run(**kw)
                 self.assertEqual(result["status"], want)
                 self.assertFalse(result["available"])
+        # 21-H.4 re-pin (pin f500162): b2573fc refused nonzero horizons with
+        # "unsupported:x13 fit requires zero horizons"; the driver deleted that
+        # refusal deliberately when it delivered the initialStep forecast route
+        # (docs/contracts/x13-automatic-pipeline-contract.md, "Horizon
+        # extension"). Nonzero horizons are IN envelope now; the positive
+        # JVM qualification of the route runs in test_x13_automatic_horizon.py.
+        for kw in ({"backcast": 1}, {"forecast": 2}):
+            with self.subTest(**kw):
+                result = run(**kw)
+                self.assertEqual(result["status"], "available")
+                self.assertTrue(result["available"])
+                self.assertEqual(result["fit"]["backcast"], kw.get("backcast", 0))
+                self.assertEqual(result["fit"]["forecast"], kw.get("forecast", 0))
+                self.assertEqual(len(result["fit"]["out"]),
+                                 len(values) + kw.get("backcast", 0) + kw.get("forecast", 0))
         broken = list(values)
         broken[5] = float("nan")
         result = pykalos.x13_automatic(broken, start_year=c["first_year"],
