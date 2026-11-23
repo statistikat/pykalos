@@ -21,6 +21,9 @@ squares, degrees of freedom, mean squares and lower-tail probabilities.
 Use `tramo_full_initial_calendar(series, start_year=1990, start_month=1, log=True)`
 for the stock initial TRfull rule on original observations. It returns the contrast
 comparison and the mean, leap-year and Easter t statistics and retention decisions.
+`tramo_residual_trading_days` takes the fitted residuals, the original estimation
+start year, start month, length and significance. It returns the late controller's
+F statistic, upper-tail probability and decision to refit.
 
 Call `estimate_tramo_tr1(series, start_year=1990, start_month=1)` for stock
 TR1 preprocessing of a complete monthly series. Its result gives the fitted

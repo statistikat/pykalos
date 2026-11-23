@@ -25,7 +25,7 @@ from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
 __all__ = ["capabilities", "convolve", "core_version", "x13_automatic",
            "x13_automatic_fit", "x13_fit", "tramo_critical_value", "tramo_seasonality",
-           "tramo_transform_decision", "tramo_calendar_f_test", "tramo_full_initial_calendar", "estimate_tramo_tr1", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
+           "tramo_transform_decision", "tramo_calendar_f_test", "tramo_full_initial_calendar", "tramo_residual_trading_days", "estimate_tramo_tr1", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
 __version__ = "0.1.0"
 
 # Decoder-pinned module scalars of the qualified envelope (docs/contracts/
@@ -190,6 +190,20 @@ def tramo_full_initial_calendar(series, *, start_year, start_month, log, frequen
     operation = "tramo_full_initial_calendar"
     arguments = _calendar_domain(series, start_year, start_month, frequency, operation)
     return _kalos._tramo_full_initial_calendar(*arguments, _request_flag(log, "log", operation))
+
+
+def tramo_residual_trading_days(residuals, *, estimation_start_year, estimation_start_month,
+                                estimation_length, significance, frequency=12):
+    """Test TRfull's fitted monthly residuals for remaining trading-day variation.
+
+    Dates describe the original estimation window. The residual vector ends on
+    its last month and can start later. A rank-deficient or unestimable test returns None.
+    """
+    operation = "tramo_residual_trading_days"
+    arguments = _calendar_domain(residuals, estimation_start_year, estimation_start_month, frequency, operation)
+    return _kalos._tramo_residual_trading_days(
+        *arguments, _fixed_integer(estimation_length, "estimation_length", operation),
+        _finite_number(significance, "significance", operation))
 
 
 def estimate_tramo_tr1(series, *, start_year, start_month, frequency=12):

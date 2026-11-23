@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <optional>
 #include <utility>
 #include "kalos/tramo_transform_decision.hpp"
 #include "kalos/tramo_calendar_f_test.hpp"
@@ -42,6 +43,17 @@ void bind_tramo_preprocessing(py::module_& module) {
             result = kalos::tramo_calendar_f_test(values, year, month, mean, significance, precision);
         }
         return calendar_report(result);
+    });
+    module.def("_tramo_residual_trading_days", [](const std::vector<double>& residuals, int year, int month,
+            int length, double significance) -> py::object {
+        std::optional<kalos::TramoResidualTradingDays> result;
+        {
+            py::gil_scoped_release release;
+            result = kalos::tramo_residual_trading_days(residuals, year, month, length, significance);
+        }
+        if (!result) return py::none();
+        return py::dict("statistic"_a=result->statistic, "upper_probability"_a=result->upper_probability,
+                        "needs_processing"_a=result->needs_processing);
     });
     module.def("_tramo_full_initial_calendar", [](const std::vector<double>& values, int year, int month, bool log) {
         kalos::TramoFullCalendarResult result;

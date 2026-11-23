@@ -1206,3 +1206,7 @@ The Python binding snapshot advances to core `0e0f272`, containing the monthly p
 ### M5 public monthly RSA1 seasonal adjustment
 
 `tramoseats_fit(..., template="RSA1")` now selects the level/log transformation, detects outliers, estimates the TR1 model and returns the dated SEATS and merged rows. Each of the six public original-series fixtures matched the model, regression effects, likelihood, residual dates and all 570 residuals, product change flag and all 3,960 component values across 60 observed/forecast rows. The `TR1` alias also passed a three-month backcast/six-month forecast calendar check. Capabilities list the available residual and forecast-error fields for RSA0 and RSA1 separately. All 92 targeted tests passed, including the four Java-free adjustment routes. [Installed RSA1 replay](tests/test_tramo_automatic.py)
+
+### M5 residual trading-day significance
+
+`tramo_residual_trading_days` evaluates dated monthly residuals against the fitted estimation domain. The installed wheel reproduced all 32 JVM decisions across eight inputs, including binary64 probabilities and statistic values, decisions on both sides of equality and absent tests for degenerate fits. All 34 targeted wheel tests passed. [Residual trading-day replay](tests/test_tramo_calendar.py)

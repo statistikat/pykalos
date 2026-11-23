@@ -67,6 +67,32 @@ class CalendarFTest(unittest.TestCase):
             with self.assertRaises((ValueError, TypeError)):
                 pykalos.tramo_full_initial_calendar(**(dict(series=[1.]*180, start_year=1990, start_month=1) | options))
 
+    def test_residual_trading_day_decisions(self):
+        count = 0
+        for line in (EVIDENCE / "residual-td.txt").read_text().splitlines():
+            fields = line.split()
+            if fields[0] == "residuals":
+                year, month, n = map(int, fields[1:4])
+                request = dict(residuals=list(map(from_hex, fields[4:])), estimation_start_year=year,
+                               estimation_start_month=month, estimation_length=n)
+                continue
+            key, alpha, statistic, probability, selected = fields
+            with self.subTest(year=year, month=month, threshold=alpha):
+                self.assertEqual(key, "gate")
+                result = pykalos.tramo_residual_trading_days(**request, significance=from_hex(alpha))
+                self.assertEqual(bits([result["statistic"], result["upper_probability"]]),
+                                 bytes.fromhex(statistic + probability))
+                self.assertEqual(result["needs_processing"], selected == "true")
+                count += 1
+        self.assertEqual(count, 32)
+        request = dict(estimation_start_year=1990, estimation_start_month=1, estimation_length=48, significance=.01)
+        for data in ([], [1.], [0.]*36):
+            self.assertIsNone(pykalos.tramo_residual_trading_days(data, **request))
+        for options in (dict(estimation_start_month=13), dict(estimation_length=9), dict(significance=2.),
+                        dict(frequency=4)):
+            with self.subTest(options=options), self.assertRaises(ValueError):
+                pykalos.tramo_residual_trading_days([1.]*36, **(request | options))
+
     def test_request_boundary(self):
         data = [from_hex(x) for x in (EVIDENCE / "panel.txt").read_text().splitlines()[0].split()[2:]]
         spec = dict(start_year=1990, start_month=1, mean=True, significance=.01, precision=1e-3)
