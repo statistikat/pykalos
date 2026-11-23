@@ -12,6 +12,12 @@ The integration gate checks the allowlist, builds and imports the wheel with che
 
 The landing and final estimates use the pinned Levenberg–Marquardt solver at this revision. The capability also identifies the differencing and initial ARMA solver and the BFGS transform and outlier requests. The two signed horizon fields now document both monthly and annual inputs. The Python boundary checks their normalized values, extended output length and the core’s refusal of annual multiplication or combined-length overflow. All 72 automatic-boundary, corpus-shape, request-validation, NumPy and smoke tests passed on the installed checkpoint wheel with Python 3.15 and NumPy 2.5.5.
 
+### Installed-wheel provider and NumPy CI
+
+CI reads the core tooling revision from `core.lock.json`. The minimal and NumPy jobs install the built wheel into clean environments. Both log the exact binary mapped behind the extension’s OpenBLAS configuration symbol, its SHA-256, the runtime configuration, integer width and pinned source-archive digest. The NumPy job imports NumPy explicitly and exercises input shapes, strides, dtypes and read-only buffers.
+
+The wheel now uses the vendored core’s provider finder and link probes. A single CMake build directory accepted the qualified root, rejected a missing root and accepted the restored root. The source archive built an installed wheel against the checksum-pinned OpenBLAS 0.3.34. Its runtime configuration on this host was `OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING neoversen1 SINGLE_THREADED`, with a 32-bit integer ABI and binary SHA-256 `6227c1b96aa62ec2aa7317912cb980ee32dae9adccebc81c105f479482d505e6`. The checker also rejected an unrelated prefix. The three dependency-free smoke tests passed. The workflow YAML parsed locally. Hosted jobs and portable bundled wheels remain outside this local evidence.
+
 ## Initial scaffold (2026-11-14)
 
 ## Implemented

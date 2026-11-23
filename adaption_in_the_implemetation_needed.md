@@ -18,9 +18,7 @@ The raw entry rejects unknown keys and checks both outlier budgets before conver
 
 ## P2 — Exercise NumPy and make provider qualification reproducible
 
-**Planned for the next Python core-pin update.** The NumPy CI lane, provider fingerprint, and tooling pin are deferred together. [Deferral record](IMPLEMENTATION_STATUS.md#L958)
-
-The smoke workflow installs the wheel without dependencies and has no explicit NumPy installation. The NumPy class skips when NumPy is absent. Install NumPy in a dedicated test lane and run the input-shape, dtype, stride, and read-only buffer assertions there. Keep a minimal dependency lane for the base API. The workflow fetches provider tooling at a separate older Kalos commit. Use the locked provider recipe or an explicit, independently checked tooling pin, and log the actual provider version, build configuration, and library fingerprint from the wheel test environment. [Smoke workflow](.github/workflows/smoke.yml#L8) · [NumPy tests](tests/test_numpy_interop.py#L13) · [Core lock](core.lock.json#L1)
+**Implemented at the M5 checkpoint.** CI builds with the provider recipe from the exact Kalos revision in the lock and installs the wheel into a fresh environment. The minimal and NumPy jobs check the loaded OpenBLAS version, ABI, binary path and checksum. The NumPy job explicitly imports NumPy before running interoperability and request validation. A local source-archive wheel build passed on macOS ARM64. Hosted Linux results remain pending. [Workflow](.github/workflows/smoke.yml) · [Provider check](tools/check-wheel-provider.py)
 
 ## Verification of the current fixes
 

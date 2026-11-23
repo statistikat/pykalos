@@ -5,25 +5,56 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dependencies: [minimal, numpy]
+    defaults:
+      run:
+        working-directory: pykalos
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/checkout@v5
         with:
-          repository: statistikat/kalos
-          ref: 4f0625cf44d9cba3c512fdd3d97e1ec4b10132da
-          path: core-build-tools
+          path: pykalos
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: sudo apt-get update && sudo apt-get install -y gfortran ninja-build
-      - run: python core-build-tools/tools/build-openblas.py --prefix "${{ runner.temp }}/openblas" --jobs 2
+      - name: Read the provider tooling revision from the source lock
+        id: core
+        run: |
+          python -c 'import json; print("revision=" + json.load(open("core.lock.json"))["commit"])' >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v5
+        with:
+          repository: statistikat/kalos
+          ref: ${{ steps.core.outputs.revision }}
+          path: core-build-tools
       - run: python tools/sync-core.py --verify
+      - run: sudo apt-get update && sudo apt-get install -y gfortran ninja-build
+      - run: python ../core-build-tools/tools/build-openblas.py --prefix "${{ runner.temp }}/openblas" --jobs 2
       - run: python -m pip install build
       - run: python -m build
         env:
           CMAKE_ARGS: -DOpenBLAS_ROOT=${{ runner.temp }}/openblas
+      - name: Create an isolated wheel test environment
+        run: |
+          python -m venv "$RUNNER_TEMP/test-env"
+          echo "$RUNNER_TEMP/test-env/bin" >> "$GITHUB_PATH"
       - run: python -m pip install --no-deps dist/*.whl
-      - run: python -m unittest discover -s tests -v
+      - run: python tools/check-wheel-provider.py "${{ runner.temp }}/openblas"
+      - if: matrix.dependencies == 'minimal'
+        name: Test the dependency-free wheel
+        run: |
+          python -c 'import importlib.util; assert importlib.util.find_spec("numpy") is None'
+          python -m unittest discover -s tests -v
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '2'
+      - if: matrix.dependencies == 'numpy'
+        name: Test NumPy interoperability and input validation
+        run: |
+          python -m pip install numpy
+          python -c 'import numpy; print(numpy.__version__)'
+          PYTHONPATH=tests python -m unittest -v test_numpy_interop test_request_validation test_smoke
         env:
           OPENBLAS_NUM_THREADS: '1'
           OMP_NUM_THREADS: '2'
