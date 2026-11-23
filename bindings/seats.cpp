@@ -112,4 +112,24 @@ void bind_seats(py::module_& module) {
         }
         return decomposition(result);
     });
+    module.def("_tramoseats_rsa0", [](const std::vector<double>& series, int year, int month,
+                                      int backcast, int forecast) {
+        kalos::tramo_seats_rsa0_result output;
+        {
+            py::gil_scoped_release release;
+            output = kalos::run_tramo_seats_rsa0(series, year, month, backcast, forecast);
+        }
+        auto result = decomposition(output.decomposition);
+        const auto& fit = output.preprocessing;
+        const auto& model = fit.model;
+        result["model"] = py::dict(
+            "orders"_a=py::dict("p"_a=model.phi.size(), "d"_a=model.d, "q"_a=model.theta.size(),
+                                "bp"_a=model.bphi.size(), "bd"_a=model.bd, "bq"_a=model.btheta.size()),
+            "phi"_a=model.phi, "bphi"_a=model.bphi, "theta"_a=model.theta, "btheta"_a=model.btheta,
+            "log"_a=model.log, "mean_correction"_a=model.mean_correction,
+            "mean_coefficient"_a=fit.mean_coefficient, "innovation_variance"_a=model.innovation_variance);
+        result["likelihood"] = py::dict("log_likelihood"_a=fit.log_likelihood, "ssq"_a=fit.residual_ssq,
+            "effective"_a=fit.effective_observations, "estimated"_a=fit.estimated_parameters);
+        return result;
+    });
 }

@@ -1,6 +1,6 @@
 # pykalos implementation status
 
-Current Python operations at the 2026-11-23 checkpoint include convolution, fixed-coefficient and automatic X-13, and three TRAMO preprocessing decisions. The dated entries retain the earlier qualification results.
+Current Python operations at the 2026-11-23 checkpoint include convolution, fixed-coefficient and automatic X-13, three TRAMO preprocessing decisions, fixed WK extraction, fitted-model decomposition and ordinary monthly RSA0 fitting. The dated entries retain the earlier qualification results.
 
 ## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
 
@@ -1030,3 +1030,9 @@ The export advances to core `fa7edeae3c68862e163633c7debce3d102248223`, which in
 ### M5 fixed-model WK extraction and fitted TRAMO decomposition
 
 Python now exposes `seats_extract_wk` for fixed monthly models and `seats_from_tramo` for fitted likelihoods and deterministic AO/LS effects. Both return owned, dated rows and preserve the core’s status and refusal reasons. The installed wheel replayed all 36 WK cases (1,055 rows, 55,812 values). The fitted bridge replayed all six requests, including four successful merges (8,160 values) and both approximation refusals. Dates, ordering, lengths and binary64 values, including signed zeros, matched the frozen oracles. [Installed-wheel replay](tests/test_seats.py)
+
+### M5 ordinary monthly RSA0 product fit
+
+`tramoseats_fit` estimates the TR0 mean and airline coefficients directly from original monthly observations, then returns the RSA0 WK and merged components and the four observed final series. Capability metadata specifies the RSA0 template, complete monthly input, additive mode and the approximation boundary. Broader TRAMO templates and approximation retries remain outside this fit. [API](README.md) · [Raw series replay](tests/test_tramoseats_fit.py)
+
+All six original-series JVM fits agreed bit-for-bit on the two MA coefficients, mean coefficient, log likelihood, residual sum of squares, 60 merged component rows and 3,960 values. The installed macOS ARM64 wheel also passed alternate calendar, horizon and request refusal checks. All 76 WK, RSA0, fixed X-13, preprocessing, smoke, NumPy, import-order and input validation tests passed at one thread with pinned OpenBLAS 0.3.34.

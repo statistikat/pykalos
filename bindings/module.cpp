@@ -631,7 +631,8 @@ PYBIND11_MODULE(_kalos, m) {
         py::dict result;
         result["fit"] = false;
         result["primitives"] = py::make_tuple("convolve", "x13_automatic", "x13_fit", "tramo_critical_value",
-                                              "tramo_seasonality", "tramo_transform_decision", "seats_extract_wk", "seats_from_tramo");
+                                              "tramo_seasonality", "tramo_transform_decision", "seats_extract_wk", "seats_from_tramo",
+                                              "tramoseats_fit");
         result["status"] = "minimal_binding";
         py::dict restricted;
         restricted["schema_version"] = 1;
@@ -644,6 +645,10 @@ PYBIND11_MODULE(_kalos, m) {
         restricted["fixed_henderson_only"] = true;
         restricted["sigma_policy_default"] = "legacy";
         result["restricted_fit"] = restricted;
+        result["tramo_seats_fit"] = py::dict(
+            py::arg("entry_point")="pykalos.tramoseats_fit", py::arg("templates")=py::make_tuple("RSA0"),
+            py::arg("frequency")=12, py::arg("complete_series_only")=true,
+            py::arg("mode")="additive", py::arg("approximation_retry")=false);
         // Schema-3-style automatic block: the qualified stage-Z surface.
         // (3: the 21-H.4 pin advance replaced the zero_horizon_only pin with
         // the horizon envelope key for the downstream composition.)

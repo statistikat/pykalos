@@ -13,6 +13,14 @@ choice, both branch readouts and the effective seasonal model. The series must
 contain at least 24 finite monthly observations. Robust AO/LS pre-correction and
 a full TRAMO/SEATS fit remain outside these operations.
 
+For complete monthly observations, `tramoseats_fit(series, start_year=1990,
+start_month=1)` estimates the RSA0 template from the original series. It
+returns the fitted airline MA coefficients, mean, likelihood and dated WK
+and merged components. Use `fit["finalSA"]`, `fit["finalTrend"]`,
+`fit["finalSeasonal"]` and `fit["finalIrregular"]` for the observed period.
+The supported template and approximation boundary are reported by
+`capabilities()["tramo_seats_fit"]`.
+
 For a fixed monthly SEATS model, `seats_extract_wk(series, innovation_variance, ...)`
 takes the fitted SARIMA coefficients and returns ordered `initial` and `final`
 component rows. Each row includes a component, information type, start year,

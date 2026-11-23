@@ -11,7 +11,8 @@ Available operations:
   (which Python/NumPy types each request slot accepts and what is refused,
   never coerced) is documented in the ``x13_automatic`` docstring;
 * the fixed-coefficient quarterly/monthly X-13 fit, ``x13_fit``;
-* the 23-B TRAMO critical value, seasonality and log/level preprocessing decisions.
+* the TRAMO critical value, seasonality and log/level preprocessing decisions;
+* fixed WK extraction, fitted TRAMO decomposition and ordinary monthly RSA0 fitting.
 """
 from math import isfinite as _isfinite
 from operator import index as _index
@@ -21,7 +22,7 @@ from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
 __all__ = ["capabilities", "convolve", "core_version", "x13_automatic",
            "x13_automatic_fit", "x13_fit", "tramo_critical_value", "tramo_seasonality",
-           "tramo_transform_decision", "seats_extract_wk", "seats_from_tramo"]
+           "tramo_transform_decision", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit"]
 __version__ = "0.1.0"
 
 # Decoder-pinned module scalars of the qualified envelope (docs/contracts/
@@ -627,3 +628,31 @@ def seats_from_tramo(series, ssq, effective, estimated, *, frequency=12, start_y
         coefficient = _finite_number(row["coefficient"], "coefficient", "seats_from_tramo")
         spec["outliers"].append(dict(type=kind, position=position, coefficient=coefficient))
     return _kalos._seats_from_tramo(data, spec)
+
+
+def tramoseats_fit(series, *, template="RSA0", frequency=12, start_year=1990, start_month=1,
+                   forecast=-2, backcast=0):
+    """Fit monthly RSA0 to complete original observations and return dated components.
+
+    The TR0 preprocessing specification estimates a mean and both airline MA
+    parameters. RSA0 applies additive SEATS to this fitted model. Forecast
+    and backcast counts are periods when nonnegative and years when negative.
+    The default requests two forecast years. A successful result includes
+    finalSA, finalTrend, finalSeasonal and finalIrregular on the observed span.
+    """
+    if not isinstance(template, str) or template.upper() not in ("RSA0", "TR0"):
+        raise ValueError("tramoseats_fit: the supported template is RSA0 (TR0)")
+    spec = dict(frequency=frequency, start_year=start_year, start_month=start_month,
+                forecast=forecast, backcast=backcast)
+    data = _seats_domain(series, spec, "tramoseats_fit")
+    if spec["frequency"] != 12:
+        raise ValueError("tramoseats_fit: RSA0 requires monthly observations")
+    result = _kalos._tramoseats_rsa0(data, spec["start_year"], spec["start_month"],
+                                    spec["backcast"], spec["forecast"])
+    result.update(template="RSA0", method="tramoseats", mode="additive", series=data)
+    if result["status"] == "ok":
+        observed = {row["component"]: row["values"] for row in result["merged"] if row["information"] == "Value"}
+        for key, component in (("finalSA", "SeasonallyAdjusted"), ("finalTrend", "Trend"),
+                               ("finalSeasonal", "Seasonal"), ("finalIrregular", "Irregular")):
+            result[key] = observed[component].copy()
+    return result
