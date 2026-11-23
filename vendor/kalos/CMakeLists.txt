@@ -228,6 +228,7 @@ if(KALOS_BUILD_TESTS)
     test_tramo_regression_tests
     test_tramo_seats_bridge
     test_tramo_seats_rsa0
+    test_tramo_seats_automatic
     test_tramo_seats_model
     test_tramo_transform_decision
     test_transformation_decision
@@ -267,6 +268,10 @@ if(KALOS_BUILD_TESTS)
     if(test_name STREQUAL "test_arma_diagnostics")
       target_compile_definitions(${test_name} PRIVATE
         KALOS_RSA0_DIAGNOSTIC_DIR="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge")
+    endif()
+    if(test_name STREQUAL "test_tramo_seats_automatic")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_AUTOMATIC_ORACLES="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge")
     endif()
     if(test_name STREQUAL "test_tramo_seats_rsa0")
       target_compile_definitions(${test_name} PRIVATE

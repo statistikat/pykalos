@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -122,14 +123,19 @@ struct DetectedOutlier {
     std::string name;
 };
 
-std::optional<std::vector<DetectedOutlier>> check_scan(const TramoFitSpec& spec, const tramo_build_result& built, bool log,
-                const TramoFitSeamInputs& in, const TramoKernelSeam& expected) {
+struct OutlierScanSelection {
+    TramoKernelStageResult outcome;
+    std::vector<std::string> names;
+    std::vector<DetectedOutlier> variables;
+};
+
+std::optional<OutlierScanSelection> run_scan(const TramoFitSpec& spec, const tramo_build_result& built,
+                                             bool log, const TramoOrders& o, bool mean, double critical_value) {
     TramoOutlierScanRequest request{};
     request.y = built.interpolated;
     request.frequency = built.annual_frequency;
-    request.mean = in.entry_mean;
+    request.mean = mean;
     request.log = log;
-    const auto& o = in.entry_orders;
     request.p = o.p;
     request.d = o.d;
     request.q = o.q;
@@ -146,13 +152,12 @@ std::optional<std::vector<DetectedOutlier>> check_scan(const TramoFitSpec& spec,
     // The pinned builder stores its two default caps in crossed fields.
     request.max_round = 30;
     request.max_outliers = 50;
-    request.cv = expected.critical_value;
+    request.cv = critical_value;
     request.upper_bound = built.estimation_length;
     if (o.d == 0 && o.bd == 0 && !tramo_stationary_scan_supported(request)) return std::nullopt;
     const auto scan = tramo_outlier_rounds(request);
     const auto outcome = scan.status == TramoOutlierRoundsResult::Status::Failed ? TramoKernelStageResult::failed :
         scan.outliers.empty() ? TramoKernelStageResult::unchanged : TramoKernelStageResult::changed;
-    require(outcome == expected.result, "live scan outcome disagrees with the module witness");
     std::vector<OutlierType> factories;
     if (spec.ao) factories.push_back(OutlierType::Additive);
     if (spec.ls) factories.push_back(OutlierType::LevelShift);
@@ -165,14 +170,22 @@ std::optional<std::vector<DetectedOutlier>> check_scan(const TramoFitSpec& spec,
         names.push_back(monthly_outlier_name(type, selected[0], built.domain_year, built.domain_position + 1));
         variables.push_back({type, selected[0], names.back()});
     }
-    require(names == expected.outliers, "live scan selection disagrees with the ordered outlier witness");
-    require(orders_equal(o, expected.orders) && expected.mean == in.entry_mean,
-            "live scan description disagrees with the module witness");
     // ModelDescription.sortVariables stably orders automatic outliers by date
     // before estimating the regression. The scan witness uses detection order.
     std::stable_sort(variables.begin(), variables.end(),
                      [](const auto& a, const auto& b) { return a.position < b.position; });
-    return variables;
+    return OutlierScanSelection{outcome, std::move(names), std::move(variables)};
+}
+
+std::optional<std::vector<DetectedOutlier>> check_scan(const TramoFitSpec& spec, const tramo_build_result& built, bool log,
+                const TramoFitSeamInputs& in, const TramoKernelSeam& expected) {
+    auto scan = run_scan(spec, built, log, in.entry_orders, in.entry_mean, expected.critical_value);
+    if (!scan) return std::nullopt;
+    require(scan->outcome == expected.result, "live scan outcome disagrees with the module witness");
+    require(scan->names == expected.outliers, "live scan selection disagrees with the ordered outlier witness");
+    require(orders_equal(in.entry_orders, expected.orders) && expected.mean == in.entry_mean,
+            "live scan description disagrees with the module witness");
+    return std::move(scan->variables);
 }
 
 struct EstimationEntry {
@@ -432,6 +445,7 @@ void assemble_fitted_result(TramoFitResult& result, const TramoFitFinalRecord& f
     result.orders = fin.orders;
     result.parameters = fin.parameters;
     result.variables = fin.variables;
+    result.regression_coefficients = fin.coefficients;
     result.ls_obs = fin.ls_obs;
     result.ls_eff = fin.ls_eff;
     result.ls_npar = fin.ls_npar;
@@ -494,6 +508,55 @@ const char* module_name(TramoKernelSeamKind kind) {
 }
 
 }  // namespace
+
+TramoFitResult estimate_tramo_tr1(const std::vector<double>& series, int start_year, int start_month) {
+    const auto& preset = *tramo_template("TR1");
+    require(series.size() >= 24 && series.size() <= static_cast<std::size_t>(std::numeric_limits<int>::max()) &&
+            std::all_of(series.begin(), series.end(), [](double v) { return std::isfinite(v); }),
+            "TR1 requires a complete monthly series spanning at least two years");
+    tramo_build_request build;
+    build.values = series;
+    build.start_year = start_year;
+    build.start_month = start_month;
+    build.arima = preset.arima;
+    build.mean = preset.mean;
+    build.transform_function = preset.transform_function;
+    build.using_auto_model = preset.using_auto_model;
+    TramoFitResult result;
+    result.builder = build_tramo_model(build);
+
+    TramoFitSpec spec;
+    spec.using_auto_model = preset.using_auto_model;
+    spec.ao = preset.outliers_ao;
+    spec.ls = preset.outliers_ls;
+    spec.tc = preset.outliers_tc;
+    spec.so = preset.outliers_so;
+    spec.delta_tc = preset.delta_tc;
+    TramoTransformDecisionRequest transform{};
+    transform.values = series;
+    transform.period = 12;
+    transform.mean = result.builder.mean;
+    transform.detect_seasonality = preset.using_auto_model;
+    transform.log_preference = detail::fdlibm_log(0.95);
+    transform.precision = spec.intermediate_precision;
+    result.transformation = decide_tramo_transform(transform);
+    const bool log = result.transformation.log_transform;
+    EstimationEntry entry{{0, 1, 1, 0, 1, 1}, result.builder.mean, {}};
+    const auto cv = tramo_critical_value(series.size());
+    auto scan = run_scan(spec, result.builder, log, entry.orders, entry.mean, cv);
+    require(scan && scan->outcome != TramoKernelStageResult::failed, "TR1 outlier scan failed");
+    entry.variables = std::move(scan->variables);
+    // Both TR1 passes scan the same fixed airline with the same threshold
+    // after removing automatic outliers. The mean and orders are fixed and
+    // the non-AMI final estimator returns directly on either pass.
+    const auto y = differenced_response(series, log, 12, 0, 0);
+    const auto effects = fit_estimation(spec, y, entry, 1);
+    require(effects.fit.returned && effects.fit.cl_state != 0, "TR1 final estimation failed");
+    const auto record = project_fitted_record(effects, series, log, 12);
+    assemble_fitted_result(result, record);
+    result.final_model_computed = true;
+    return result;
+}
 
 TramoFitResult tramo_fit(const TramoFitRequest& request) {
     TramoFitResult result;

@@ -1179,3 +1179,7 @@ The installed wheel exposes `residuals["doornikhansen"]` and advertises it on th
 ### M6 Windows checkout of the locked source and evidence
 
 A fresh checkout with `core.autocrlf=true` modified the locked source and fixture bytes and failed offline verification on this host. Git now preserves the committed bytes under both vendor trees. A second fresh CRLF-configured checkout verified every hash for all 196 core files and 63 evidence files at `2bf7cc3`. Both portable jobs verify this immediately after checkout and before building the provider.
+
+### M5 raw TR1 and M6 finite state prediction checkpoint
+
+Core `5350e96` contains the public fixed-airline TR1 preprocessor from original observations and the optimized finite state predictor. The Python integration checks the six public TR1 preprocessing records, reruns fixed-order oracle agreement, and repeats the original eight-case fixed-order timing matrix with the same JVM, wheel toolchain and thread settings.

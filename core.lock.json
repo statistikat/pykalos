@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "repository": "https://github.com/statistikat/kalos",
-  "commit": "2bf7cc398644bbe1ae733da43ee92eb77d54d2bb",
+  "commit": "5350e96960fe8f57dc6a96bd688d1164cf61e5a9",
   "version": "0.1.0",
   "source_manifest_sha256": "ec747d4c4dac2c2029df4f99cea7294525db2621e4c4bd79d6f9353f9c52a108",
   "generated_files": [
@@ -14,7 +14,7 @@
         "core"
       ],
       "files": {
-        "CMakeLists.txt": "398bf31a61f930f64f585ee4340e41ed809a3b5945f3b1890f89f70b0993900e",
+        "CMakeLists.txt": "cad4a034e736ae17714cff3698ebe88f0c267e31f1131bf94ed7f265b1030f9b",
         "LICENSE": "cc049274ec12d4d20db90d6278d88217fd1c8eb8c976b659cebc01f9df7fbed1",
         "LICENSE.md": "ca54c28ead69c289e1a7f08f7b45232a92310d5140b07741329a32895ff7a647",
         "backends/openblas.cpp": "a0d604e0a5997fc08d08a8923d7efb23d120bda863aaee812d3fe1044a1770e0",
@@ -74,7 +74,7 @@
         "include/kalos/preparation.hpp": "86d4a4319a5d687854cbe48d53ee7e7312fc45823b676f6aa57fb5dfa7a32161",
         "include/kalos/regression_likelihood.hpp": "70d602b0d7eefae7edfddcfaa404d2a38e29d94ca88dab24b6204a7a3f61ad55",
         "include/kalos/regression_variable_tests.hpp": "a816f8ec79a8183c899703c0b61e5e1955149271be38599d63ca15a6daecf63b",
-        "include/kalos/revision.hpp": "4afaf762f66844a9e5c2a628d3de8af660f8527b1687f64c9c89bf04bbb516c3",
+        "include/kalos/revision.hpp": "b748685176723e0a02a1727ca5ea572168102980739398c383824ba136852427",
         "include/kalos/seats_extract_wk.hpp": "c80b9dd19bcca423328ca55ef43fcf29809e2cd86646727124c68d5c06f5d2d6",
         "include/kalos/sparse_history.hpp": "4a0a34d5f653e6d314fbf2bf72a323c3d72297c18ea39cc3c6f73c98bab13e79",
         "include/kalos/state_space.hpp": "13aa70201814f68da74e82b8b75db8102d51d61ce076b87dd8aa6c1323cd3a5a",
@@ -83,7 +83,7 @@
         "include/kalos/tramo_differencing_battery.hpp": "234d851e04df858a7b402be484410076237e8aaa2c10951a43ebe837df8d6fa4",
         "include/kalos/tramo_differencing_decision.hpp": "78e2543db38e8af74fe0dc74ecb1deaa0d5cee8fd72aa657ef6ba862d8c2d441",
         "include/kalos/tramo_final_estimation.hpp": "3da50fce9e803af2fc25ae60b5c5c64816650c39722c34b55d514c55bc7e4013",
-        "include/kalos/tramo_fit.hpp": "417686babd0fe797a0e0af331bbe762f719899698696124ef8b44a774136f34c",
+        "include/kalos/tramo_fit.hpp": "8356e35950be3275300642e3c2f322974124982f6c5bee2f03d24fb735499ed7",
         "include/kalos/tramo_kernel_rounds.hpp": "5f5017f52e8e8f9fbf81821f35c5b4c474aab2a530ced332f1dd3d1a406c17f1",
         "include/kalos/tramo_model_builder.hpp": "4f3f56dda0d5a370154c47281e01a49e1032204d3b917bac20f90e90b36cd85c",
         "include/kalos/tramo_outlier_rounds.hpp": "2f6e8b69cc49102583d05126b4632206b90d07424b1713d70d4b4e20a013c72b",
@@ -135,7 +135,7 @@
         "src/fdlibm.cpp": "7faeaeece08d566aa5c701a25a70c4659132d5c0e15d03244c4478a4f83d5dc4",
         "src/final_estimator.cpp": "8fa597600319c82a69db0257cd9a4874a09e63b1af4a343a7ef171eba652105e",
         "src/final_information.cpp": "f97ec198ec053c2cd7e49ee2f7d21f64f1f9acdfeebfed4a66b28c1d4d303c2d",
-        "src/finite_state_factor.cpp": "e7e4e97eee1a41911bc58518606820b74cc2f3340f5c73d062edeaeaf8552407",
+        "src/finite_state_factor.cpp": "14beffb6bfb5ca1bd45bf1bdd9aba620c4eaf49cd1523acc372f62c940cbdd85",
         "src/forecast_arma_information.cpp": "0f621fce11c679c4f11ff5812ecbecd9f7bd4dcb98a86b2fa684e03295cdedd4",
         "src/forecast_information.cpp": "6d09ce48a15d76a89e7978c85c41f99b2f4615fc736472790ec9d88ecca45cbf",
         "src/hannan_rissanen.cpp": "4c54de7803b2f33889a46d4d02862648b5697628cbf97e8fd639c743bcdf68cd",
@@ -172,7 +172,7 @@
         "src/tramo_differencing_battery.cpp": "1bd8b068db42f926320d52c36a2d4a71fcb9d11a1fcc68fe5e61013e4d94ded9",
         "src/tramo_differencing_decision.cpp": "1a87f0c3fc6dab91363012d884d94eacb53d148cd1d51ff55daf26a9c272719f",
         "src/tramo_final_estimation.cpp": "be45abee03c4a7c280eb817cf79817e3795d6ae7a905cd32448b661783f6b34b",
-        "src/tramo_fit.cpp": "f6eff29a9b1f95280d4cecb04bd50bf7a721321ce83cdf4e8bee7ebf1cf9537f",
+        "src/tramo_fit.cpp": "91180169ffdb0faf04bec6348ab35ef0b2163ebf78ff15428c86a4f8a2c6e198",
         "src/tramo_kernel_rounds.cpp": "8aacc2d1afb7e7754d51208219d1b5761d2bd323341764f75aef4ffc9c02d7cd",
         "src/tramo_model_builder.cpp": "9e5ee5ed55c2a410007b14a67eccfbd7848fd27f0591521e8ee9d11552189dc5",
         "src/tramo_outlier_rounds.cpp": "70b56054719ae2e01b1d0abe37fba76defd7aea03b67917ab50c1209bbf1d553",

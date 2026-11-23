@@ -281,6 +281,7 @@ struct TramoFitResult {
     TramoOrders orders;
     std::vector<double> parameters;     // JVM [phi|bphi|theta|btheta] bits
     std::vector<TramoFitVariable> variables;
+    std::vector<double> regression_coefficients; // mean, then variables in description order
     TramoFitCovariance covariance;
     // sigma2 bookkeeping (the cl record views): ssq, the effective count
     // (cl dim), nx, nmissing, logDeterminant and the derived
@@ -318,6 +319,10 @@ struct TramoFitResult {
 // envelope REQUESTS answer the refused: status instead where the matrix
 // says so (the refusals are decisions, not shape errors).
 TramoFitResult tramo_fit(const TramoFitRequest& request);
+
+// Public monthly TR1 preprocessing, including automatic log/level selection,
+// automatic outliers and a fixed-order airline with a mean.
+TramoFitResult estimate_tramo_tr1(const std::vector<double>& series, int start_year, int start_month);
 
 }  // namespace kalos
 
