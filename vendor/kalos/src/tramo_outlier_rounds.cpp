@@ -10,9 +10,13 @@
 namespace kalos {
 
 bool tramo_stationary_scan_supported(const TramoOutlierScanRequest& request) {
-    return request.frequency == 12 && request.d == 0 && request.bd == 0 &&
-           (request.p == 1 || request.p == 2) && request.q == 0 && request.bp == 0 && request.bq == 0 &&
-           request.mean && !request.maximum_likelihood && !request.so && request.prespec.empty() && request.calendar_regressors.empty() &&
+    const bool regular_ar = (request.p == 1 || request.p == 2) && request.q == 0 &&
+                            request.bp == 0 && request.bq == 0;
+    const bool seasonal_arma = ((request.p == 2 && request.q == 0) || (request.p == 1 && request.q == 1)) &&
+                               request.bp == 1 && request.bq == 1;
+    return request.frequency == 12 && request.d == 0 && request.bd == 0 && (regular_ar || seasonal_arma) &&
+           request.mean && !request.maximum_likelihood && !request.so && request.prespec.empty() &&
+           request.calendar_regressors.empty() &&
            std::all_of(request.y.begin(), request.y.end(), [](double y) { return std::isfinite(y); });
 }
 

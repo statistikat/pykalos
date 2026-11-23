@@ -806,7 +806,13 @@ TramoFitResult estimate_tramo_tr3(const std::vector<double>& series, int start_y
         test.mean_threshold = spec.tsig;
         test.statistics = fitted_test_statistics(fit);
         const auto regression = run_tramo_regression_tests(test);
-        require(!regression.estimation_cleared, "TR3 fast mean test requires an additional estimation round");
+        if (regression.estimation_cleared) {
+            EstimationEntry next{fit.orders, regression.mean, {}};
+            for (const auto& var : fit.variables)
+                next.variables.push_back({static_cast<OutlierType>(var.type), var.position, var.name});
+            fit = fit_estimation(spec, y, next, 4);
+            require(fit.fit.returned && fit.fit.cl_state != 0, "TR3 fourth-pass estimation failed");
+        }
         const auto entry = controller_state(fit, y, start_year, start_month);
         trials.clear();
         const auto controllers = tramo_monthly_controllers(entry, seasonal, score, estimate, restart);

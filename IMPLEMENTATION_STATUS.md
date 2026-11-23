@@ -1270,3 +1270,7 @@ At `095f3ed` the raw TR3 route reconsiders the selected model after a seasonalit
 The installed wheel exposes `estimate_tramo_tr3` and `tramoseats_fit(..., template="RSA3")`. Both reproduced the JVM-selected orders, every fitted coefficient, likelihood and all 824 dated residuals across nine monthly series. The raw fit also reproduced all 5,760 values across 90 observed and forecast rows bit-for-bit, including the seasonality restart and multiple-outlier models. Custom and zero horizons and all five Java-free product routes passed. Residual tests and original-series forecast errors for RSA3 are tracked separately. [Installed-wheel replay](tests/test_tramo_automatic.py)
 
 The repaired macOS ARM64 wheel at core `095f3ed` passed all 126 tests in 195.439 seconds with NumPy and one execution thread. The 4,353 automatic X-13 and 1,287 extended-horizon comparisons passed, along with the earlier RSA0/RSA1 diagnostics, public forecast errors, estimation and provider import-order checks.
+
+### M5 TR3 fourth-pass and selected-model diagnostics integration checkpoint
+
+The Python snapshot advances to `a4dc93f` for the four additional raw RSA3 fast-mean fits and public residual diagnostics on all 13 models. The two independent JVM diagnostic panels contain 65 scales, statistics and probabilities in addition to the degrees of freedom.
