@@ -101,6 +101,31 @@ class PublicTr1(unittest.TestCase):
                     cases += 1
         self.assertEqual((cases, residuals, values), (6, 498, 3600))
 
+    def test_public_rsa1_residual_diagnostics(self):
+        inputs = dict(grouped_records("rsa1-x86_64.txt"))
+        inputs.update(("level_" + cid, rows) for cid, rows in grouped_records("rsa1-level-effects-x86_64.txt"))
+        diagnostics = dict(grouped_records("rsa1-residual-diagnostics-x86_64.txt"))
+        self.assertEqual(set(diagnostics), set(inputs))
+        self.assertEqual(len(inputs), 8)
+        for cid, records in inputs.items():
+            _, year, month, _, *data = records[1]
+            series = list(map(from_hex, data))
+            domain = dict(start_year=int(year), start_month=int(month))
+            facts = {r[0]: r[1:] for r in diagnostics[cid]}
+            for fn, options in ((pykalos.estimate_tramo_tr1, domain),
+                                (pykalos.tramoseats_fit, domain | {"template": "RSA1"})):
+                with self.subTest(case=cid, route=fn.__name__):
+                    residual = fn(series, **options)["residuals"]
+                    self.assertEqual(bits([residual["ser"]]), bytes.fromhex(facts["residuals.ser"][0]))
+                    self.assertEqual(residual["lb"]["lags"], 24)
+                    for key, df in (("lb", 22), ("doornikhansen", 2)):
+                        test = residual[key]
+                        self.assertEqual(test["df"], df)
+                        self.assertEqual(bits([test["value"], test["pvalue"]]),
+                                         bytes.fromhex("".join(facts["residuals." + key][:2])))
+        templates = pykalos.capabilities()["tramo_seats_fit"]["by_template"]
+        self.assertEqual(templates["RSA1"]["residuals"], ("tsres", "ser", "lb", "doornikhansen"))
+
     def test_rsa1_horizons(self):
         records = dict(grouped_records("rsa1-x86_64.txt"))["fit_noout"]
         _, year, month, n, *data = records[1]

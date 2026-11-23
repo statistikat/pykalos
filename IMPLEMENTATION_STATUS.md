@@ -1230,3 +1230,7 @@ The repaired macOS ARM64 wheel at core `bf5c08f` passed all 122 tests in 119.003
 ### M5 public RSA1 residual diagnostics checkpoint
 
 Core `d17a7a5` qualifies the stock RSA1 residual standard error, monthly airline independence test and Doornik–Hansen normality test on eight original-series JVM fits. The binding gate replays these values through standalone TR1 preprocessing and raw seasonal adjustment.
+
+### M5 public RSA1 residual standard error, independence and normality
+
+Raw `tramoseats_fit(..., template="RSA1")` and standalone `estimate_tramo_tr1` both return `ser`, `lb` and `doornikhansen` with dated residuals. Both routes reproduced all 24 public JVM results on eight fitted series, including two additive outlier fits. The scales, test statistics and probabilities matched bit-for-bit and both tests reported the reference degrees of freedom. All 21 targeted installed-wheel tests passed, including the prior short-series RSA0 diagnostics. [Diagnostic replay](tests/test_tramo_automatic.py)
