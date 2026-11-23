@@ -2,7 +2,7 @@
 import unittest
 
 import pykalos
-from test_seats import bits, from_hex, grouped_records
+from test_seats import bits, check_hex_rows, from_hex, grouped_records
 
 
 def check_preprocessing(test, result, records):
@@ -43,6 +43,48 @@ class PublicTr1(unittest.TestCase):
                 self.assertEqual(result["status"], "available")
                 residuals += check_preprocessing(self, result, records)
         self.assertEqual((len(cases), residuals), (6, 570))
+
+    def test_raw_rsa1_product(self):
+        totals = [0, 0, 0]
+        cases = grouped_records("rsa1-x86_64.txt")
+        for cid, records in cases:
+            with self.subTest(case=cid):
+                domain = records[1]
+                fit = pykalos.tramoseats_fit(list(map(from_hex, domain[4:])), template="RSA1",
+                                            start_year=int(domain[1]), start_month=int(domain[2]))
+                self.assertEqual((fit["status"], fit["preprocessing_status"], fit["template"]),
+                                 ("ok", "available", "RSA1"))
+                self.assertEqual(fit["mode"], "multiplicative" if fit["model"]["log"] else "additive")
+                totals[0] += check_preprocessing(self, fit, records)
+                product, = [r for r in records if r[0] == "product"]
+                self.assertEqual(product[1:3], ["present", "changed"])
+                self.assertEqual(fit["model_changed"], product[3] == "true")
+                rows = [r for r in records if r[0] == "merged"]
+                totals[1] += len(rows)
+                totals[2] += check_hex_rows(self, fit["merged"], rows)
+                for key, component in (("finalSA", "SeasonallyAdjusted"), ("finalTrend", "Trend"),
+                                       ("finalSeasonal", "Seasonal"), ("finalIrregular", "Irregular")):
+                    row, = [r for r in rows if r[1:3] == [component, "Value"]]
+                    self.assertEqual(bits(fit[key]), bytes.fromhex("".join(row[6:])))
+                self.assertEqual(fit["series_forecast_stdev_status"], "unavailable")
+        self.assertEqual((len(cases), *totals), (6, 570, 60, 3960))
+        capability = pykalos.capabilities()["tramo_seats_fit"]["by_template"]
+        self.assertTrue(capability["RSA0"]["series_forecast_stdev"])
+        self.assertFalse(capability["RSA1"]["series_forecast_stdev"])
+
+    def test_rsa1_horizons(self):
+        records = dict(grouped_records("rsa1-x86_64.txt"))["fit_noout"]
+        _, year, month, n, *data = records[1]
+        result = pykalos.tramoseats_fit(list(map(from_hex, data)), template="tr1", start_year=int(year),
+                                      start_month=int(month), backcast=3, forecast=6)
+        first = 12 * int(year) + int(month) - 1
+        origin = {"Value": (first, int(n)), "Forecast": (first + int(n), 6), "Backcast": (first - 3, 3)}
+        series = [row for row in result["merged"] if row["component"] == "Series"]
+        self.assertEqual({row["information"] for row in series}, set(origin))
+        for row in series:
+            self.assertEqual((12*row["start_year"] + row["start_month"] - 1, len(row["values"])),
+                             origin[row["information"]])
+        self.assertEqual(result["template"], "RSA1")
 
     def test_refusals(self):
         spec = dict(series=[1.]*36, start_year=1990, start_month=1)

@@ -12,7 +12,7 @@ Available operations:
   never coerced) is documented in the ``x13_automatic`` docstring;
 * the fixed-coefficient quarterly/monthly X-13 fit, ``x13_fit``;
 * the TRAMO critical value, seasonality and log/level preprocessing decisions;
-* fixed WK extraction, fitted TRAMO decomposition and ordinary monthly RSA0 fitting.
+* fixed WK extraction, fitted TRAMO decomposition and ordinary monthly RSA0 and RSA1 fitting.
 """
 from . import _kalos
 from ._estimation import estimate_sarima_fixed
@@ -488,31 +488,36 @@ def seats_from_tramo(series, ssq, effective, estimated, *, frequency=12, start_y
 
 def tramoseats_fit(series, *, template="RSA0", frequency=12, start_year=1990, start_month=1,
                    forecast=-2, backcast=0):
-    """Fit monthly RSA0 to complete original observations and return dated components.
+    """Fit RSA0 or RSA1 to dated complete monthly observations.
 
-    The TR0 preprocessing specification estimates a mean and both airline MA
-    parameters. RSA0 applies additive SEATS to this fitted model. Forecast
-    and backcast counts are periods when nonnegative and years when negative.
-    The default requests two forecast years. A successful result includes
-    finalSA, finalTrend, finalSeasonal and finalIrregular on the observed span.
-    series_forecast_stdev contains preprocessing-model forecast uncertainty.
-    The final WK rows independently contain component forecast uncertainty.
-    residuals["lb"] contains the public monthly residual independence test.
+    RSA0 fits the additive airline with a mean. RSA1 chooses the transformation
+    and detects outliers before fitting and decomposing the model. Each returns
+    observed finals, dated component rows and the fitted preprocessing residuals.
+    RSA0 also returns original-series forecast errors and residual diagnostics.
+    Horizon counts are periods when nonnegative and years when negative.
     """
-    if not isinstance(template, str) or template.upper() not in ("RSA0", "TR0"):
-        raise ValueError("tramoseats_fit: the supported template is RSA0 (TR0)")
+    presets = {"TR0": "RSA0", "RSA0": "RSA0", "TR1": "RSA1", "RSA1": "RSA1"}
+    if not isinstance(template, str) or template.upper() not in presets:
+        raise ValueError("tramoseats_fit: supported monthly templates are RSA0 (TR0) and RSA1 (TR1)")
+    preset = presets[template.upper()]
     spec = dict(frequency=frequency, start_year=start_year, start_month=start_month,
                 forecast=forecast, backcast=backcast)
     data = _seats_domain(series, spec, "tramoseats_fit")
     if spec["frequency"] != 12:
-        raise ValueError("tramoseats_fit: RSA0 requires monthly observations")
+        raise ValueError(f"tramoseats_fit: {preset} requires monthly observations")
     # The covariance projection takes months. Domain validation checks these
     # normalized counts against the native integer range before conversion.
     months = [count if count >= 0 else -12 * count for count in (spec["backcast"], spec["forecast"])]
-    result = _kalos._tramoseats_rsa0(data, spec["start_year"], spec["start_month"], *months)
+    if preset == "RSA0":
+        result = _kalos._tramoseats_rsa0(data, spec["start_year"], spec["start_month"], *months)
+    else:
+        result = _kalos._tramoseats_rsa1(data, spec["start_year"], spec["start_month"], *months)
+        result["series_forecast_stdev_status"] = "unavailable" if months[1] else "no_requested_predictions"
+        result["series_forecast_stdev"] = []
     first_year, first_period = divmod(12 * spec["start_year"] + spec["start_month"] - 1 + len(data), 12)
     result["series_forecast_domain"] = dict(start_year=first_year, start_month=first_period + 1, length=months[1])
-    result.update(template="RSA0", method="tramoseats", mode="additive", series=data)
+    mode = "multiplicative" if result["model"]["log"] else "additive"
+    result.update(template=preset, method="tramoseats", mode=mode, series=data)
     if result["status"] == "ok":
         observed = {row["component"]: row["values"] for row in result["merged"] if row["information"] == "Value"}
         for key, component in (("finalSA", "SeasonallyAdjusted"), ("finalTrend", "Trend"),

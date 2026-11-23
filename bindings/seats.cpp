@@ -164,6 +164,19 @@ void bind_seats(py::module_& module) {
         }
         return decomposition(result);
     });
+    module.def("_tramoseats_rsa1", [](const std::vector<double>& series, int year, int month,
+                                      int backcast, int forecast) {
+        kalos::tramo_seats_automatic_result output;
+        {
+            py::gil_scoped_release release;
+            output = kalos::run_tramo_seats_rsa1(series, year, month, backcast, forecast);
+        }
+        auto result = preprocessing(output.preprocessing);
+        result["preprocessing_status"] = result["status"];
+        result.attr("update")(decomposition(output.decomposition));
+        result["model_changed"] = output.decomposition.extraction.model_changed;
+        return result;
+    });
     module.def("_tramoseats_rsa0", [](const std::vector<double>& series, int year, int month,
                                       int backcast, int forecast) {
         kalos::tramo_seats_rsa0_result output;

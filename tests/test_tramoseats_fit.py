@@ -129,10 +129,10 @@ class Rsa0Fit(unittest.TestCase):
         self.assertEqual({r["information"] for r in no_forecast["merged"]}, {"Value"})
         self.assertEqual(no_forecast["series_forecast_stdev_status"], "no_requested_predictions")
         self.assertEqual(no_forecast["series_forecast_stdev"], [])
-        for args, reason in ((dict(template="RSA1"), "RSA0"), (dict(frequency=4), "monthly"),
+        for args, reason in ((dict(template="RSA4"), "RSA0"), (dict(frequency=4), "monthly"),
                              (dict(series=[1.]*12), "degrees of freedom"), (dict(series=[float("nan")]), "finite"),
                              (dict(forecast=1.), "integer"), (dict(backcast=-(2**30)), "range")):
             with self.subTest(args=args), self.assertRaisesRegex((ValueError, TypeError), reason):
                 pykalos.tramoseats_fit(**(dict(series=data) | args))
-        self.assertEqual(pykalos.capabilities()["tramo_seats_fit"]["templates"], ("RSA0",))
+        self.assertEqual(pykalos.capabilities()["tramo_seats_fit"]["templates"], ("RSA0", "RSA1"))
         self.assertFalse(pykalos.capabilities()["fit"])

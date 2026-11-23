@@ -683,13 +683,18 @@ PYBIND11_MODULE(_kalos, m) {
         restricted["fixed_henderson_only"] = true;
         restricted["sigma_policy_default"] = "legacy";
         result["restricted_fit"] = restricted;
+        using namespace pybind11::literals;
+        py::dict rsa0("modes"_a=py::make_tuple("additive"), "series_forecast_stdev"_a=true,
+                      "residuals"_a=py::make_tuple("tsres", "ser", "lb", "doornikhansen"));
+        py::dict rsa1("modes"_a=py::make_tuple("additive", "multiplicative"), "series_forecast_stdev"_a=false,
+                      "residuals"_a=py::make_tuple("tsres"));
         result["tramo_seats_fit"] = py::dict(
-            py::arg("entry_point")="pykalos.tramoseats_fit", py::arg("templates")=py::make_tuple("RSA0"),
-            py::arg("frequency")=12, py::arg("complete_series_only")=true,
-            py::arg("mode")="additive", py::arg("approximation_retry")=true,
-            py::arg("approximation_policy")="monthly_airline_legacy",
-            py::arg("series_forecast_stdev")=true, py::arg("residuals")=true,
-            py::arg("residual_ljung_box")=true, py::arg("residual_doornik_hansen")=true);
+            "entry_point"_a="pykalos.tramoseats_fit", "templates"_a=py::make_tuple("RSA0", "RSA1"),
+            "frequency"_a=12, "complete_series_only"_a=true, "mode"_a="template_dependent",
+            "by_template"_a=py::dict("RSA0"_a=rsa0, "RSA1"_a=rsa1),
+            "approximation_retry"_a=true, "approximation_policy"_a="monthly_airline_legacy",
+            "series_forecast_stdev"_a=true, "residuals"_a=true,
+            "residual_ljung_box"_a=true, "residual_doornik_hansen"_a=true);
         // Schema-3-style automatic block: the qualified stage-Z surface.
         // (3: the 21-H.4 pin advance replaced the zero_horizon_only pin with
         // the horizon envelope key for the downstream composition.)

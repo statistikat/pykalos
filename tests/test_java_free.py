@@ -1,4 +1,4 @@
-"""Run both installed fit routes with no Java executable or loadable VM in use."""
+"""Run installed fit routes with no Java executable or loadable VM in use."""
 import ctypes
 import os
 from pathlib import Path
@@ -40,9 +40,10 @@ def run_isolated():
         "test_x13_fixed.FixedFitTest.test_reference_corpora",
         "test_x13_automatic.Test_quick.test_case",
         "test_tramoseats_fit.Rsa0Fit.test_raw_series_oracle",
+        "test_tramo_automatic.PublicTr1.test_raw_rsa1_product",
     ])
     result = unittest.TextTestRunner(verbosity=1).run(tests)
-    if not result.wasSuccessful() or result.skipped or result.testsRun != 3 or jvm_loaded():
+    if not result.wasSuccessful() or result.skipped or result.testsRun != 4 or jvm_loaded():
         raise RuntimeError("Installed-wheel Java-free numerical qualification failed")
 
 

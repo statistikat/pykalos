@@ -1,6 +1,6 @@
 # pykalos implementation status
 
-Current Python operations at the 2026-11-23 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and ordinary monthly RSA0 fitting with forecast errors and residual diagnostics. The dated entries retain the earlier qualification results.
+Current Python operations at the 2026-11-23 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0/RSA1 fitting. RSA0 also provides preprocessing forecast errors and residual diagnostics. The dated entries retain the earlier qualification results.
 
 ## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
 
@@ -1202,3 +1202,7 @@ The installed Python elapsed-time medians improved 2.85× and 2.94× on the shar
 ### M5 raw RSA1 seasonal-adjustment checkpoint
 
 The Python binding snapshot advances to core `0e0f272`, containing the monthly public RSA1 pipeline from dated observations. The binding gate checks all six JVM models and likelihoods, dated residuals, product model-change decisions, observed and forecast components and the Java-free wheel route.
+
+### M5 public monthly RSA1 seasonal adjustment
+
+`tramoseats_fit(..., template="RSA1")` now selects the level/log transformation, detects outliers, estimates the TR1 model and returns the dated SEATS and merged rows. Each of the six public original-series fixtures matched the model, regression effects, likelihood, residual dates and all 570 residuals, product change flag and all 3,960 component values across 60 observed/forecast rows. The `TR1` alias also passed a three-month backcast/six-month forecast calendar check. Capabilities list the available residual and forecast-error fields for RSA0 and RSA1 separately. All 92 targeted tests passed, including the four Java-free adjustment routes. [Installed RSA1 replay](tests/test_tramo_automatic.py)

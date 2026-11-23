@@ -41,8 +41,11 @@ the 24-lag independence test (`lb`). The test returns `value`, `pvalue`,
 `df` and `lags`. Up to 24 residuals give an undefined independence statistic and probability.
 The Doornik–Hansen normality test is returned as `doornikhansen` and is
 `None` when there are at most seven fitted residuals.
-The supported template and approximation boundary are reported by
-`capabilities()["tramo_seats_fit"]`.
+Use `tramoseats_fit(series, template="RSA1", ...)` for the stock transformation
+and outlier detection followed by monthly SEATS. The result includes the TR1
+preprocessing record, product model-change flag, dated components and
+forecasts. `capabilities()["tramo_seats_fit"]["by_template"]` lists the
+qualified uncertainty and residual fields for each template.
 
 For a fixed monthly SEATS model, `seats_extract_wk(series, innovation_variance, ...)`
 takes the fitted SARIMA coefficients and returns ordered `initial` and `final`
