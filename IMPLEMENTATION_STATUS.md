@@ -54,6 +54,8 @@ At thread settings 1, 2 and 8 the installed wheel passed all 16 fixed runs acros
 
 Both public X-13 fits now use Python’s integer-index protocol for integer fields. An object whose `__index__` returned a fractional value was previously truncated. The regression failed on the preceding wheel and passed after the correction. All 71 targeted validation, fixed-fit, TRAMO, smoke and NumPy-provider tests passed on the updated installed wheel.
 
+The source archive containing the fixed-fit entry built a wheel and passed **96/96** tests, including all automatic and horizon X-13 corpus cases (5,640 numerical checks), the fixed-fit and TRAMO corpora and both NumPy import orders. The separate 71-test run above covers the subsequent integer-protocol correction. Hosted results are tracked separately from these macOS ARM64 runs.
+
 ## Initial scaffold (2026-11-14)
 
 ## Implemented
