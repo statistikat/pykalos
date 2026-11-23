@@ -73,6 +73,33 @@ bool is_text(py::handle obj) {
         || PyByteArray_Check(obj.ptr());
 }
 
+bool is_complex(py::handle value) {
+    if (PyComplex_Check(value.ptr())) return true;
+    if (PyFloat_Check(value.ptr()) || PyLong_Check(value.ptr())) return false;
+    const auto dtype = py::getattr(value, "dtype", py::none());
+    return py::str(py::getattr(dtype, "kind", py::none())).equal(py::str("c"));
+}
+
+std::vector<double> real_coefficients(py::handle values) {
+    if (PyUnicode_Check(values.ptr()) || PyBytes_Check(values.ptr()) || PyDict_Check(values.ptr()))
+        throw py::type_error("convolve expects a sequence of real coefficients");
+    auto iterator = py::iter(values);
+    std::vector<double> result;
+    const auto size = PyObject_LengthHint(values.ptr(), 0);
+    if (size < 0) throw py::error_already_set();
+    result.reserve(static_cast<std::size_t>(size));
+    for (const auto item : iterator) {
+        if (is_complex(item))
+            throw py::type_error("convolve coefficients must be real; complex values are refused");
+        try {
+            result.push_back(item.cast<double>());
+        } catch (const py::cast_error&) {
+            throw py::type_error("convolve coefficients must be real scalar numbers");
+        }
+    }
+    return result;
+}
+
 std::string type_name(py::handle obj) { return obj.ptr()->ob_type->tp_name; }
 
 void validate_request_keys(const py::dict& d) {
@@ -137,7 +164,7 @@ bool req_opt_bool(const py::dict& d, const char* key, bool fallback) {
 
 double req_double(const py::dict& d, const char* key) {
     py::object v = req_value(d, key);
-    if (PyBool_Check(v.ptr()) || is_text(v))
+    if (PyBool_Check(v.ptr()) || is_text(v) || is_complex(v))
         throw py::type_error(std::string("x13_automatic request field '") + key
                              + "' must be a real number (bool and text are refused), got type "
                              + type_name(v));
@@ -185,6 +212,7 @@ std::vector<double> req_series(const py::dict& d, const char* key) {
                              + type_name(v));
     std::vector<double> out;
     for (py::handle item : py::reinterpret_borrow<py::iterable>(v)) {
+        if (is_complex(item)) throw py::type_error("x13_automatic series values must be real");
         if (is_text(item))
             throw py::type_error(std::string("x13_automatic request field '") + key
                                  + "' elements must be real numbers; text elements are refused, "
@@ -680,7 +708,9 @@ PYBIND11_MODULE(_kalos, m) {
         result["automatic"] = automatic;
         return result;
     });
-    m.def("convolve", [](std::vector<double> left, std::vector<double> right) {
+    m.def("convolve", [](py::object left_items, py::object right_items) {
+        auto left = real_coefficients(left_items);
+        auto right = real_coefficients(right_items);
         // Inputs are owned before releasing the GIL. The core invokes callbacks
         // on the caller only; Python APIs never run in an OpenMP worker.
         py::gil_scoped_release release;

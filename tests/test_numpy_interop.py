@@ -52,6 +52,25 @@ class NumPyInteropTest(unittest.TestCase):
         self.assertEqual(pykalos.convolve((x for x in LEFT), tuple(RIGHT)), PRODUCT)
         self.assertEqual(pykalos.convolve(np.array([True, False]), np.array([2.0])), [2.0, 0.0])
 
+    def test_complex_inputs_are_refused_before_conversion(self):
+        from test_request_validation import _raw_request
+
+        for dtype in (np.complex64, np.complex128, np.clongdouble):
+            z = dtype(1 + 2j)
+            calls = (
+                lambda: pykalos.convolve([1.], [z]),
+                lambda: pykalos.convolve(np.array([z]), [1.]),
+                lambda: pykalos.x13_automatic([z], frequency=4),
+                lambda: pykalos.x13_automatic([1.], frequency=4, precision=z),
+                lambda: pykalos.x13_automatic_fit(_raw_request(input=[z], frequency=4)),
+                lambda: pykalos.x13_automatic_fit(_raw_request(precision=z, frequency=4)),
+                lambda: pykalos.seats_extract_wk([1.]*24, z),
+                lambda: pykalos.tramoseats_fit([z]*24),
+            )
+            for call in calls:
+                with self.subTest(dtype=dtype, call=call), self.assertRaisesRegex(TypeError, "real"):
+                    call()
+
     def test_non_vector_inputs_rejected(self):
         for bad in (np.array([LEFT]), np.array([LEFT]).T, np.float64(1.0), b"\x00" * 16, "12"):
             with self.assertRaises(TypeError):

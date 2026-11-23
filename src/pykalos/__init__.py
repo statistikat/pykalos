@@ -138,12 +138,18 @@ def _request_flag(value, name, operation="x13_automatic"):
         f"never a decision input — the string 'False' would have meant True")
 
 
+def _is_complex(value):
+    return isinstance(value, complex) or getattr(getattr(value, "dtype", None), "kind", None) == "c"
+
+
 def _request_float(value, name, operation="x13_automatic"):
     """Real scalar number for a float slot: no bool, no text, no containers."""
     if isinstance(value, bool) or _is_numpy_bool(value):
         raise TypeError(
             f"{operation}: {name} must be a real number, got the boolean "
             f"{value!r}; booleans are never accepted as numbers")
+    if _is_complex(value):
+        raise TypeError(f"{operation}: {name} must be real; complex values are refused")
     if isinstance(value, _TEXT_TYPES):
         raise TypeError(
             f"{operation}: {name} must be a real number, got "
@@ -215,6 +221,8 @@ def _request_series(values, name, operation="x13_automatic", *, allow_boolean=Tr
             f"1-D array, got the non-iterable {_type_name(values)}") from exc
     out = []
     for i, v in enumerate(items):
+        if _is_complex(v):
+            raise TypeError(f"{operation}: {name} element {i} must be real; complex values are refused")
         if not allow_boolean and (isinstance(v, bool) or _is_numpy_bool(v)):
             raise TypeError(f"{operation}: {name} element {i} must be numeric, got a boolean")
         if isinstance(v, _TEXT_TYPES):
@@ -526,7 +534,7 @@ def x13_automatic(series, *, frequency=12, start_year=1970, start_period=1,
 
 
 def _finite_number(value, field, operation):
-    if getattr(value, "ndim", 0) or isinstance(value, complex):
+    if getattr(value, "ndim", 0):
         raise TypeError(f"{operation}: {field} must be a finite real scalar")
     value = _request_float(value, field, operation)
     if not _isfinite(value):

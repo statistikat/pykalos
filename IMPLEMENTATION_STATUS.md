@@ -1050,3 +1050,7 @@ The core pin advances to `2fe3d8e8c8b6bfeae9fa4224517e9e0c12228fe8`. It supplies
 ### M5 Python forecast uncertainty on the original series
 
 `tramoseats_fit` now returns the preprocessing model’s `series_forecast_stdev`, its own status and the dated forecast domain. The WK Series/StdevForecast row remains available for component uncertainty. Python normalizes the signed horizon once for both projections. The repaired private-provider wheel passed all 77 targeted tests. For all six fits, 144 original-series standard errors passed the frozen covariance budget (2e−8 × (1 + |reference|)); all 144 paired WK standard errors were bit-exact. Alternate and zero horizons passed. [Prediction tests](tests/test_tramoseats_fit.py)
+
+### Python real-valued input qualification
+
+NumPy complex scalars previously reached real-valued series, parameter and convolution slots through scalar conversion, which discarded their imaginary parts. The product and raw automatic-fit boundaries now reject complex scalars explicitly, and convolution checks each coefficient while copying it into the owned vector. The regression reproduced the loss on the preceding wheel. All 78 targeted tests passed on the repaired private wheel with NumPy, including the complex64, complex128 and extended-precision cases, strided/memoryview inputs and large-array timing checks. [Boundary tests](tests/test_numpy_interop.py)
