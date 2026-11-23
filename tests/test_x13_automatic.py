@@ -160,7 +160,7 @@ class BoundarySurfaceTest(unittest.TestCase):
 
     def test_capabilities_report_the_automatic_entry(self):
         caps = pykalos.capabilities()
-        self.assertEqual(caps["primitives"], ("convolve", "x13_automatic"))
+        self.assertIn("x13_automatic", caps["primitives"])
         self.assertFalse(caps["fit"])
         auto = caps["automatic"]
         self.assertEqual(auto["schema_version"], 3)  # 21-H.4: horizon envelope

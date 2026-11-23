@@ -11,6 +11,7 @@
 #include "kalos/detail/lapack.hpp"
 #include "kalos/x13_automatic.hpp"
 namespace py = pybind11;
+void bind_tramo_preprocessing(py::module_& module);
 
 namespace {
 
@@ -668,6 +669,7 @@ py::dict automatic_result_dict(const kalos::X13AutomaticFitResult& res) {
 
 PYBIND11_MODULE(_kalos, m) {
     m.doc() = "Minimal owned-buffer Kalos bindings";
+    bind_tramo_preprocessing(m);
     m.def("core_version", [] {
         py::dict result;
         result["version"] = kalos::version;
@@ -681,7 +683,8 @@ PYBIND11_MODULE(_kalos, m) {
     m.def("capabilities", [] {
         py::dict result;
         result["fit"] = false;
-        result["primitives"] = py::make_tuple("convolve", "x13_automatic");
+        result["primitives"] = py::make_tuple("convolve", "x13_automatic", "tramo_critical_value",
+                                              "tramo_seasonality", "tramo_transform_decision");
         result["status"] = "minimal_binding";
         // Schema-3-style automatic block: the qualified stage-Z surface.
         // (3: the 21-H.4 pin advance replaced the zero_horizon_only pin with

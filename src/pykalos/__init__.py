@@ -1,6 +1,6 @@
 """Minimal Python interface to the pinned Kalos C++ engine.
 
-Two surfaces:
+Available operations:
 
 * the raw explicit entries re-exported from the extension module
   (``convolve``, ``x13_automatic_fit``) - every core contract stays explicit
@@ -9,12 +9,15 @@ Two surfaces:
   preprocessing pipeline (item 21-H, stage Z), which applies the family
   product defaults documented on the function. Its boundary input policy
   (which Python/NumPy types each request slot accepts and what is refused,
-  never coerced) is documented in the ``x13_automatic`` docstring.
+  never coerced) is documented in the ``x13_automatic`` docstring;
+* the 23-B TRAMO critical value, seasonality and log/level preprocessing decisions.
 """
+from . import _kalos
 from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
 __all__ = ["capabilities", "convolve", "core_version", "x13_automatic",
-           "x13_automatic_fit"]
+           "x13_automatic_fit", "tramo_critical_value", "tramo_seasonality",
+           "tramo_transform_decision"]
 __version__ = "0.1.0"
 
 # Decoder-pinned module scalars of the qualified envelope (docs/contracts/
@@ -99,52 +102,52 @@ def _is_numpy_bool(value):
     return type(value).__module__ == "numpy" and type(value).__name__ in ("bool", "bool_")
 
 
-def _request_int(value, name):
+def _request_int(value, name, operation="x13_automatic"):
     """Exact integer or refuse: no truncation, no bool, no integral float."""
     if isinstance(value, bool) or _is_numpy_bool(value):
         raise TypeError(
-            f"x13_automatic: {name} must be an integer, got the boolean "
+            f"{operation}: {name} must be an integer, got the boolean "
             f"{value!r}; booleans are never accepted as numbers")
     if hasattr(value, "__index__"):   # Python int, numpy integer scalars, ...
         return int(value.__index__())
     if isinstance(value, float):
         raise TypeError(
-            f"x13_automatic: {name} must be an integer, got the float "
+            f"{operation}: {name} must be an integer, got the float "
             f"{value!r}; fractional values are refused (no truncation) and "
             f"integral floats are not accepted either — pass the integer "
             f"int({value}) if it is what you meant")
     raise TypeError(
-        f"x13_automatic: {name} must be an integer, got {value!r} "
+        f"{operation}: {name} must be an integer, got {value!r} "
         f"of type {_type_name(value)}; text and None are refused")
 
 
-def _request_flag(value, name):
+def _request_flag(value, name, operation="x13_automatic"):
     """Real bool or numpy bool_ only: 'False'/'1'/1 must not mean anything."""
     if isinstance(value, bool):
         return value
     if _is_numpy_bool(value):
         return bool(value)
     raise TypeError(
-        f"x13_automatic: {name} must be True or False (a bool, or a numpy "
+        f"{operation}: {name} must be True or False (a bool, or a numpy "
         f"bool_), got {value!r} of type {_type_name(value)}; truthiness is "
         f"never a decision input — the string 'False' would have meant True")
 
 
-def _request_float(value, name):
+def _request_float(value, name, operation="x13_automatic"):
     """Real scalar number for a float slot: no bool, no text, no containers."""
     if isinstance(value, bool) or _is_numpy_bool(value):
         raise TypeError(
-            f"x13_automatic: {name} must be a real number, got the boolean "
+            f"{operation}: {name} must be a real number, got the boolean "
             f"{value!r}; booleans are never accepted as numbers")
     if isinstance(value, _TEXT_TYPES):
         raise TypeError(
-            f"x13_automatic: {name} must be a real number, got "
+            f"{operation}: {name} must be a real number, got "
             f"{value!r} of type {_type_name(value)}; text is refused")
     try:
         return float(value)
     except (TypeError, ValueError) as exc:
         raise TypeError(
-            f"x13_automatic: {name} must be a real number, got {value!r} "
+            f"{operation}: {name} must be a real number, got {value!r} "
             f"of type {_type_name(value)}") from exc
 
 
@@ -172,56 +175,107 @@ def _request_span(value, name):
             _request_int(endpoints[1], f"{name}[1]"))
 
 
-def _request_series(values, name):
+def _request_series(values, name, operation="x13_automatic", *, allow_boolean=True):
     """Owned list of floats, or an explicit refusal; never text/binary/matrix."""
     if isinstance(values, _TEXT_TYPES):
         raise TypeError(
-            f"x13_automatic: {name} must be a one-dimensional sequence of "
+            f"{operation}: {name} must be a one-dimensional sequence of "
             f"numbers, got {_type_name(values)}; text/binary input is "
             f"refused (a digit string is not a series)")
     if isinstance(values, dict) or hasattr(values, "keys"):
         raise TypeError(
-            f"x13_automatic: {name} must be a one-dimensional sequence of "
+            f"{operation}: {name} must be a one-dimensional sequence of "
             f"numbers, got a mapping; iterating a mapping's keys is never "
             f"a series")
     if isinstance(values, (set, frozenset)):
         raise TypeError(
-            f"x13_automatic: {name} must be an ordered sequence, got a "
+            f"{operation}: {name} must be an ordered sequence, got a "
             f"set; sets carry no calendar order")
     ndim = getattr(values, "ndim", None)
     if ndim is not None:
         if ndim == 0:
             raise TypeError(
-                f"x13_automatic: {name} must be a one-dimensional sequence "
+                f"{operation}: {name} must be a one-dimensional sequence "
                 f"of numbers, got the 0-D scalar value {values!r}")
         if ndim != 1:
             raise TypeError(
-                f"x13_automatic: {name} must be a one-dimensional sequence "
+                f"{operation}: {name} must be a one-dimensional sequence "
                 f"of numbers, got an array with ndim={ndim}; multivariate "
                 f"input is refused")
     try:
         items = list(values)
     except TypeError as exc:
         raise TypeError(
-            f"x13_automatic: {name} must be an iterable of numbers or a "
+            f"{operation}: {name} must be an iterable of numbers or a "
             f"1-D array, got the non-iterable {_type_name(values)}") from exc
     out = []
     for i, v in enumerate(items):
+        if not allow_boolean and (isinstance(v, bool) or _is_numpy_bool(v)):
+            raise TypeError(f"{operation}: {name} element {i} must be numeric, got a boolean")
         if isinstance(v, _TEXT_TYPES):
             raise TypeError(
-                f"x13_automatic: {name} element {i} is text/binary "
+                f"{operation}: {name} element {i} is text/binary "
                 f"({v!r}); text elements are refused, not parsed")
         if hasattr(v, "__iter__") or getattr(v, "ndim", 0):
             raise TypeError(
-                f"x13_automatic: {name} element {i} is not a scalar; "
+                f"{operation}: {name} element {i} is not a scalar; "
                 f"multivariate input is refused at the boundary")
         try:
             out.append(float(v))
         except (TypeError, ValueError) as exc:
             raise TypeError(
-                f"x13_automatic: {name} element {i} is not numeric: "
+                f"{operation}: {name} element {i} is not numeric: "
                 f"{v!r} of type {_type_name(v)}") from exc
     return out
+
+
+def tramo_critical_value(observations):
+    """Return TRAMO's critical value for a nonnegative integer observation count."""
+    n = _request_int(observations, "observations", "tramo_critical_value")
+    if not 0 <= n <= 2**31 - 1:
+        raise ValueError("observations must be in the range 0 to 2147483647")
+    return _kalos._tramo_critical_value(n)
+
+
+def _tramo_values(series, frequency, operation):
+    if _request_int(frequency, "frequency", operation) != 12:
+        raise ValueError(f"{operation} requires monthly data (frequency 12)")
+    if getattr(series, "ndim", 1) == 1 and hasattr(series, "__len__") and len(series) > 2**31 - 1:
+        raise ValueError(f"{operation}: series exceeds the core index range")
+    values = _request_series(series, "series", operation, allow_boolean=False)
+    if not 24 <= len(values) <= 2**31 - 1:
+        raise ValueError(f"{operation} requires at least 24 monthly observations within the core index range")
+    return values
+
+
+def tramo_seasonality(series, *, frequency=12):
+    """Test seasonality in a complete monthly series of at least 24 observations.
+
+    Return the Qs and Friedman tests, seasonality verdict and first-differenced,
+    mean-removed data. The first reported difference ends at the second input month.
+    """
+    return _kalos._tramo_seasonality(_tramo_values(series, frequency, "tramo_seasonality"))
+
+
+def tramo_transform_decision(series, log_preference, precision, *, frequency=12, mean=True,
+                             detect_seasonality=True, spec_seasonality=True, robust=False):
+    """Run the TRAMO monthly log/level decision without robust AO/LS pre-correction.
+
+    Supply a finite log-preference offset and a positive estimation precision.
+    The result contains both branch readouts, the chosen transform, chronological
+    remarks and a seasonality report (None when detection is disabled).
+    """
+    op = "tramo_transform_decision"
+    if _request_flag(robust, "robust", op):
+        raise ValueError(f"{op} requires an input without robust AO/LS pre-correction")
+    return _kalos._tramo_transform_decision(
+        _tramo_values(series, frequency, op),
+        _request_float(log_preference, "log_preference", op),
+        _request_float(precision, "precision", op),
+        _request_flag(mean, "mean", op),
+        _request_flag(detect_seasonality, "detect_seasonality", op),
+        _request_flag(spec_seasonality, "spec_seasonality", op),
+    )
 
 
 def x13_automatic(series, *, frequency=12, start_year=1970, start_period=1,

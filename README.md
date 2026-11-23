@@ -3,7 +3,16 @@
 Minimal Python bindings calling [Kalos](https://github.com/statistikat/kalos).
 `core_version()`, `capabilities()` and `convolve(left, right)` are the raw
 surface; `x13_automatic(series, ...)` runs the qualified automatic-spec X-13
-preprocessing pipeline (item 21-H) through the same pinned core. Unrestricted
+preprocessing pipeline (item 21-H) through the same pinned core.
+
+The TRAMO preprocessing functions use the frozen 23-B contract.
+`tramo_critical_value(n)` returns the critical value for an observation count.
+`tramo_seasonality(series)` reports Qs, Friedman tests and the differenced series.
+`tramo_transform_decision(series, log_preference, precision)` reports the log/level
+choice, both branch readouts and the effective seasonal model. The series must
+contain at least 24 finite monthly observations. Robust AO/LS pre-correction and
+a full TRAMO/SEATS fit remain outside these operations.
+ Unrestricted
 fitting, the restricted fixed-coefficient fit and R API parity are not
 exposed here.
 

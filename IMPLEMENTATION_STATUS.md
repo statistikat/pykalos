@@ -28,6 +28,12 @@ On this same host, the old `f500162` wheel failed `ao_nodet` and all three force
 
 At the existing core pin `cb5c2de`, the Python evidence allowlist now includes the frozen 23-B transform corpus. The export added six evidence files, bringing the offline-verified totals to 188 core files and 17 evidence files. The Python acceptance gate is a replay of all 29 captured cases, including robust pre-correction refusals, plus checks of shape, frequency, ownership and capability reporting.
 
+### M5 Python TRAMO critical value, seasonality and transform decision
+
+The installed wheel exports `tramo_critical_value`, `tramo_seasonality` and `tramo_transform_decision` and lists all three in `capabilities()["primitives"]`. Python owns and validates the request data before the C++ decision runs with the GIL released. The monthly seasonality and transform operations require at least 24 finite observations. Both report the captured seasonality fields. Disabling detection yields `None` for the nested report. Robust AO/LS pre-correction is refused explicitly. The unrestricted fit gate remains false.
+
+All 29 frozen cases passed on macOS ARM64 with the installed wheel and checksum-pinned OpenBLAS 0.3.34. They cover ten critical-value grid points, five detector series, ten transform decisions and four robust refusals. The replay compares the available floating-point fields and differenced observations at binary64 precision, including signed zero, and checks NaN classification. Shape, scalar, frequency, oversize, ownership and capability checks passed. [Python replay](tests/test_tramo_transform.py)
+
 ## Initial scaffold (2026-11-14)
 
 ## Implemented
