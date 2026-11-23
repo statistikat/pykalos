@@ -1087,3 +1087,7 @@ The binding snapshot advances from `2fe3d8e` to `5c95dc1`, including the raw TR0
 ### M5 dated RSA0 preprocessing residuals
 
 `tramoseats_fit` returns the dated preprocessing residuals (`residuals.tsres`) and their public standard error (`residuals.ser`) in its residuals dictionary, and advertises the projection in the restricted RSA0 capability. The repaired installed wheel matched all six residual start dates, all 570 residuals and all six standard errors bit-for-bit. All 78 targeted tests passed, including the forecast-error, full component, NumPy import-order and concurrent-fit regressions. Offline verification covered 194 core and 48 evidence files. [Oracle replay](tests/test_tramoseats_fit.py)
+
+### Java-free installed-wheel numerical gate
+
+A fresh process now starts with an empty executable search directory, missing JDK/JRE homes and an empty classpath. It rejects process creation during the fits and checks the process image list for a JVM before and after running the fixed X-13 corpus, the automatic X-13 quick case and all six original-series RSA0 oracles. The installed private-provider wheel passed on macOS ARM64 without NumPy. The portable Linux, macOS and Windows jobs run the same test before installing NumPy. [Java-free wheel test](tests/test_java_free.py)
