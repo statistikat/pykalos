@@ -1118,3 +1118,7 @@ The specialized covariance reduced the measured Python medians by factors of 15.
 ### M2 explicit fixed-order SARIMA estimation
 
 The installed Python wheel exposes the frozen four starting policies, fixed and free coefficient masks, dated prepared regression designs, both qualified solvers and chronological initialization/optimization/unit-root decisions. It passed all 27 JVM control cases at the core's existing bounds (24 estimated models and three likelihood-only guards), the fully free pinned LM reference, the fixed-coordinate BFGS check and the corresponding solver refusal. All 84 targeted tests passed, including Java-free and NumPy coexistence. Portable wheel CI runs the preparation and estimation checks on each platform. [Estimator tests](tests/test_estimation.py)
+
+### M5 qualified monthly SEATS approximation and residual independence checkpoint
+
+The binding snapshot advances to core `c5bcf97`. The exported source includes the two monthly fitted-model retry policies, their terminal failure handling and the public RSA0 residual independence test. Offline verification covered 194 core files and 57 evidence files. The binding gates replay the fixed-model WK and fitted-model bridge captures, the ordinary RSA0 diagnostic and the short-residual threshold.
