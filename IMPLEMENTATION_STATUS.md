@@ -42,6 +42,10 @@ On macOS ARM64, the OpenBLAS 0.3.34 wheel and NumPy 2.5.5 (Apple Accelerate) pas
 
 The 23-B source-archive wheel passed all 93 tests present at build time, including the 13 automatic and four horizon X-13 cases (5,640 numerical checks). A second installed wheel linked to Homebrew OpenBLAS 0.3.34 passed the entire 29-case TRAMO fixture and both NumPy import orders. The added oversize refusal also passed on the final wheel. The offline verifier confirmed the 188 core and 17 evidence files.
 
+### M3 Python restricted-fit evidence checkpoint
+
+At core `cb5c2de`, the export allowlist now includes the seven allocation-seam and eleven end-to-end X-13 fit cases. The gate for the public fixed-coefficient fit is the complete quarterly and monthly fixed-route corpus, the out-of-domain horizon cases, the `x13_fast` reference and the core’s exact versus transcendental table thresholds.
+
 ## Initial scaffold (2026-11-14)
 
 ## Implemented

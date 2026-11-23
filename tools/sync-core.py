@@ -31,6 +31,8 @@ def sha(data):
 # to f500162, qualified by tests/test_x13_automatic_horizon.py.
 EVIDENCE_ALLOWLIST = ("validation/evidence/native/x13-automatic/",
                       "validation/evidence/native/x13-horizon/",
+                      "validation/evidence/native/x13-allocation/",
+                      "validation/evidence/native/x13-fit/",
                       "validation/evidence/native/tramo-transform/")
 
 
