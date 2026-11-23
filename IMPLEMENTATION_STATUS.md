@@ -1,6 +1,6 @@
 # pykalos implementation status
 
-Current Python operations at the 2026-11-23 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, three TRAMO preprocessing decisions, fixed WK extraction, fitted-model decomposition and ordinary monthly RSA0 fitting with forecast errors and residual diagnostics. The dated entries retain the earlier qualification results.
+Current Python operations at the 2026-11-23 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and ordinary monthly RSA0 fitting with forecast errors and residual diagnostics. The dated entries retain the earlier qualification results.
 
 ## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
 
@@ -1155,3 +1155,7 @@ The bundled Linux, macOS and Windows jobs run the Java-free checks before instal
 ### M5 monthly calendar F-test checkpoint
 
 The Python snapshot advances to core `854703c`, including the monthly working-day and trading-day candidate fits with explicit significance and numerical precision. Offline verification covered 196 core files and 59 evidence files. The binding gate compares every candidate fit and exact threshold decision across the four dated monthly input series.
+
+### M5 monthly working-day and trading-day selection
+
+`tramo_calendar_f_test` fits both calendar candidate models to dated complete monthly observations with explicit mean, significance and numerical precision. Across the four JVM input regimes and 14 comparisons, all candidate sums of squares, mean squares and lower-tail probabilities matched bit-for-bit. The degrees of freedom, three possible selections and strict/inclusive threshold decisions matched exactly. Negative tests covered calendar domains, input types, residual count and invalid numerical controls. All 88 targeted installed-wheel tests passed. [Calendar qualification](tests/test_tramo_calendar.py)

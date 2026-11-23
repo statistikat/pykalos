@@ -25,7 +25,7 @@ from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
 __all__ = ["capabilities", "convolve", "core_version", "x13_automatic",
            "x13_automatic_fit", "x13_fit", "tramo_critical_value", "tramo_seasonality",
-           "tramo_transform_decision", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
+           "tramo_transform_decision", "tramo_calendar_f_test", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
 __version__ = "0.1.0"
 
 # Decoder-pinned module scalars of the qualified envelope (docs/contracts/
@@ -157,6 +157,22 @@ def tramo_seasonality(series, *, frequency=12):
     mean-removed data. The first reported difference ends at the second input month.
     """
     return _kalos._tramo_seasonality(_tramo_values(series, frequency, "tramo_seasonality"))
+
+
+def tramo_calendar_f_test(series, *, start_year, start_month, mean, significance, precision, frequency=12):
+    """Fit TRAMO’s monthly working-day and trading-day candidates on the estimation scale.
+
+    Supply complete monthly observations and the first observation's calendar date.
+    The result contains the baseline and candidate residual sums of squares, degrees
+    of freedom, mean squares, lower-tail probabilities and selected calendar effect.
+    """
+    operation = "tramo_calendar_f_test"
+    if _fixed_integer(frequency, "frequency", operation) != 12:
+        raise ValueError(f"{operation} requires monthly data (frequency 12)")
+    return _kalos._tramo_calendar_f_test(
+        _finite_vector(series, "series", operation), _fixed_integer(start_year, "start_year", operation),
+        _fixed_integer(start_month, "start_month", operation), _request_flag(mean, "mean", operation),
+        _finite_number(significance, "significance", operation), _finite_number(precision, "precision", operation))
 
 
 def tramo_transform_decision(series, log_preference, precision, *, frequency=12, mean=True,

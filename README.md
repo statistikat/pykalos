@@ -13,6 +13,12 @@ choice, both branch readouts and the effective seasonal model. The series must
 contain at least 24 finite monthly observations. Robust AO/LS pre-correction and
 a full TRAMO/SEATS fit remain outside these operations.
 
+For the monthly trading-day F-test, pass the dated observations on their
+estimation scale to `tramo_calendar_f_test(series, start_year=1990,
+start_month=1, mean=True, significance=0.01, precision=1e-3)`. The result
+names the selected effect and reports both candidates' residual sums of
+squares, degrees of freedom, mean squares and lower-tail probabilities.
+
 For complete monthly observations, `tramoseats_fit(series, start_year=1990,
 start_month=1)` estimates the RSA0 template from the original series. It
 returns the fitted airline MA coefficients, mean, likelihood and dated WK

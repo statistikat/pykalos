@@ -3,6 +3,7 @@
 
 #include <utility>
 #include "kalos/tramo_transform_decision.hpp"
+#include "kalos/tramo_calendar_f_test.hpp"
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -21,6 +22,23 @@ py::dict seasonality_report(const kalos::TramoSeasonalityReport& report) {
 
 void bind_tramo_preprocessing(py::module_& module) {
     module.def("_tramo_critical_value", &kalos::tramo_critical_value);
+    module.def("_tramo_calendar_f_test", [](const std::vector<double>& values, int year, int month,
+            bool mean, double significance, double precision) {
+        kalos::TramoCalendarFTestResult result;
+        {
+            py::gil_scoped_release release;
+            result = kalos::tramo_calendar_f_test(values, year, month, mean, significance, precision);
+        }
+        auto report = [](const kalos::TramoCalendarFCandidate& fit) {
+            return py::dict("residual_ssq"_a=fit.residual_ssq, "degrees_of_freedom"_a=fit.degrees_of_freedom,
+                            "mean_square"_a=fit.mean_square, "lower_probability"_a=fit.lower_probability);
+        };
+        const char* selected = "none";
+        if (result.selected == kalos::TramoTradingDays::WorkingDays) selected = "working_days";
+        if (result.selected == kalos::TramoTradingDays::TradingDays) selected = "trading_days";
+        return py::dict("base_ssq"_a=result.base_ssq, "working_days"_a=report(result.working_days),
+                        "trading_days"_a=report(result.trading_days), "selected"_a=selected);
+    });
     module.def("_tramo_seasonality", [](const std::vector<double>& values) {
         kalos::TramoSeasonalityReport report;
         {
