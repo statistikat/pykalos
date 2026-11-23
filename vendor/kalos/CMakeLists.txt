@@ -77,7 +77,10 @@ add_library(kalos STATIC
   src/tramo_outlier_scan.cpp
   src/tramo_outlier_rounds.cpp
   src/tramo_regression_tests.cpp
+  src/tramo_seats_bridge.cpp
   src/tramo_seats_model_validator.cpp
+  src/tramo_tr0.cpp
+  src/tramo_seats_pipeline.cpp
   src/tramo_transform_decision.cpp
   src/transformation_decision.cpp
   src/transforms.cpp
@@ -221,6 +224,8 @@ if(KALOS_BUILD_TESTS)
     test_tramo_model_builder
     test_tramo_outlier_scan
     test_tramo_regression_tests
+    test_tramo_seats_bridge
+    test_tramo_seats_rsa0
     test_tramo_seats_model
     test_tramo_transform_decision
     test_transformation_decision
@@ -256,6 +261,16 @@ if(KALOS_BUILD_TESTS)
       target_compile_options(${test_name} PRIVATE /UNDEBUG)
     else()
       target_compile_options(${test_name} PRIVATE -UNDEBUG)
+    endif()
+    if(test_name STREQUAL "test_tramo_seats_rsa0")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_RSA0_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_tramo_seats_bridge")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_BRIDGE_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/bridge.txt"
+        KALOS_MERGE_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/merge.txt"
+        KALOS_MERGE_X64="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/merge-x86_64.txt")
     endif()
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES ENVIRONMENT

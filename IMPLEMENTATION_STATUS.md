@@ -1022,3 +1022,7 @@ instruction "both ride the pin advance":
   ran here, not skipped).
 Datable hygiene: no dated external data involved — nothing to pin.
 
+
+### M5 fitted-model and ordinary RSA0 checkpoint
+
+The export advances to core `fa7edeae3c68862e163633c7debce3d102248223`, which includes typed WK component rows, the fitted TRAMO deterministic-effects merge, and the ordinary monthly TR0 estimator and RSA0 product pipeline. The SEATS extraction and bridge evidence now ship alongside the preceding Python corpora, including the direct raw-series RSA0 oracle. Offline verification covered all 194 core files and 46 evidence files. Python binding and installed-wheel qualification for these contracts follow this integration commit.

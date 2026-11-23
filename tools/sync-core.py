@@ -33,7 +33,9 @@ EVIDENCE_ALLOWLIST = ("validation/evidence/native/x13-automatic/",
                       "validation/evidence/native/x13-horizon/",
                       "validation/evidence/native/x13-allocation/",
                       "validation/evidence/native/x13-fit/",
-                      "validation/evidence/native/tramo-transform/")
+                      "validation/evidence/native/tramo-transform/",
+                      "validation/evidence/native/seats-wk-extraction/",
+                      "validation/evidence/native/tramo-seats-bridge/")
 
 
 def safe_path(value):
