@@ -64,7 +64,7 @@ jobs:
           source "$RUNNER_TEMP/test-env/bin/activate"
           python -m pip install --no-deps wheelhouse/*.whl
           python tools/check-wheel-provider.py --bundled
-          PYTHONPATH=tests python -m unittest -v test_smoke test_java_free test_x13_fixed test_tramo_transform test_seats test_tramoseats_fit
+          PYTHONPATH=tests python -m unittest -v test_smoke test_java_free test_x13_fixed test_preparation test_estimation test_tramo_transform test_seats test_tramoseats_fit
           python -m pip install numpy
           PYTHONPATH=tests python -m unittest -v test_numpy_interop test_provider_import_order
       - uses: actions/upload-artifact@v4
@@ -142,7 +142,7 @@ jobs:
           & $python tools/check-wheel-provider.py --bundled
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           $env:PYTHONPATH = "tests"
-          & $python -m unittest -v test_smoke test_java_free test_x13_fixed test_tramo_transform test_seats test_tramoseats_fit
+          & $python -m unittest -v test_smoke test_java_free test_x13_fixed test_preparation test_estimation test_tramo_transform test_seats test_tramoseats_fit
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           & $python -m pip install numpy
           & $python -m unittest -v test_numpy_interop test_provider_import_order

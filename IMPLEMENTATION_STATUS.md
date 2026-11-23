@@ -1114,3 +1114,7 @@ The `9e3afba` wheel passed all 79 targeted tests, including the complete raw-RSA
 | Multiple-outlier input | 3.672 (3.471–3.868) | 8.227 (6.903–9.909) | 0.446× | 34.473 |
 
 The specialized covariance reduced the measured Python medians by factors of 15.8 and 9.4 respectively. On this host both Python medians were below the contemporary JVM medians. Each JVM measurement was repeated; the earlier medians of 4.039 and 6.237 ms document run-to-run variation. [Raw samples](tools/benchmark/results/2026-11-23-macos-arm64-specialized.json)
+
+### M2 explicit fixed-order SARIMA estimation
+
+The installed Python wheel exposes the frozen four starting policies, fixed and free coefficient masks, dated prepared regression designs, both qualified solvers and chronological initialization/optimization/unit-root decisions. It passed all 27 JVM control cases at the core's existing bounds (24 estimated models and three likelihood-only guards), the fully free pinned LM reference, the fixed-coordinate BFGS check and the corresponding solver refusal. All 84 targeted tests passed, including Java-free and NumPy coexistence. Portable wheel CI runs the preparation and estimation checks on each platform. [Estimator tests](tests/test_estimation.py)

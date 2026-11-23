@@ -90,3 +90,29 @@ and fixed flags. `prepare_series(series, transformation="log", degree=...)`
 returns the transformed data, an explicit missing mask and the source and local
 rows contributing to the likelihood Jacobian. Periods are one-based and row
 offsets are zero-based.
+
+`estimate_sarima_fixed(series, period=..., d=..., seasonal_d=..., blocks=...,
+control=...)` estimates a fixed SARIMA order. Each supplied `ar`, `ma`,
+`seasonal_ar` or `seasonal_ma` block contains `initial` and `fixed` vectors.
+Omitted blocks have order zero. The returned coefficient dictionary uses
+Kalos AR signs, with polynomial 1−φB, and MA signs with polynomial 1+θB.
+Optional `design` accepts the observed design from `prepare_regression`.
+
+Supply all eight control fields. For example, a Zero start with the BFGS
+solver uses the following explicit values.
+
+```python
+control = dict(eps=1e-7, feps=1e-4, maximum_likelihood=True,
+               unit_root_search=False, corrected_degrees_of_freedom=True,
+               fast_derivatives=True, starting_point="zero", solver="bfgs")
+fit = pykalos.estimate_sarima_fixed(
+    values, period=12, d=1, seasonal_d=1, control=control,
+    blocks={"ma": {"initial": [0.0], "fixed": [False]},
+            "seasonal_ma": {"initial": [0.0], "fixed": [False]}})
+```
+
+The other start names are `default`, `hannan_rissanen` and `multiple`.
+The `pinned_levenberg_marquardt` solver accepts the core's fully free block
+envelope. Control decisions, pass likelihoods, evaluation counts and the
+retained coefficients are available even when the optimizer reports a
+non-converged point.

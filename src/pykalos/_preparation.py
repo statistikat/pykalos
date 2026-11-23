@@ -66,8 +66,8 @@ def prepare_regression(length, *, start, frequency, regressors=(), coefficients=
         integer(forecast, "forecast"))
 
 
-def _mask(value, size, field, operation):
-    if value is None:
+def _mask(value, size, field, operation, *, optional=True):
+    if optional and value is None:
         return [False] * size
     flags = [_request_flag(flag, field, operation) for flag in _ordered(value, field, operation)]
     if len(flags) != size:

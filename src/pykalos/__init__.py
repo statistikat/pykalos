@@ -15,6 +15,7 @@ Available operations:
 * fixed WK extraction, fitted TRAMO decomposition and ordinary monthly RSA0 fitting.
 """
 from . import _kalos
+from ._estimation import estimate_sarima_fixed
 from ._preparation import prepare_regression, prepare_series
 from ._validation import (
     _TEXT_TYPES, _finite_number, _finite_vector, _fixed_integer,
@@ -24,7 +25,7 @@ from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
 __all__ = ["capabilities", "convolve", "core_version", "x13_automatic",
            "x13_automatic_fit", "x13_fit", "tramo_critical_value", "tramo_seasonality",
-           "tramo_transform_decision", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series"]
+           "tramo_transform_decision", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
 __version__ = "0.1.0"
 
 # Decoder-pinned module scalars of the qualified envelope (docs/contracts/

@@ -14,6 +14,7 @@
 namespace py = pybind11;
 void bind_restricted_x13(py::module_& module);
 void bind_preparation(py::module_& module);
+void bind_estimation(py::module_& module);
 void bind_seats(py::module_& module);
 void bind_tramo_preprocessing(py::module_& module);
 
@@ -644,6 +645,7 @@ py::dict automatic_result_dict(const kalos::X13AutomaticFitResult& res) {
 PYBIND11_MODULE(_kalos, m) {
     m.doc() = "Minimal owned-buffer Kalos bindings";
     bind_preparation(m);
+    bind_estimation(m);
     bind_seats(m);
     bind_tramo_preprocessing(m);
     bind_restricted_x13(m);
@@ -667,7 +669,7 @@ PYBIND11_MODULE(_kalos, m) {
         result["fit"] = false;
         result["primitives"] = py::make_tuple("convolve", "x13_automatic", "x13_fit", "tramo_critical_value",
                                               "tramo_seasonality", "tramo_transform_decision", "seats_extract_wk", "seats_from_tramo",
-                                              "tramoseats_fit", "prepare_regression", "prepare_series");
+                                              "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed");
         result["status"] = "minimal_binding";
         py::dict restricted;
         restricted["schema_version"] = 1;
