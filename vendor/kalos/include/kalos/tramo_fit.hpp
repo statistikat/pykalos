@@ -253,6 +253,7 @@ struct TramoFitRequest {
     std::vector<TramoFitSeamInputs> seam_inputs;
     // The final-model record.
     TramoFitFinalRecord final;
+    bool verify_final_record = true; // false computes the record from live estimation alone
 };
 
 // The coefficient-covariance block of the result (D9): the native
@@ -303,6 +304,7 @@ struct TramoFitResult {
     TramoKernelRoundsRun kernel;
     std::vector<TramoFitSeamCheck> seam_checks;
     std::size_t seams_live = 0, seams_fact = 0;
+    bool final_model_computed = false; // independently projected from the final estimator
     std::size_t regression_tests_checked = 0; // mean decision and post-test t-statistics
     std::size_t statistics_checked = 0; // model-statistics rows reproduced from live estimation
 };

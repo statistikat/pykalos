@@ -1163,3 +1163,7 @@ The Python snapshot advances to core `854703c`, including the monthly working-da
 ### Full numerical replay after monthly SEATS retry integration
 
 The repaired macOS ARM64 wheel at core `c5bcf97` passed the complete 111-test discovery run with NumPy. All 4,353 automatic X-13 checks and all 1,287 extended-horizon checks passed. The 849.1-second run also covered the 27 fixed-order estimation controls, fitted and ordinary TRAMO/SEATS, public residual independence, wheel-provider coexistence and Java-free adjustment.
+
+### M5 normality and stock TRfull calendar checkpoint
+
+Core `2bf7cc3` adds the public RSA0 residual normality test and the stock initial TRfull calendar module on monthly original observations. The qualification gates compare the diagnostic structure and binary64 values on the nine RSA0 fits and the calendar decisions, t statistics and candidate fits on the 20 stock level/log cases. The wheel retains its restricted raw-series fit templates until the corresponding final component fixtures pass.

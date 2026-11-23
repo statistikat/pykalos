@@ -188,6 +188,7 @@ struct FittedOutlierEffects {
     std::vector<std::string> names;
     std::vector<double> corrected_response;
     TramoFinalEstimatorRunResult fit;
+    std::vector<TramoFitVariable> variables;
 };
 
 TramoTestStatistics fitted_test_statistics(const FittedOutlierEffects& effects) {
@@ -251,15 +252,15 @@ bool check_regression_test(const FittedOutlierEffects& effects, bool test_mean,
     return decision.estimation_cleared;
 }
 
-FittedOutlierEffects check_final_estimation(const TramoFitSpec& spec, const std::vector<double>& y,
-                            EstimationEntry& entry, const TramoKernelSeam& expected) {
+FittedOutlierEffects fit_estimation(const TramoFitSpec& spec, const std::vector<double>& y,
+                                   EstimationEntry& entry, int pass) {
     TramoFinalEstimatorRunRequest options;
     const auto& o = entry.orders;
     options.orders = {o.p, o.d, o.q, o.bp, o.bd, o.bq};
     options.mean = entry.mean;
     options.eps = spec.precision;
     options.ur = spec.final_unit_root_threshold;
-    options.pass = expected.pass_at_call;
+    options.pass = pass;
     options.ami = spec.using_auto_model;
     options.outliers = spec.outliers_used;
     std::vector<std::vector<double>> columns;
@@ -271,16 +272,9 @@ FittedOutlierEffects check_final_estimation(const TramoFitSpec& spec, const std:
     }
     auto estimate = tramo_final_estimator_run(options, y, columns);
     const auto& t = estimate.orders_after;
-    require(estimate.returned == (expected.returned != 0) && estimate.nnsig == expected.nnsig,
-            "live final estimation decision disagrees with the module witness");
     entry.orders = {t.p, t.d, t.q, t.bp, t.bd, t.bq};
     entry.mean = estimate.mean_out;
-    require(orders_equal(entry.orders, expected.orders) &&
-            names == expected.outliers, "live final estimation specification disagrees with the witness");
-    require(std::equal(estimate.parameters_after.begin(), estimate.parameters_after.end(),
-                       expected.parameters.begin(), expected.parameters.end(), bit_equal),
-            "live final estimation parameters disagree with the module witness");
-    FittedOutlierEffects effects{entry.orders, entry.mean, estimate.parameters_after, std::move(names), {}, {}};
+    FittedOutlierEffects effects{entry.orders, entry.mean, estimate.parameters_after, std::move(names), {}, {}, {}};
     if (!columns.empty() && estimate.cl_coefs.size() == columns.size() + static_cast<std::size_t>(entry.mean)) {
         // RegArimaUtility.regressionEffect accumulates the effects before
         // the differencing module subtracts their sum from the model response.
@@ -291,8 +285,168 @@ FittedOutlierEffects check_final_estimation(const TramoFitSpec& spec, const std:
         effects.corrected_response = y;
         for (std::size_t i = 0; i < y.size(); ++i) effects.corrected_response[i] -= total[i];
     }
+    if (estimate.cl_state != 0) {
+        for (std::size_t i = 0; i < columns.size(); ++i) {
+            const auto& var = entry.variables[i];
+            effects.variables.push_back({var.name, static_cast<TramoOutlierKind>(var.type), var.position,
+                estimate.cl_coefs.at(i + entry.mean), std::move(columns[i])});
+        }
+    }
     effects.fit = std::move(estimate);
     return effects;
+}
+
+FittedOutlierEffects check_final_estimation(const TramoFitSpec& spec, const std::vector<double>& y,
+                                            EstimationEntry& entry, const TramoKernelSeam& expected) {
+    auto effects = fit_estimation(spec, y, entry, expected.pass_at_call);
+    const auto& estimate = effects.fit;
+    require(estimate.returned == (expected.returned != 0) && estimate.nnsig == expected.nnsig,
+            "live final estimation decision disagrees with the module witness");
+    require(orders_equal(entry.orders, expected.orders) &&
+            effects.names == expected.outliers, "live final estimation specification disagrees with the witness");
+    require(std::equal(estimate.parameters_after.begin(), estimate.parameters_after.end(),
+                       expected.parameters.begin(), expected.parameters.end(), bit_equal),
+            "live final estimation parameters disagree with the module witness");
+    return effects;
+}
+
+TramoFitFinalRecord project_fitted_record(const FittedOutlierEffects& effects,
+                                         const std::vector<double>& observations, bool log, int frequency) {
+    const auto& fit = effects.fit;
+    const auto& o = effects.orders;
+    TramoFitFinalRecord r;
+    r.log = log;
+    r.mean = effects.mean;
+    r.orders = o;
+    r.parameters = effects.parameters;
+    r.outlier_names = effects.names;
+    r.variables = effects.variables;
+    r.coefficients = fit.cl_coefs;
+    r.nx = static_cast<int>(r.coefficients.size());
+    r.dim = fit.cl_dim;
+    r.ssq = r.ls_ssq = fit.cl_ssq;
+    r.log_determinant = fit.cl_log_determinant;
+    r.unscaled_covariance = fit.cl_unscaled_covariance;
+    r.free_arma_parameters = static_cast<int>(r.parameters.size());
+    r.scaling_factor = true;
+    const auto level = differenced_response(observations, log, frequency, 0, 0);
+    r.differenced_response = differenced_response(level, false, frequency, o.d, o.bd);
+    require(static_cast<int>(r.differenced_response.size()) == r.dim &&
+            r.nx == static_cast<int>(r.variables.size()) + r.mean, "invalid fitted model dimensions");
+
+    // RegArimaUtility.fullResiduals subtracts each fitted regressor on the
+    // level scale, differences once, and removes the drift on that domain.
+    if (r.nx == 0) {
+        r.full_residuals = fit.cl_residuals;
+    } else {
+        auto corrected = level;
+        for (const auto& variable : r.variables)
+            for (std::size_t i = 0; i < level.size(); ++i)
+                corrected[i] += -variable.coefficient * variable.column[i];
+        auto dy = differenced_response(std::move(corrected), false, frequency, o.d, o.bd);
+        if (r.mean)
+            for (double& v : dy) v -= r.coefficients.front();
+        auto residuals = detail::pinned_fast_kalman_residuals(dy, o.p, o.bp, o.q, o.bq, frequency, r.parameters);
+        require(residuals && residuals->size() == dy.size(), "final residual filtering failed");
+        r.full_residuals = std::move(*residuals);
+    }
+    r.ls_obs = static_cast<int>(observations.size());
+    r.ls_eff = r.dim;
+    r.ls_npar = 1 + r.nx + r.free_arma_parameters;
+    r.ls_ll = fit.cl_log_likelihood;
+    if (log) {
+        double sum = 0.0;
+        for (std::size_t i = level.size() - r.dim; i < level.size(); ++i) sum += level[i];
+        r.ls_tadj = -sum;
+    }
+    r.ls_all = r.ls_ll + r.ls_tadj;
+    const double n = r.dim, k = r.ls_npar, ln = detail::fdlibm_log(n);
+    r.ls_aic = -2.0 * (r.ls_all - k);
+    r.ls_aicc = -2.0 * (r.ls_all - n * k / (n - k - 1.0));
+    r.ls_bic = -2.0 * r.ls_all + k * ln;
+    r.ls_bic2 = (-2.0 * r.ls_ll + k * ln) / n;
+    r.ls_bicc = detail::fdlibm_log(r.ssq / n) + (k - 1) * ln / n;
+    r.ls_hq = -2.0 * (r.ls_all - k * detail::fdlibm_log(ln));
+    return r;
+}
+
+void check_final_record(const TramoFitFinalRecord& got, const TramoFitFinalRecord& ref) {
+    require(orders_equal(got.orders, ref.orders) && got.mean == ref.mean && got.log == ref.log &&
+            got.outlier_names == ref.outlier_names && got.dim == ref.dim && got.ls_npar == ref.ls_npar,
+            "projected final description disagrees");
+    const auto check = [](const auto& a, const auto& b, const char* field) {
+        require(std::equal(a.begin(), a.end(), b.begin(), b.end(), bit_equal),
+                std::string("projected final ") + field + " disagrees");
+    };
+    require(got.ls_obs == ref.ls_obs && got.ls_eff == ref.ls_eff && got.nx == ref.nx &&
+            got.nmissing == ref.nmissing && got.scaling_factor == ref.scaling_factor &&
+            got.free_arma_parameters == ref.free_arma_parameters, "projected final likelihood dimensions disagree");
+    check(got.differenced_response, ref.differenced_response, "differenced response");
+    require(got.variables.size() == ref.variables.size(), "projected final variable count disagrees");
+    for (std::size_t i = 0; i < got.variables.size(); ++i) {
+        const auto& actual = got.variables[i];
+        const auto& expected = ref.variables[i];
+        require(actual.name == expected.name && actual.type == expected.type &&
+                actual.position == expected.position && bit_equal(actual.coefficient, expected.coefficient),
+                "projected final variable disagrees");
+        if (!expected.column.empty()) check(actual.column, expected.column, "variable column");
+    }
+    check(got.parameters, ref.parameters, "parameters");
+    check(got.coefficients, ref.coefficients, "coefficients");
+    check(got.unscaled_covariance, ref.unscaled_covariance, "regression covariance");
+    check(got.full_residuals, ref.full_residuals, "residuals");
+    for (auto member : {&TramoFitFinalRecord::ssq, &TramoFitFinalRecord::log_determinant,
+         &TramoFitFinalRecord::ls_ll, &TramoFitFinalRecord::ls_tadj, &TramoFitFinalRecord::ls_all,
+         &TramoFitFinalRecord::ls_aic, &TramoFitFinalRecord::ls_aicc, &TramoFitFinalRecord::ls_bic,
+         &TramoFitFinalRecord::ls_bicc, &TramoFitFinalRecord::ls_bic2, &TramoFitFinalRecord::ls_hq})
+        require(bit_equal(got.*member, ref.*member), "projected final likelihood statistics disagree");
+}
+
+void assemble_fitted_result(TramoFitResult& result, const TramoFitFinalRecord& fin,
+                            const std::vector<double>* covariance_witness = nullptr) {
+    result.ssq = fin.ssq;
+    result.cl_dim = fin.dim;
+    result.cl_nx = fin.nx;
+    result.cl_nmissing = fin.nmissing;
+    result.log_determinant = fin.log_determinant;
+    auto& covariance = result.covariance;
+    covariance.n = static_cast<std::size_t>(fin.nx);
+    if (fin.nx > 0) {
+        const int df = fin.dim - fin.nx - fin.free_arma_parameters;
+        require(df > 0, "non-positive residual degrees of freedom");
+        result.covariance_scale = fin.ssq / df;
+        covariance.covariance = fin.unscaled_covariance;
+        for (double& value : covariance.covariance) value *= result.covariance_scale;
+        for (std::size_t i = 0; i < covariance.n; ++i)
+            for (std::size_t j = i; j < covariance.n; ++j)
+                covariance.covariance_upper.push_back(covariance.covariance[i * covariance.n + j]);
+    }
+    if (covariance_witness) {
+        covariance.captured_upper = *covariance_witness;
+        covariance.matches_capture = std::equal(covariance.covariance_upper.begin(), covariance.covariance_upper.end(),
+            covariance_witness->begin(), covariance_witness->end(), bit_equal);
+        require(covariance.matches_capture, "the recomputed D9 covariance differs from the captured coefficientsCovariance bits");
+    }
+    result.log = fin.log;
+    result.mean = fin.mean;
+    result.orders = fin.orders;
+    result.parameters = fin.parameters;
+    result.variables = fin.variables;
+    result.ls_obs = fin.ls_obs;
+    result.ls_eff = fin.ls_eff;
+    result.ls_npar = fin.ls_npar;
+    result.ls_ll = fin.ls_ll;
+    result.ls_tadj = fin.ls_tadj;
+    result.ls_all = fin.ls_all;
+    result.ls_ssq = fin.ls_ssq;
+    result.ls_aic = fin.ls_aic;
+    result.ls_aicc = fin.ls_aicc;
+    result.ls_bic = fin.ls_bic;
+    result.ls_bicc = fin.ls_bicc;
+    result.ls_bic2 = fin.ls_bic2;
+    result.ls_hq = fin.ls_hq;
+    result.full_residuals = fin.full_residuals;
+    result.status = "available";
 }
 
 bool outliers_equal(const std::vector<std::string>& a,
@@ -754,7 +908,22 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
     }
 
     // ---- stage 5: the final surface and the D9 covariance -----------------
-    const TramoFitFinalRecord& fin = request.final;
+    if (fully_specified && !has_fixed_regressors && built.arima.is_airline() &&
+        built.arima.theta.front().kind == tramo_parameter_kind::undefined &&
+        built.arima.btheta.front().kind == tramo_parameter_kind::undefined) {
+        EstimationEntry entry{{0, 1, 1, 0, 1, 1}, built.mean, {}};
+        const auto y = differenced_response(built.interpolated, prestage.log, built.annual_frequency, 0, 0);
+        effects = fit_estimation(spec, y, entry, 0);
+    }
+    std::optional<TramoFitFinalRecord> projected;
+    if (effects && effects->fit.cl_state != 0) {
+        projected = project_fitted_record(*effects, built.interpolated, prestage.log, built.annual_frequency);
+        if (request.verify_final_record) check_final_record(*projected, request.final);
+        result.final_model_computed = true;
+    }
+    require(projected || request.verify_final_record, "final estimator unavailable for native fitted record");
+    const auto& fin = projected ? *projected : request.final;
+    const auto* covariance_witness = request.verify_final_record ? &request.final.captured_covariance_upper : nullptr;
     require(fin.dim > 0, "final record without a dim");
     require(fin.nx >= 0, "negative nx");
     require(fin.free_arma_parameters == fin.orders.p + fin.orders.q +
@@ -768,7 +937,7 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
     require(fin.unscaled_covariance.size() ==
                 static_cast<std::size_t>(fin.nx) * fin.nx,
             "unscaledCovariance is not nx x nx");
-    require(fin.captured_covariance_upper.size() ==
+    require(!covariance_witness || covariance_witness->size() ==
                 static_cast<std::size_t>(fin.nx) * (fin.nx + 1) / 2,
             "the captured covariance upper triangle has the wrong size");
     require(fin.scaling_factor, "the cl view is not the scaling-factor "
@@ -812,84 +981,7 @@ TramoFitResult tramo_fit(const TramoFitRequest& request) {
                 "capture at index " + std::to_string(i));
     }
 
-    // The D9 covariance: V = uc * (ssq / (double)(dim - nx - k)), element
-    // mul after the single scalar division (bytecode-conform sequence).
-    result.ssq = fin.ssq;
-    result.cl_dim = fin.dim;
-    result.cl_nx = fin.nx;
-    result.cl_nmissing = fin.nmissing;
-    result.log_determinant = fin.log_determinant;
-    result.covariance.captured_upper = fin.captured_covariance_upper;
-    result.covariance.n = static_cast<std::size_t>(fin.nx);
-    if (fin.nx > 0) {
-        require(fin.dim - fin.nx - fin.free_arma_parameters > 0,
-                "non-positive residual degrees of freedom");
-        const double scale =
-            fin.ssq / static_cast<double>(fin.dim - fin.nx -
-                                          fin.free_arma_parameters);
-        result.covariance_scale = scale;
-        result.covariance.covariance.resize(
-            static_cast<std::size_t>(fin.nx) * fin.nx);
-        for (int i = 0; i < fin.nx; ++i) {
-            for (int j = 0; j < fin.nx; ++j) {
-                result.covariance
-                    .covariance[static_cast<std::size_t>(i) * fin.nx + j] =
-                    fin.unscaled_covariance[static_cast<std::size_t>(i) *
-                                                fin.nx + j] *
-                    scale;
-            }
-        }
-        bool all = true;
-        for (int i = 0; i < fin.nx && all; ++i) {
-            for (int j = i; j < fin.nx; ++j) {
-                const double v =
-                    result.covariance
-                        .covariance[static_cast<std::size_t>(i) * fin.nx + j];
-                result.covariance.covariance_upper.push_back(v);
-                // Row-major upper triangle: row r has nx - r entries, so
-                // entry (i, j), i <= j, sits at i*nx - i*(i-1)/2 + (j - i).
-                if (!bit_equal(v, fin.captured_covariance_upper[
-                                      static_cast<std::size_t>(i) * fin.nx -
-                                          static_cast<std::size_t>(i) *
-                                              (i - 1) / 2 +
-                                          (j - i)])) {
-                    all = false;
-                    break;
-                }
-            }
-        }
-        result.covariance.matches_capture = all;
-        require(all, "the recomputed D9 covariance differs from the "
-                     "captured coefficientsCovariance bits");
-    } else {
-        // The nx == 0 branch: ConcentratedLikelihood.covariance answers
-        // FastMatrix.EMPTY (bytecode offsets 0-12).
-        result.covariance.matches_capture =
-            fin.captured_covariance_upper.empty();
-        require(result.covariance.matches_capture,
-                "an empty-regression record carries covariance bits");
-    }
-
-    result.log = fin.log;
-    result.mean = fin.mean;
-    result.orders = fin.orders;
-    result.parameters = fin.parameters;
-    result.variables = fin.variables;
-    result.ls_obs = fin.ls_obs;
-    result.ls_eff = fin.ls_eff;
-    result.ls_npar = fin.ls_npar;
-    result.ls_ll = fin.ls_ll;
-    result.ls_tadj = fin.ls_tadj;
-    result.ls_all = fin.ls_all;
-    result.ls_ssq = fin.ls_ssq;
-    result.ls_aic = fin.ls_aic;
-    result.ls_aicc = fin.ls_aicc;
-    result.ls_bic = fin.ls_bic;
-    result.ls_bicc = fin.ls_bicc;
-    result.ls_bic2 = fin.ls_bic2;
-    result.ls_hq = fin.ls_hq;
-    result.full_residuals = fin.full_residuals;
-    result.status = "available";
+    assemble_fitted_result(result, fin, covariance_witness);
     return result;
 }
 
