@@ -1074,9 +1074,9 @@ On an eight-core Apple M2 running macOS 27.0.1, native ARM64 CPython 3.15.2 and 
 | Ordinary RSA0 workload | Observations | Python median ms (interquartile range) | JDemetra+ median ms (interquartile range) | Python / JVM |
 |---|---:|---:|---:|---:|
 | Airline (`fit_tr0_air`) | 144 | 45.422 (44.230–48.675) | 4.039 (3.732–4.379) | 11.25× |
-| Mixed factors (`fit_multi`) | 96 | 34.473 (33.416–36.202) | 6.237 (5.624–6.633) | 5.53× |
+| Multiple-outlier input (`fit_multi`) | 96 | 34.473 (33.416–36.202) | 6.237 (5.624–6.633) | 5.53× |
 
-Both public routes materialized all 50 initial, final and merged rows, with 3,912 and 2,808 values respectively. They also returned the observed seasonal adjustment and 24 original-series forecast standard errors. All 240 observed adjustments matched the oracle bit-for-bit in both engines. The largest Python forecast-error differences were 2.42e−13 and 1.25e−14. The native ARM64 JVM matched the captured x86-64 public errors exactly on these two cases. The measured end-to-end latency gap remains open. [Raw samples and build identity](tools/benchmark/results/2026-11-23-macos-arm64.json) · [Benchmark driver](tools/benchmark/rsa0.py)
+Both public routes materialized all 50 initial, final and merged rows, with 3,912 and 2,808 values respectively. They also returned the observed seasonal adjustment and 24 original-series forecast standard errors. All 240 observed adjustments matched the oracle bit-for-bit in both engines. The largest Python forecast-error differences were 2.42e−13 and 1.25e−14. The native ARM64 JVM matched the captured x86-64 public errors exactly on these two cases. Both timed RSA0 fits use the airline SARIMA structure. The older mixed-factor estimation benchmark uses a free ordinary AR, fixed ordinary MA and free seasonal MA; that core performance gate remains open alongside the observed RSA0 latency gap. [Raw samples and build identity](tools/benchmark/results/2026-11-23-macos-arm64.json) · [Benchmark driver](tools/benchmark/rsa0.py)
 
 To repeat, install the wheel for this checkout and run `python tools/benchmark/rsa0.py --jdk <native-Java-21.0.11-home> --jar-dir <toolkit-and-sa-jars> --jar-dir <tramoseats-jars>`. The driver reports all sample times in milliseconds per fit and checks the returned values before emitting the report.
 
