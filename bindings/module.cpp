@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -61,16 +62,196 @@ kalos::OutlierType outlier_from_code(long v) {
 }
 
 // ---- request builders (fail-closed on any missing / unknown field) ---------
+//
+// REVIEW-1 boundary contract: every field is read with an explicit type
+// check and a message naming the field and the offending type. Unknown keys
+// are reported naming them (a misspelled optional option, e.g.
+// use_calender_detection, never silently vanishes); integer fields must
+// implement __index__ (no float truncation, no bool-as-int); flags must be
+// real Python bools (the string "False" must never mean True); the two
+// outlier budgets are sign-checked before the size_t conversion; the series
+// is refused as text/binary/multivariate before the core sees it. This
+// parser adds NO policy about CONTENT: well-formed but unsupported requests
+// still reach the core and keep its documented status responses.
+
+const char* const kRequiredRequestKeys[] = {
+    "input", "frequency", "first_year", "first_period", "aicc_log_correction",
+    "max_d", "max_bd", "ub1", "ub2", "cancel", "differencing_precision",
+    "models_count", "max_p", "max_q", "max_bp", "max_bq", "balanced", "mixed",
+    "arma_accept_white_noise", "arma_eps", "outliers_used", "outlier_types",
+    "outlier_max_round", "outlier_max_outliers", "tcrate", "precision",
+    "mean_precision", "va", "reduce_va", "ljung_box_limit", "check_mu",
+    "accept_airline", "ur_limit", "mean_test_initial", "mean_test_final",
+    "tsig", "seasonal", "trend_length", "msr_policy", "mode", "backcast",
+    "forecast", "lower_sigma", "upper_sigma",
+};
+const char* const kOptionalRequestKeys[] = {
+    "outlier_span", "sigma", "use_calendar_detection", "use_easter_detection",
+    "automatic_trading_days", "use_user_variables",
+};
+
+bool key_in(const std::string& key, const char* const* list, std::size_t n) {
+    for (std::size_t i = 0; i < n; ++i)
+        if (key == list[i]) return true;
+    return false;
+}
+
+bool is_text(py::handle obj) {
+    return PyUnicode_Check(obj.ptr()) || PyBytes_Check(obj.ptr())
+        || PyByteArray_Check(obj.ptr());
+}
+
+std::string type_name(py::handle obj) { return obj.ptr()->ob_type->tp_name; }
+
+void validate_request_keys(const py::dict& d) {
+    std::vector<std::string> unknown;
+    for (const auto& item : d) {
+        if (!PyUnicode_Check(item.first.ptr()))
+            throw py::type_error("x13_automatic_fit request keys must be strings, got type "
+                                 + type_name(item.first));
+        const std::string key = py::cast<std::string>(item.first);
+        if (!key_in(key, kRequiredRequestKeys, std::size(kRequiredRequestKeys))
+            && !key_in(key, kOptionalRequestKeys, std::size(kOptionalRequestKeys)))
+            unknown.push_back(key);
+    }
+    if (unknown.empty()) return;
+    std::sort(unknown.begin(), unknown.end());
+    std::string joined;
+    for (const auto& k : unknown) {
+        if (!joined.empty()) joined += ", ";
+        joined += k;
+    }
+    throw py::type_error("x13_automatic_fit request contains unknown key(s): " + joined
+                         + "; every key must be part of the raw request schema — a "
+                           "misspelled optional option is never silently ignored");
+}
+
+py::object req_value(const py::dict& d, const char* key) {
+    if (!d.contains(key)) throw py::key_error(std::string("x13_automatic request missing field: ") + key);
+    return py::reinterpret_borrow<py::object>(d[py::str(key)]);
+}
 
 template <typename T>
-T req_field(const py::dict& d, const char* key) {
-    if (!d.contains(key)) throw py::key_error(std::string("x13_automatic request missing field: ") + key);
-    return py::cast<T>(d[py::str(key)]);
+T req_int(const py::dict& d, const char* key) {
+    py::object v = req_value(d, key);
+    if (PyBool_Check(v.ptr()) || !PyIndex_Check(v.ptr()))
+        throw py::type_error(std::string("x13_automatic request field '") + key
+                             + "' must be an integer (bool and float are refused, no truncation), got type "
+                             + type_name(v));
+    PyObject* as_long = PyNumber_Index(v.ptr());
+    if (!as_long) throw py::error_already_set();
+    return py::cast<T>(py::reinterpret_steal<py::object>(as_long));  // range-checked
+}
+
+bool req_bool(const py::dict& d, const char* key) {
+    py::object v = req_value(d, key);
+    if (!PyBool_Check(v.ptr()))
+        throw py::type_error(std::string("x13_automatic request field '") + key
+                             + "' must be a Python bool (True/False); got type " + type_name(v)
+                             + " — truthiness is never a decision input");
+    return py::cast<bool>(v);
 }
 
 bool req_opt_bool(const py::dict& d, const char* key, bool fallback) {
-    if (!d.contains(key) || d[py::str(key)].is_none()) return fallback;
-    return py::cast<bool>(d[py::str(key)]);
+    if (!d.contains(key)) return fallback;
+    py::object v = py::reinterpret_borrow<py::object>(d[py::str(key)]);
+    if (v.is_none()) return fallback;
+    if (!PyBool_Check(v.ptr()))
+        throw py::type_error(std::string("x13_automatic request field '") + key
+                             + "' must be a Python bool (True/False) or None; got type "
+                             + type_name(v) + " — truthiness is never a decision input");
+    return py::cast<bool>(v);
+}
+
+double req_double(const py::dict& d, const char* key) {
+    py::object v = req_value(d, key);
+    if (PyBool_Check(v.ptr()) || is_text(v))
+        throw py::type_error(std::string("x13_automatic request field '") + key
+                             + "' must be a real number (bool and text are refused), got type "
+                             + type_name(v));
+    double out = PyFloat_AsDouble(v.ptr());
+    if (out == -1.0 && PyErr_Occurred()) {
+        PyErr_Clear();
+        throw py::type_error(std::string("x13_automatic request field '") + key
+                             + "' must be a real number, got type " + type_name(v));
+    }
+    return out;
+}
+
+std::string req_str(const py::dict& d, const char* key) {
+    py::object v = req_value(d, key);
+    if (!PyUnicode_Check(v.ptr()))
+        throw py::type_error(std::string("x13_automatic request field '") + key
+                             + "' must be a string, got type " + type_name(v));
+    return py::cast<std::string>(v);
+}
+
+// Series input: a one-dimensional iterable of real scalars. Text/binary
+// containers, pure buffer views (memoryview) and non-scalar elements
+// (multivariate rows) are refused; ndarrays (which expose __array__) and
+// ordinary iterables stay supported, matching the wrapper's documented
+// policy. NaN/Inf elements remain the core's documented policy.
+std::vector<double> req_series(const py::dict& d, const char* key) {
+    py::object v = req_value(d, key);
+    if (is_text(v))
+        throw py::type_error(std::string("x13_automatic request field '") + key
+                             + "' must be a one-dimensional sequence of numbers; text/binary "
+                               "input is refused (a digit string is not a series)");
+    if (PyObject_CheckBuffer(v.ptr()) && !PyObject_HasAttrString(v.ptr(), "__array__"))
+        throw py::type_error(std::string("x13_automatic request field '") + key
+                             + "' must be a one-dimensional sequence of numbers; got the "
+                               "buffer-like type " + type_name(v)
+                             + " — binary views are refused, 1-D ndarrays are accepted");
+    if (!(PyIter_Check(v.ptr()) || PySequence_Check(v.ptr())))
+        throw py::type_error(std::string("x13_automatic request field '") + key
+                             + "' must be an iterable of numbers, got the non-iterable type "
+                             + type_name(v));
+    std::vector<double> out;
+    for (py::handle item : py::reinterpret_borrow<py::iterable>(v)) {
+        if (is_text(item))
+            throw py::type_error(std::string("x13_automatic request field '") + key
+                                 + "' elements must be real numbers; text elements are refused, "
+                                   "not parsed");
+        if (PyFloat_Check(item.ptr())) {          // float and np.float64
+            out.push_back(PyFloat_AsDouble(item.ptr()));
+            continue;
+        }
+        if (PyIndex_Check(item.ptr())) {
+            // NB: EVERY ndarray satisfies PyIndex_Check (numpy fills the slot
+            // for all arrays and raises at runtime), so the conversion is the
+            // real scalar test: only integer scalars convert.
+            PyObject* as_long = PyNumber_Index(item.ptr());
+            if (!as_long) {
+                PyErr_Clear();
+                throw py::type_error(std::string("x13_automatic request field '") + key
+                                     + "' has a non-scalar element of type " + type_name(item)
+                                     + "; multivariate or mixed input is refused at the "
+                                       "boundary");
+            }
+            double x = PyFloat_AsDouble(as_long);
+            Py_DECREF(as_long);
+            if (x == -1.0 && PyErr_Occurred()) throw py::error_already_set();
+            out.push_back(x);
+            continue;
+        }
+        if (PyObject_HasAttrString(item.ptr(), "__float__") && PyObject_Size(item.ptr()) < 0) {
+            PyErr_Clear();  // not sized: numeric scalars like np.float32/Decimal
+            double x = PyFloat_AsDouble(item.ptr());
+            if (x == -1.0 && PyErr_Occurred()) {
+                PyErr_Clear();
+                throw py::type_error(std::string("x13_automatic request field '") + key
+                                     + "' has a non-numeric element of type "
+                                     + type_name(item));
+            }
+            out.push_back(x);
+            continue;
+        }
+        throw py::type_error(std::string("x13_automatic request field '") + key
+                             + "' has a non-scalar or non-numeric element of type "
+                             + type_name(item)
+                             + "; multivariate or mixed input is refused at the boundary");
+    }
+    return out;
 }
 
 kalos::X11DecompositionMode mode_from_name(const std::string& s) {
@@ -97,73 +278,144 @@ kalos::X11SeasonalRequest seasonal_from_name(const std::string& s) {
 
 kalos::X13AutomaticRequest build_request(const py::dict& d) {
     using namespace kalos;
+    validate_request_keys(d);
     X13AutomaticRequest r;
-    r.input = req_field<std::vector<double>>(d, "input");
-    r.frequency = req_field<int>(d, "frequency");
-    r.first_period = req_field<int>(d, "first_period");
-    r.first_year = req_field<int>(d, "first_year");
-    r.aicc_log_correction = req_field<double>(d, "aicc_log_correction");
-    r.max_d = req_field<int>(d, "max_d");
-    r.max_bd = req_field<int>(d, "max_bd");
-    r.ub1 = req_field<double>(d, "ub1");
-    r.ub2 = req_field<double>(d, "ub2");
-    r.cancel = req_field<double>(d, "cancel");
-    r.differencing_precision = req_field<double>(d, "differencing_precision");
-    r.models_count = req_field<int>(d, "models_count");
-    r.max_p = req_field<int>(d, "max_p");
-    r.max_q = req_field<int>(d, "max_q");
-    r.max_bp = req_field<int>(d, "max_bp");
-    r.max_bq = req_field<int>(d, "max_bq");
-    r.balanced = req_field<bool>(d, "balanced");
-    r.mixed = req_field<bool>(d, "mixed");
-    r.arma_accept_white_noise = req_field<bool>(d, "arma_accept_white_noise");
-    r.arma_eps = req_field<double>(d, "arma_eps");
-    r.outliers_used = req_field<bool>(d, "outliers_used");
-    for (long code : req_field<std::vector<long>>(d, "outlier_types"))
-        r.outlier_types.push_back(outlier_from_code(code));
-    if (d.contains(py::str("outlier_span")) && !d[py::str("outlier_span")].is_none()) {
-        auto span = py::cast<std::pair<int, int>>(d[py::str("outlier_span")]);
-        r.outlier_span = span;
+    r.input = req_series(d, "input");
+    r.frequency = req_int<int>(d, "frequency");
+    r.first_period = req_int<int>(d, "first_period");
+    r.first_year = req_int<int>(d, "first_year");
+    r.aicc_log_correction = req_double(d, "aicc_log_correction");
+    r.max_d = req_int<int>(d, "max_d");
+    r.max_bd = req_int<int>(d, "max_bd");
+    r.ub1 = req_double(d, "ub1");
+    r.ub2 = req_double(d, "ub2");
+    r.cancel = req_double(d, "cancel");
+    r.differencing_precision = req_double(d, "differencing_precision");
+    r.models_count = req_int<int>(d, "models_count");
+    r.max_p = req_int<int>(d, "max_p");
+    r.max_q = req_int<int>(d, "max_q");
+    r.max_bp = req_int<int>(d, "max_bp");
+    r.max_bq = req_int<int>(d, "max_bq");
+    r.balanced = req_bool(d, "balanced");
+    r.mixed = req_bool(d, "mixed");
+    r.arma_accept_white_noise = req_bool(d, "arma_accept_white_noise");
+    r.arma_eps = req_double(d, "arma_eps");
+    r.outliers_used = req_bool(d, "outliers_used");
+    {
+        py::object codes = req_value(d, "outlier_types");
+        if (is_text(codes) || !(PyIter_Check(codes.ptr()) || PySequence_Check(codes.ptr())))
+            throw py::type_error("x13_automatic request field 'outlier_types' must be a "
+                                 "sequence of integer codes, got type " + type_name(codes));
+        for (py::handle item : py::reinterpret_borrow<py::iterable>(codes)) {
+            if (PyBool_Check(item.ptr()) || !PyIndex_Check(item.ptr()))
+                throw py::type_error("x13_automatic request field 'outlier_types' codes must "
+                                     "be integers (bool and float are refused), got type "
+                                     + type_name(item));
+            PyObject* as_long = PyNumber_Index(item.ptr());
+            if (!as_long) throw py::error_already_set();
+            r.outlier_types.push_back(outlier_from_code(py::cast<long>(
+                py::reinterpret_steal<py::object>(as_long))));
+        }
     }
-    r.outlier_max_round = static_cast<std::size_t>(req_field<long>(d, "outlier_max_round"));
-    r.outlier_max_outliers = static_cast<std::size_t>(req_field<long>(d, "outlier_max_outliers"));
-    r.tcrate = req_field<double>(d, "tcrate");
-    r.precision = req_field<double>(d, "precision");
-    r.mean_precision = req_field<double>(d, "mean_precision");
-    r.va = req_field<double>(d, "va");
-    r.reduce_va = req_field<double>(d, "reduce_va");
-    r.ljung_box_limit = req_field<double>(d, "ljung_box_limit");
-    r.check_mu = req_field<bool>(d, "check_mu");
-    r.accept_airline = req_field<bool>(d, "accept_airline");
-    r.ur_limit = req_field<double>(d, "ur_limit");
-    r.mean_test_initial = req_field<double>(d, "mean_test_initial");
-    r.mean_test_final = req_field<double>(d, "mean_test_final");
-    r.tsig = req_field<double>(d, "tsig");
+    {
+        if (d.contains("outlier_span")) {
+            py::object v = py::reinterpret_borrow<py::object>(d[py::str("outlier_span")]);
+            if (!v.is_none()) {
+                if (is_text(v))
+                    throw py::type_error("x13_automatic request field 'outlier_span' must be "
+                                         "None or exactly two integer endpoints, got text");
+                if (!(PyIter_Check(v.ptr()) || PySequence_Check(v.ptr())))
+                    throw py::type_error("x13_automatic request field 'outlier_span' must be "
+                                         "an iterable of two integers, got type " + type_name(v));
+                std::vector<py::object> endpoints;
+                for (py::handle item : py::reinterpret_borrow<py::iterable>(v))
+                    endpoints.push_back(py::reinterpret_borrow<py::object>(item));
+                if (endpoints.size() != 2)
+                    throw py::type_error("x13_automatic request field 'outlier_span' needs "
+                                         "exactly two integer endpoints, got "
+                                         + std::to_string(endpoints.size())
+                                         + " values; a third endpoint is never silently dropped");
+                int ends[2];
+                for (std::size_t i = 0; i < 2; ++i) {
+                    if (PyBool_Check(endpoints[i].ptr()) || !PyIndex_Check(endpoints[i].ptr()))
+                        throw py::type_error("x13_automatic request field 'outlier_span' "
+                                             "endpoints must be integers (bool and float are "
+                                             "refused), got type " + type_name(endpoints[i]));
+                    PyObject* as_long = PyNumber_Index(endpoints[i].ptr());
+                    if (!as_long) throw py::error_already_set();
+                    ends[i] = py::cast<int>(py::reinterpret_steal<py::object>(as_long));
+                }
+                r.outlier_span = std::pair<int, int>(ends[0], ends[1]);
+            }
+        }
+    }
+    {   // budgets: sign-checked BEFORE the unsigned conversion (REVIEW-1).
+        long rounds = req_int<long>(d, "outlier_max_round");
+        if (rounds < 0)
+            throw py::value_error("x13_automatic request field 'outlier_max_round' must be "
+                                  "non-negative, got " + std::to_string(rounds));
+        r.outlier_max_round = static_cast<std::size_t>(rounds);
+        long cap = req_int<long>(d, "outlier_max_outliers");
+        if (cap < 0)
+            throw py::value_error("x13_automatic request field 'outlier_max_outliers' must be "
+                                  "non-negative, got " + std::to_string(cap));
+        r.outlier_max_outliers = static_cast<std::size_t>(cap);
+    }
+    r.tcrate = req_double(d, "tcrate");
+    r.precision = req_double(d, "precision");
+    r.mean_precision = req_double(d, "mean_precision");
+    r.va = req_double(d, "va");
+    r.reduce_va = req_double(d, "reduce_va");
+    r.ljung_box_limit = req_double(d, "ljung_box_limit");
+    r.check_mu = req_bool(d, "check_mu");
+    r.accept_airline = req_bool(d, "accept_airline");
+    r.ur_limit = req_double(d, "ur_limit");
+    r.mean_test_initial = req_double(d, "mean_test_initial");
+    r.mean_test_final = req_double(d, "mean_test_final");
+    r.tsig = req_double(d, "tsig");
     r.use_calendar_detection = req_opt_bool(d, "use_calendar_detection", false);
     r.use_easter_detection = req_opt_bool(d, "use_easter_detection", false);
     r.automatic_trading_days = req_opt_bool(d, "automatic_trading_days", false);
     r.use_user_variables = req_opt_bool(d, "use_user_variables", false);
     r.seasonal.clear();
-    for (const std::string& s : req_field<std::vector<std::string>>(d, "seasonal"))
-        r.seasonal.push_back(seasonal_from_name(s));
-    r.trend_length = req_field<int>(d, "trend_length");
-    if (d.contains(py::str("sigma")) && !d[py::str("sigma")].is_none()) {
-        std::string pol = py::cast<std::string>(d[py::str("sigma")]);
-        if (pol == "legacy") r.sigma = X11SigmaPolicy::legacy;
-        else if (pol == "accurate") r.sigma = X11SigmaPolicy::accurate;
-        else throw py::value_error("unknown sigma policy: " + pol);
-    }
-    r.lower_sigma = req_field<double>(d, "lower_sigma");
-    r.upper_sigma = req_field<double>(d, "upper_sigma");
     {
-        std::string mp = req_field<std::string>(d, "msr_policy");
+        py::object names = req_value(d, "seasonal");
+        if (is_text(names) || !(PyIter_Check(names.ptr()) || PySequence_Check(names.ptr())))
+            throw py::type_error("x13_automatic request field 'seasonal' must be a sequence "
+                                 "of request names, got type " + type_name(names));
+        for (py::handle item : py::reinterpret_borrow<py::iterable>(names)) {
+            if (!PyUnicode_Check(item.ptr()))
+                throw py::type_error("x13_automatic request field 'seasonal' names must be "
+                                     "strings, got type " + type_name(item));
+            r.seasonal.push_back(seasonal_from_name(py::cast<std::string>(item)));
+        }
+    }
+    r.trend_length = req_int<int>(d, "trend_length");
+    {
+        if (d.contains("sigma")) {
+            py::object v = py::reinterpret_borrow<py::object>(d[py::str("sigma")]);
+            if (!v.is_none()) {
+                if (!PyUnicode_Check(v.ptr()))
+                    throw py::type_error("x13_automatic request field 'sigma' must be a policy "
+                                         "name string or None, got type " + type_name(v));
+                std::string pol = py::cast<std::string>(v);
+                if (pol == "legacy") r.sigma = X11SigmaPolicy::legacy;
+                else if (pol == "accurate") r.sigma = X11SigmaPolicy::accurate;
+                else throw py::value_error("unknown sigma policy: " + pol);
+            }
+        }
+    }
+    r.lower_sigma = req_double(d, "lower_sigma");
+    r.upper_sigma = req_double(d, "upper_sigma");
+    {
+        std::string mp = req_str(d, "msr_policy");
         if (mp == "jdplus") r.msr_policy = X11MsrIterationPolicy::jdplus;
         else if (mp == "x11_five_year_cap") r.msr_policy = X11MsrIterationPolicy::x11_five_year_cap;
         else throw py::value_error("unknown msr policy: " + mp);
     }
-    r.mode = mode_from_name(req_field<std::string>(d, "mode"));
-    r.backcast = req_field<int>(d, "backcast");
-    r.forecast = req_field<int>(d, "forecast");
+    r.mode = mode_from_name(req_str(d, "mode"));
+    r.backcast = req_int<int>(d, "backcast");
+    r.forecast = req_int<int>(d, "forecast");
     return r;
 }
 
@@ -491,7 +743,16 @@ PYBIND11_MODULE(_kalos, m) {
         "Raw explicit entry: the request dict must carry every decoder-shaped\n"
         "module scalar including a REQUIRED sigma policy; a missing policy\n"
         "answers the pinned core status 'unsupported:x13 fit requires an\n"
-        "explicit sigma policy'. Scope envelope: frequency 12, horizons\n"
+        "explicit sigma policy'. Boundary validation (REVIEW-1, all before\n"
+        "the core call): keys are checked against the request schema and\n"
+        "unknown names raise TypeError (a misspelled optional option is\n"
+        "never silently ignored); integer fields must implement __index__\n"
+        "(bool/float refused, no truncation); flags must be real Python\n"
+        "bools (numpy bool_, ints and text are refused at this raw entry);\n"
+        "outlier_span needs exactly two integer endpoints; the two outlier\n"
+        "budgets are sign-checked (negative raises ValueError) before the\n"
+        "size_t conversion; input is refused as text, binary or\n"
+        "multivariate. Scope envelope: frequency 12, horizons\n"
         "{0..N} month counts (item 21-H.4),\n"
         "the four decomposition modes, full-span outlier detection, transform\n"
         "function Auto, calendar/easter/TD/user detection deferred (explicit\n"
