@@ -1222,3 +1222,7 @@ The Python snapshot advances to core `bf5c08f`. It includes six additional raw R
 ### M5 AO, LS and stock TC restoration on both scales
 
 `tramoseats_fit` and `seats_from_tramo` restore AO, LS and monthly TC effects on additive and multiplicative fits. The fitted-model input accepts `TC` with the stock decay of 0.7. On six public RSA1 fixtures, the raw route reproduced the fitted parameters, regression coefficients, likelihood and all 498 residuals. Both public routes independently reproduced the same 3,600 observed and forecast values bit-for-bit. All 20 targeted installed-wheel tests passed, including the fixed-model, fixed-order estimation and Java-free product replays. [Installed outlier-restoration replay](tests/test_tramo_automatic.py)
+
+### Full installed-wheel replay after outlier restoration
+
+The repaired macOS ARM64 wheel at core `bf5c08f` passed all 122 tests in 119.003 seconds with NumPy and one execution thread. All 4,353 automatic X-13 comparisons and all 1,287 extended-horizon comparisons passed, alongside the new level/log raw and fitted TC product gates.
