@@ -34,6 +34,8 @@ estimated, ...)` also restores fitted deterministic effects into `merged`
 rows. Supply AO/LS effects as mappings with `type`, zero-based observation
 `position` and `coefficient`. Both operations use negative horizons for
 years and positive horizons for periods. The default forecast is two years.
+Legacy approximation covers the monthly airline retry and the mean-free
+(2,1,0)(1,1,0) seasonal re-estimation used in the mixed AO/LS fitted models.
 
 For a fixed quarterly or monthly model, call `x13_fit` with explicit seasonal
 filters and Henderson length. The result includes the captured preadjustment

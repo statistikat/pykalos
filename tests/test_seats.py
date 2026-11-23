@@ -65,8 +65,7 @@ class SeatsOracle(unittest.TestCase):
             inputs[row["id"]].append(row["line"])
         for row in csv_records("model-facts.csv"):
             facts[row["id"], row["key"]].append(row["value"])
-        refusals = dict(x_airline="approximation_required", x_crash_fixma="approximation_required",
-                        x_quarterly="D11", x_var0="innovation variance 0",
+        refusals = dict(x_quarterly="D11", x_var0="innovation variance 0",
                         x_kalman="KalmanSmoother", x_kalman_wn="KalmanSmoother")
         cases = csv_records("cases.csv")
         rows = points = 0
@@ -106,28 +105,24 @@ class SeatsOracle(unittest.TestCase):
                         self.assertEqual(bits(row["values"]), bits(list(map(float, tokens[8:]))))
                         rows += 1
                         points += len(row["values"])
-        self.assertEqual((len(cases), rows, points), (36, 1055, 55812))
+        self.assertEqual((len(cases), rows, points), (36, 1095, 58020))
 
     def test_fitted_tramo(self):
         fitted = dict(grouped_records("bridge.txt"))
-        accepted = refused = points = 0
+        accepted = approximated = points = 0
         for cid, records in grouped_records("merge-x86_64.txt"):
             with self.subTest(case=cid):
                 options = fitted_arguments(fitted[cid])
                 header = records[0]
                 options.update(backcast=int(header[4]), forecast=int(header[6]))
-                if header[10] == "true":
-                    with self.assertRaisesRegex(ValueError, "approximation_required"):
-                        pykalos.seats_from_tramo(**options)
-                    refused += 1
-                    continue
+                approximated += header[10] == "true"
                 result = pykalos.seats_from_tramo(**options)
                 self.assertEqual(result["status"], "ok")
                 for key, phase in (("wk", "final"), ("merged", "merged")):
                     rows = [row for row in records if row[0] == key]
                     points += check_hex_rows(self, result[phase], rows)
                 accepted += 1
-        self.assertEqual((accepted, refused, points), (4, 2, 8160))
+        self.assertEqual((accepted, approximated, points), (6, 2, 11343))
 
     def test_request_boundary(self):
         data = [1.] * 96

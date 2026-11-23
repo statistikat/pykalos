@@ -1122,3 +1122,7 @@ The installed Python wheel exposes the frozen four starting policies, fixed and 
 ### M5 qualified monthly SEATS approximation and residual independence checkpoint
 
 The binding snapshot advances to core `c5bcf97`. The exported source includes the two monthly fitted-model retry policies, their terminal failure handling and the public RSA0 residual independence test. Offline verification covered 194 core files and 57 evidence files. The binding gates replay the fixed-model WK and fitted-model bridge captures, the ordinary RSA0 diagnostic and the short-residual threshold.
+
+### M5 monthly Legacy approximation at the Python boundary
+
+The installed fixed-model WK operation now reproduces the classical airline retry and the degenerate model's JVM matrix-error status. Across the 36 captured WK requests it matched all 1,095 component rows and 58,020 values bit-for-bit, preserving the four named refusal cases. All six fitted-TRAMO bridge fixtures passed, including both mixed AO/LS horizons, with 11,343 values bit-for-bit across the final and merged rows. All 21 targeted wheel tests passed, including NumPy coexistence, Java-free execution and raw RSA0. [Installed-wheel oracle replay](tests/test_seats.py)
