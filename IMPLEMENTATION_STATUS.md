@@ -1058,3 +1058,5 @@ NumPy complex scalars previously reached real-valued series, parameter and convo
 ### M6 Windows wheel qualification job
 
 The Windows lane builds the same private LP64 archive under UCRT64, links against the native CPython ABI, gathers compiler-runtime notices and repairs dependent DLLs with delvewheel. A separate PowerShell step installs the wheel outside the build shell, checks the PE import table, replays the component fixtures and exercises both NumPy import orders. The macOS private build and checker still pass. Local PE parsing accepted a control executable and rejected an OpenBLAS DLL import. The Windows runner must complete the actual build, clean install and tests before Windows portability can be claimed. [Windows job](.github/workflows/portable.yml)
+
+The clean source-archive wheel at Python `eb15c8f` and core `fa7edea` passed the full 102-test suite in 761.5 seconds on macOS ARM64. Its 13 automatic X-13 and four horizon oracle cases made 4,353 and 1,287 checks respectively with zero failures, alongside the restricted X-13, TRAMO preprocessing, WK, bridge, RSA0 and import-order tests.
