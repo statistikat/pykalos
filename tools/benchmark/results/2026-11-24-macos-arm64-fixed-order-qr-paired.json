@@ -1,0 +1,425 @@
+{
+  "wheels": {
+    "previous": {
+      "core": "d17a7a56aa19a0984f5aaf3c2476c618847200ad",
+      "extension_sha256": "b763fd11a43a994176936446f30d7d9f70cf37cb9e04242a791d922861c34ea8"
+    },
+    "current": {
+      "core": "b736a7037dc2de97511db8c451ca4b8cf7efa7d6",
+      "extension_sha256": "1abe6d43ed42aec16ddcb6de85fb6cdb5af3061cf6edb2b1ebe0528d83375889"
+    }
+  },
+  "threads": {
+    "KALOS_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1"
+  },
+  "rounds": 5,
+  "sampling": "one warmup then one timed fit per process, alternating the first wheel by case and round",
+  "reference": {
+    "java": {
+      "version": "27.0.1.0.2",
+      "vendor": "Eclipse Adoptium",
+      "runtime_version": "27.0.1.0.2+1",
+      "vm_name": "OpenJDK 64-Bit Server VM",
+      "architecture": "aarch64"
+    },
+    "r": "R version 4.5.2 (2025-10-31)",
+    "packages": {
+      "rjd3toolkit": "3.9.0",
+      "rjd3x13": "3.9.0",
+      "rjd3tramoseats": "3.9.0",
+      "rjd3jars": "0.0.6",
+      "rJava": "1.0-11",
+      "RProtoBuf": "0.4.28",
+      "digest": "0.6.39"
+    },
+    "jvm_flags": [
+      "-XX:ActiveProcessorCount=1",
+      "-Djava.util.concurrent.ForkJoinPool.common.parallelism=1"
+    ],
+    "generator_sha256": "32425ecde18cff78d044eaf15021a855065f64e558a26faa8de4e2a542282ac4",
+    "manifest_sha256": "a2394411ca585589c5308ae423c1299050774f7d50a79fcbac566878f85be23c"
+  },
+  "summary": {
+    "previous": {
+      "airline": {
+        "cpu_ms": 1054.43875,
+        "wall_ms": 2187.67908325
+      },
+      "mixed_factors": {
+        "cpu_ms": 606.56925,
+        "wall_ms": 1569.0638747500002
+      }
+    },
+    "current": {
+      "airline": {
+        "cpu_ms": 908.332,
+        "wall_ms": 1865.17544775
+      },
+      "mixed_factors": {
+        "cpu_ms": 512.4952499999999,
+        "wall_ms": 1357.24291675
+      }
+    }
+  },
+  "samples": {
+    "previous": {
+      "12-airline-complete-none": [
+        {
+          "wall_ms": 1901.975666,
+          "cpu_ms": 1080.639
+        },
+        {
+          "wall_ms": 1430.810041,
+          "cpu_ms": 1074.901
+        },
+        {
+          "wall_ms": 2696.745833,
+          "cpu_ms": 1074.17
+        },
+        {
+          "wall_ms": 1691.217167,
+          "cpu_ms": 1048.286
+        },
+        {
+          "wall_ms": 2820.391917,
+          "cpu_ms": 1066.271
+        }
+      ],
+      "12-airline-complete-log": [
+        {
+          "wall_ms": 1817.462584,
+          "cpu_ms": 1053.686
+        },
+        {
+          "wall_ms": 1368.22375,
+          "cpu_ms": 1094.588
+        },
+        {
+          "wall_ms": 2654.154333,
+          "cpu_ms": 1086.7
+        },
+        {
+          "wall_ms": 1445.605042,
+          "cpu_ms": 1048.054
+        },
+        {
+          "wall_ms": 3381.263834,
+          "cpu_ms": 1064.425
+        }
+      ],
+      "12-airline-gaps-none": [
+        {
+          "wall_ms": 2003.352666,
+          "cpu_ms": 1018.331
+        },
+        {
+          "wall_ms": 4229.997667,
+          "cpu_ms": 1057.022
+        },
+        {
+          "wall_ms": 2454.113292,
+          "cpu_ms": 1084.683
+        },
+        {
+          "wall_ms": 2096.041792,
+          "cpu_ms": 1040.137
+        },
+        {
+          "wall_ms": 4264.997625,
+          "cpu_ms": 1047.782
+        }
+      ],
+      "12-airline-gaps-log": [
+        {
+          "wall_ms": 1714.948084,
+          "cpu_ms": 1030.283
+        },
+        {
+          "wall_ms": 4030.2785,
+          "cpu_ms": 1031.378
+        },
+        {
+          "wall_ms": 2025.212875,
+          "cpu_ms": 1065.947
+        },
+        {
+          "wall_ms": 2577.164791,
+          "cpu_ms": 1027.497
+        },
+        {
+          "wall_ms": 3908.186417,
+          "cpu_ms": 1039.506
+        }
+      ],
+      "12-mixed_factors-complete-none": [
+        {
+          "wall_ms": 895.296375,
+          "cpu_ms": 560.851
+        },
+        {
+          "wall_ms": 2478.352917,
+          "cpu_ms": 563.989
+        },
+        {
+          "wall_ms": 1065.363084,
+          "cpu_ms": 574.817
+        },
+        {
+          "wall_ms": 1421.091333,
+          "cpu_ms": 572.273
+        },
+        {
+          "wall_ms": 2080.238791,
+          "cpu_ms": 557.773
+        }
+      ],
+      "12-mixed_factors-complete-log": [
+        {
+          "wall_ms": 767.708167,
+          "cpu_ms": 564.409
+        },
+        {
+          "wall_ms": 2388.177416,
+          "cpu_ms": 546.077
+        },
+        {
+          "wall_ms": 1068.67325,
+          "cpu_ms": 574.799
+        },
+        {
+          "wall_ms": 1957.218125,
+          "cpu_ms": 567.056
+        },
+        {
+          "wall_ms": 1586.816041,
+          "cpu_ms": 559.264
+        }
+      ],
+      "12-mixed_factors-gaps-none": [
+        {
+          "wall_ms": 874.927958,
+          "cpu_ms": 650.666
+        },
+        {
+          "wall_ms": 2024.436542,
+          "cpu_ms": 634.621
+        },
+        {
+          "wall_ms": 1084.028667,
+          "cpu_ms": 663.779
+        },
+        {
+          "wall_ms": 1874.393958,
+          "cpu_ms": 652.084
+        },
+        {
+          "wall_ms": 1764.236542,
+          "cpu_ms": 646.526
+        }
+      ],
+      "12-mixed_factors-gaps-log": [
+        {
+          "wall_ms": 854.786667,
+          "cpu_ms": 641.661
+        },
+        {
+          "wall_ms": 1811.032625,
+          "cpu_ms": 647.213
+        },
+        {
+          "wall_ms": 1048.658792,
+          "cpu_ms": 647.328
+        },
+        {
+          "wall_ms": 1809.980125,
+          "cpu_ms": 655.825
+        },
+        {
+          "wall_ms": 1504.111583,
+          "cpu_ms": 639.245
+        }
+      ]
+    },
+    "current": {
+      "12-airline-complete-none": [
+        {
+          "wall_ms": 1631.553958,
+          "cpu_ms": 936.087
+        },
+        {
+          "wall_ms": 1261.113042,
+          "cpu_ms": 914.445
+        },
+        {
+          "wall_ms": 2436.327959,
+          "cpu_ms": 925.22
+        },
+        {
+          "wall_ms": 1583.931042,
+          "cpu_ms": 909.277
+        },
+        {
+          "wall_ms": 2525.337042,
+          "cpu_ms": 913.341
+        }
+      ],
+      "12-airline-complete-log": [
+        {
+          "wall_ms": 1509.577458,
+          "cpu_ms": 922.05
+        },
+        {
+          "wall_ms": 1282.781459,
+          "cpu_ms": 933.157
+        },
+        {
+          "wall_ms": 2308.396583,
+          "cpu_ms": 965.162
+        },
+        {
+          "wall_ms": 1361.537334,
+          "cpu_ms": 906.33
+        },
+        {
+          "wall_ms": 3142.473375,
+          "cpu_ms": 908.748
+        }
+      ],
+      "12-airline-gaps-none": [
+        {
+          "wall_ms": 1614.355917,
+          "cpu_ms": 879.303
+        },
+        {
+          "wall_ms": 1222.980042,
+          "cpu_ms": 926.191
+        },
+        {
+          "wall_ms": 2072.9625,
+          "cpu_ms": 924.605
+        },
+        {
+          "wall_ms": 2087.978875,
+          "cpu_ms": 891.243
+        },
+        {
+          "wall_ms": 3783.450125,
+          "cpu_ms": 907.327
+        }
+      ],
+      "12-airline-gaps-log": [
+        {
+          "wall_ms": 1638.387041,
+          "cpu_ms": 877.83
+        },
+        {
+          "wall_ms": 3798.300375,
+          "cpu_ms": 889.506
+        },
+        {
+          "wall_ms": 1947.5465,
+          "cpu_ms": 916.694
+        },
+        {
+          "wall_ms": 2246.607875,
+          "cpu_ms": 892.543
+        },
+        {
+          "wall_ms": 3422.840083,
+          "cpu_ms": 883.495
+        }
+      ],
+      "12-mixed_factors-complete-none": [
+        {
+          "wall_ms": 674.399542,
+          "cpu_ms": 476.164
+        },
+        {
+          "wall_ms": 2032.436875,
+          "cpu_ms": 469.772
+        },
+        {
+          "wall_ms": 853.901917,
+          "cpu_ms": 491.531
+        },
+        {
+          "wall_ms": 1183.851584,
+          "cpu_ms": 470.209
+        },
+        {
+          "wall_ms": 1789.177375,
+          "cpu_ms": 465.91
+        }
+      ],
+      "12-mixed_factors-complete-log": [
+        {
+          "wall_ms": 686.995875,
+          "cpu_ms": 466.704
+        },
+        {
+          "wall_ms": 1703.336375,
+          "cpu_ms": 456.229
+        },
+        {
+          "wall_ms": 823.590083,
+          "cpu_ms": 487.507
+        },
+        {
+          "wall_ms": 1836.086083,
+          "cpu_ms": 475.363
+        },
+        {
+          "wall_ms": 1367.794834,
+          "cpu_ms": 472.89
+        }
+      ],
+      "12-mixed_factors-gaps-none": [
+        {
+          "wall_ms": 711.786542,
+          "cpu_ms": 550.221
+        },
+        {
+          "wall_ms": 1895.635958,
+          "cpu_ms": 557.276
+        },
+        {
+          "wall_ms": 1149.26675,
+          "cpu_ms": 551.872
+        },
+        {
+          "wall_ms": 2458.553667,
+          "cpu_ms": 541.684
+        },
+        {
+          "wall_ms": 1431.487041,
+          "cpu_ms": 536.402
+        }
+      ],
+      "12-mixed_factors-gaps-log": [
+        {
+          "wall_ms": 747.720042,
+          "cpu_ms": 548.943
+        },
+        {
+          "wall_ms": 1617.798459,
+          "cpu_ms": 560.641
+        },
+        {
+          "wall_ms": 879.354542,
+          "cpu_ms": 556.661
+        },
+        {
+          "wall_ms": 1445.838208,
+          "cpu_ms": 557.922
+        },
+        {
+          "wall_ms": 1493.958,
+          "cpu_ms": 540.451
+        }
+      ]
+    }
+  }
+}
