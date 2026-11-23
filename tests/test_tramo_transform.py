@@ -94,7 +94,7 @@ class TramoTransformTest(unittest.TestCase):
     def test_scope_and_refusals(self):
         caps = pykalos.capabilities()
         self.assertFalse(caps["fit"])
-        self.assertEqual(caps["primitives"], ("convolve", "x13_automatic", "tramo_critical_value",
+        self.assertEqual(caps["primitives"], ("convolve", "x13_automatic", "x13_fit", "tramo_critical_value",
                                               "tramo_seasonality", "tramo_transform_decision"))
         for count in (True, -1, 2**31, 12.5, "50"):
             with self.subTest(observations=count), self.assertRaises((ValueError, TypeError)):

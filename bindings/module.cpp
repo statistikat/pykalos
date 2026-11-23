@@ -10,45 +10,15 @@
 #include "kalos/parallel.hpp"
 #include "kalos/detail/lapack.hpp"
 #include "kalos/x13_automatic.hpp"
+#include "x11_options.hpp"
 namespace py = pybind11;
+void bind_restricted_x13(py::module_& module);
 void bind_tramo_preprocessing(py::module_& module);
 
 namespace {
+using namespace pykalos_options;
 
 // ---- enum name mirrors (boundary vocabulary; never re-decided in Python) ----
-
-const char* mode_name(kalos::X11DecompositionMode m) {
-    using M = kalos::X11DecompositionMode;
-    switch (m) {
-        case M::additive: return "additive";
-        case M::multiplicative: return "multiplicative";
-        case M::log_additive: return "log_additive";
-        case M::pseudo_additive: return "pseudo_additive";
-    }
-    return "additive";
-}
-
-const char* sigma_name(kalos::X11SigmaPolicy p) {
-    return p == kalos::X11SigmaPolicy::accurate ? "accurate" : "legacy";
-}
-
-const char* msr_policy_name(kalos::X11MsrIterationPolicy p) {
-    return p == kalos::X11MsrIterationPolicy::x11_five_year_cap ? "x11_five_year_cap" : "jdplus";
-}
-
-const char* seasonal_name(kalos::X11SeasonalRequest r) {
-    switch (r) {
-        case kalos::X11SeasonalRequest::stable: return "stable";
-        case kalos::X11SeasonalRequest::s3x1: return "s3x1";
-        case kalos::X11SeasonalRequest::s3x3: return "s3x3";
-        case kalos::X11SeasonalRequest::s3x5: return "s3x5";
-        case kalos::X11SeasonalRequest::s3x9: return "s3x9";
-        case kalos::X11SeasonalRequest::s3x15: return "s3x15";
-        case kalos::X11SeasonalRequest::x11default: return "x11default";
-        case kalos::X11SeasonalRequest::msr: return "msr";
-    }
-    return "stable";
-}
 
 int outlier_code(kalos::OutlierType t) { return static_cast<int>(t); }
 
@@ -260,28 +230,6 @@ std::vector<double> req_series(const py::dict& d, const char* key) {
     return out;
 }
 
-kalos::X11DecompositionMode mode_from_name(const std::string& s) {
-    using M = kalos::X11DecompositionMode;
-    if (s == "additive" || s == "undefined") return M::additive;
-    if (s == "multiplicative") return M::multiplicative;
-    if (s == "log_additive") return M::log_additive;
-    if (s == "pseudo_additive") return M::pseudo_additive;
-    throw py::value_error("unknown decomposition mode: " + s);
-}
-
-kalos::X11SeasonalRequest seasonal_from_name(const std::string& s) {
-    using R = kalos::X11SeasonalRequest;
-    if (s == "stable") return R::stable;
-    if (s == "s3x1") return R::s3x1;
-    if (s == "s3x3") return R::s3x3;
-    if (s == "s3x5") return R::s3x5;
-    if (s == "s3x9") return R::s3x9;
-    if (s == "s3x15") return R::s3x15;
-    if (s == "x11default") return R::x11default;
-    if (s == "msr") return R::msr;
-    throw py::value_error("unknown seasonal request: " + s);
-}
-
 kalos::X13AutomaticRequest build_request(const py::dict& d) {
     using namespace kalos;
     validate_request_keys(d);
@@ -405,9 +353,7 @@ kalos::X13AutomaticRequest build_request(const py::dict& d) {
                     throw py::type_error("x13_automatic request field 'sigma' must be a policy "
                                          "name string or None, got type " + type_name(v));
                 std::string pol = py::cast<std::string>(v);
-                if (pol == "legacy") r.sigma = X11SigmaPolicy::legacy;
-                else if (pol == "accurate") r.sigma = X11SigmaPolicy::accurate;
-                else throw py::value_error("unknown sigma policy: " + pol);
+                r.sigma = sigma_from_name(pol);
             }
         }
     }
@@ -415,9 +361,7 @@ kalos::X13AutomaticRequest build_request(const py::dict& d) {
     r.upper_sigma = req_double(d, "upper_sigma");
     {
         std::string mp = req_str(d, "msr_policy");
-        if (mp == "jdplus") r.msr_policy = X11MsrIterationPolicy::jdplus;
-        else if (mp == "x11_five_year_cap") r.msr_policy = X11MsrIterationPolicy::x11_five_year_cap;
-        else throw py::value_error("unknown msr policy: " + mp);
+        r.msr_policy = msr_from_name(mp);
     }
     r.mode = mode_from_name(req_str(d, "mode"));
     r.backcast = req_int<int>(d, "backcast");
@@ -670,6 +614,7 @@ py::dict automatic_result_dict(const kalos::X13AutomaticFitResult& res) {
 PYBIND11_MODULE(_kalos, m) {
     m.doc() = "Minimal owned-buffer Kalos bindings";
     bind_tramo_preprocessing(m);
+    bind_restricted_x13(m);
     m.def("core_version", [] {
         py::dict result;
         result["version"] = kalos::version;
@@ -683,9 +628,20 @@ PYBIND11_MODULE(_kalos, m) {
     m.def("capabilities", [] {
         py::dict result;
         result["fit"] = false;
-        result["primitives"] = py::make_tuple("convolve", "x13_automatic", "tramo_critical_value",
+        result["primitives"] = py::make_tuple("convolve", "x13_automatic", "x13_fit", "tramo_critical_value",
                                               "tramo_seasonality", "tramo_transform_decision");
         result["status"] = "minimal_binding";
+        py::dict restricted;
+        restricted["schema_version"] = 1;
+        restricted["entry_point"] = "pykalos.x13_fit";
+        restricted["qualified"] = true;
+        restricted["qualified_frequencies"] = py::make_tuple(4, 12);
+        restricted["fixed_coefficients_only"] = true;
+        restricted["zero_horizons_only"] = true;
+        restricted["fixed_seasonal_filters_only"] = true;
+        restricted["fixed_henderson_only"] = true;
+        restricted["sigma_policy_default"] = "legacy";
+        result["restricted_fit"] = restricted;
         // Schema-3-style automatic block: the qualified stage-Z surface.
         // (3: the 21-H.4 pin advance replaced the zero_horizon_only pin with
         // the horizon envelope key for the downstream composition.)

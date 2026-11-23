@@ -1,10 +1,10 @@
 # pykalos implementation status
 
-Current checkpoint (2026-11-23) is the M5 core snapshot described below. The dated entries retain the earlier qualification results.
+Current Python operations at the 2026-11-23 checkpoint include convolution, fixed-coefficient and automatic X-13, and three TRAMO preprocessing decisions. The dated entries retain the earlier qualification results.
 
 ## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
 
-The Python snapshot advances from `f500162` to `cb5c2de193c2cd7e2035a9a99f205186a90a4dec`. This includes the completed 23-F.4 TRAMO preprocessing assembly and the subsequent standalone build, provider selection and checked X-13 horizon changes. The public Python surface still comprises convolution and automatic monthly X-13. The 23-F request takes kernel and seam witnesses. A product TRAMO/SEATS binding depends on the assembled decomposition and end-to-end oracle.
+The Python snapshot advances from `f500162` to `cb5c2de193c2cd7e2035a9a99f205186a90a4dec`. This includes the completed 23-F.4 TRAMO preprocessing assembly and the subsequent standalone build, provider selection and checked X-13 horizon changes. At this initial sync, Python exposed convolution and automatic monthly X-13. The 23-F request takes kernel and seam witnesses. A product TRAMO/SEATS binding depends on the assembled decomposition and end-to-end oracle.
 
 The integration gate checks the allowlist, builds and imports the wheel with checksum-pinned OpenBLAS and replays the existing 13 automatic and four horizon cases. Upstream manifest verification covered 187 core, 112 fixture and 331 evidence files. `tools/sync-core.py --verify` verified 143 core files and 11 evidence files before export, and 188 core files (including the generated revision header) and the same 11 evidence files afterwards. The installed wheel reports the exact revision and LP64 OpenBLAS 0.3.34 on macOS ARM64.
 
@@ -45,6 +45,12 @@ The 23-B source-archive wheel passed all 93 tests present at build time, includi
 ### M3 Python restricted-fit evidence checkpoint
 
 At core `cb5c2de`, the export allowlist now includes the seven allocation-seam and eleven end-to-end X-13 fit cases. The gate for the public fixed-coefficient fit is the complete quarterly and monthly fixed-route corpus, the out-of-domain horizon cases, the `x13_fast` reference and the core’s exact versus transcendental table thresholds.
+
+### M3 Python restricted fixed-coefficient X-13 fit
+
+`pykalos.x13_fit` accepts complete quarterly or monthly series, fixed regressors and coefficients, one seasonal request per period and an explicit Henderson length. It echoes the effective mode and request provenance, returns all 27 reference tables and the three restored components on success, and preserves the core’s named refusals for MSR or default seasonal filters, automatic trend length and nonzero horizons. The default sigma policy is legacy. The dedicated `restricted_fit` capability reports the fixed-coefficient, fixed-filter and zero-horizon envelope; unrestricted `fit` remains false. [API and example](README.md) · [Core contract](https://github.com/statistikat/kalos/blob/cb5c2de193c2cd7e2035a9a99f205186a90a4dec/docs/contracts/x13-fit-contract.md)
+
+At thread settings 1, 2 and 8 the installed wheel passed all 16 fixed runs across the allocation and fit corpora and both out-of-envelope horizon cases. Each run of the suite compared **44,712 table values** and the exact final-component triplets. Non-log outputs and `a1` were bit-exact. Log-model outputs met the pinned 1e-15 preadjustment, 1e-12 results and 1e-9 finals thresholds. The fourteen directly captured `x13_fast` tables (1,344 values) also matched. Shape, policy, field and integer-range refusals passed. Offline verification covered 188 core and 34 evidence files. [Python oracle replay](tests/test_x13_fixed.py)
 
 ## Initial scaffold (2026-11-14)
 

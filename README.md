@@ -13,9 +13,20 @@ choice, both branch readouts and the effective seasonal model. The series must
 contain at least 24 finite monthly observations. Robust AO/LS pre-correction and
 a full TRAMO/SEATS fit remain outside these operations.
 
-Unrestricted
-fitting, the restricted fixed-coefficient fit and R API parity are not
-exposed here.
+For a fixed quarterly or monthly model, call `x13_fit` with explicit seasonal
+filters and Henderson length. The result includes the captured preadjustment
+tables, the X-11 tables consumed by the restore, all nine finals and the
+seasonally adjusted, trend and irregular components. Supply fixed regression
+coefficients and their model-ordered columns when needed.
+
+```python
+fit = pykalos.x13_fit(series, frequency=12, start_period=1,
+                      seasonal=["s3x9"] * 12, trend_length=13)
+adjusted = fit["finalSA"] if fit["available"] else None
+```
+
+`capabilities()["restricted_fit"]` describes this route. Unrestricted fitting
+remains gated.
 
 ```python
 import pykalos

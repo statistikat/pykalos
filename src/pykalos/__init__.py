@@ -10,13 +10,14 @@ Available operations:
   product defaults documented on the function. Its boundary input policy
   (which Python/NumPy types each request slot accepts and what is refused,
   never coerced) is documented in the ``x13_automatic`` docstring;
+* the fixed-coefficient quarterly/monthly X-13 fit, ``x13_fit``;
 * the 23-B TRAMO critical value, seasonality and log/level preprocessing decisions.
 """
 from . import _kalos
 from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
 __all__ = ["capabilities", "convolve", "core_version", "x13_automatic",
-           "x13_automatic_fit", "tramo_critical_value", "tramo_seasonality",
+           "x13_automatic_fit", "x13_fit", "tramo_critical_value", "tramo_seasonality",
            "tramo_transform_decision"]
 __version__ = "0.1.0"
 
@@ -226,6 +227,73 @@ def _request_series(values, name, operation="x13_automatic", *, allow_boolean=Tr
             raise TypeError(
                 f"{operation}: {name} element {i} is not numeric: "
                 f"{v!r} of type {_type_name(v)}") from exc
+    return out
+
+
+def _fixed_integer(value, field):
+    value = _request_int(value, field, "x13_fit")
+    if not -2**31 <= value < 2**31:
+        raise ValueError(f"x13_fit: {field} is outside the supported integer range")
+    return value
+
+
+def _fixed_sequence(value, field):
+    if isinstance(value, (_TEXT_TYPES, set, frozenset)) or hasattr(value, "keys"):
+        raise TypeError(f"x13_fit: {field} must be an ordered sequence")
+    try:
+        return iter(value)
+    except TypeError as exc:
+        raise TypeError(f"x13_fit: {field} must be an ordered sequence") from exc
+
+
+def _fixed_name(value, field):
+    if not isinstance(value, str):
+        raise TypeError(f"x13_fit: {field} must be a string")
+    return value
+
+
+def x13_fit(series, *, seasonal, trend_length, variables=(), log=False, frequency=12,
+            start_period=1, sigma=None, lower_sigma=1.5, upper_sigma=2.5,
+            msr_policy="jdplus", mode="additive", backcast=0, forecast=0):
+    """Fit a restricted, fixed-coefficient quarterly or monthly X-13 model.
+
+    Supply one seasonal filter name per period and a fixed odd Henderson
+    length. Each variable is a mapping with class, effect, a sequence of fixed
+    coefficients and one numeric column per coefficient in model order
+    (keys: class, effect, coefficient, columns). Each column spans the series.
+    sigma defaults to legacy. Horizons must be zero for a completed fixed fit.
+
+    The result echoes the request, effective decomposition mode and core status.
+    Available fits include preadjustment, selection decisions, the X-11 tables
+    consumed by finals, nine restored tables and finalSA/finalTrend/finalIrregular.
+    This route applies supplied coefficients; it performs no parameter estimation.
+    """
+    fixed_variables = []
+    keys = {"class", "effect", "coefficient", "columns"}
+    for i, var in enumerate(_fixed_sequence(variables, "variables")):
+        if not hasattr(var, "keys") or set(var.keys()) != keys:
+            raise ValueError(f"x13_fit: variables[{i}] needs exactly class, effect, coefficient and columns")
+        fixed_variables.append({
+            "class": _fixed_name(var["class"], "variable class"),
+            "effect": _fixed_name(var["effect"], "variable effect"),
+            "coefficient": _request_series(var["coefficient"], "coefficient", "x13_fit", allow_boolean=False),
+            "columns": [_request_series(col, "column", "x13_fit", allow_boolean=False)
+                        for col in _fixed_sequence(var["columns"], "columns")],
+        })
+    filters = [_fixed_name(value, "seasonal filter") for value in _fixed_sequence(seasonal, "seasonal")]
+    policy = "legacy" if sigma is None else _fixed_name(sigma, "sigma")
+    out = _kalos._x13_fixed({
+        "series": _request_series(series, "series", "x13_fit", allow_boolean=False),
+        "variables": fixed_variables, "log": _request_flag(log, "log", "x13_fit"),
+        "seasonal": filters, "trend_length": _fixed_integer(trend_length, "trend_length"),
+        "frequency": _fixed_integer(frequency, "frequency"),
+        "start_period": _fixed_integer(start_period, "start_period"), "sigma": policy,
+        "lower_sigma": _request_float(lower_sigma, "lower_sigma", "x13_fit"),
+        "upper_sigma": _request_float(upper_sigma, "upper_sigma", "x13_fit"),
+        "msr_policy": _fixed_name(msr_policy, "msr_policy"), "mode": _fixed_name(mode, "mode"),
+        "backcast": _fixed_integer(backcast, "backcast"), "forecast": _fixed_integer(forecast, "forecast"),
+    })
+    out["sigma_policy_provenance"] = policy + (" (default)" if sigma is None else " (explicit)")
     return out
 
 
