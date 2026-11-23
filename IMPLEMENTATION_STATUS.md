@@ -1151,3 +1151,7 @@ The generic fixed-order estimator still needs performance work. In a separate di
 ### M6 full installed-wheel regression matrix
 
 The bundled Linux, macOS and Windows jobs run the Java-free checks before installing NumPy, then discover the complete wheel suite with all 13 automatic X-13 and four horizon cases. The shared corpus selector accepts `all` and retains the quick default and explicit case lists. Local discovery selected every expected case and the workflow parsed with both full-corpus settings. The earlier initial bundled jobs at `cc1e239` passed on [manylinux](https://github.com/statistikat/pykalos/actions/runs/45272946518/job/138037208627) and [macOS](https://github.com/statistikat/pykalos/actions/runs/45272946518/job/138037208162). The expanded hosted replay and Windows results remain pending.
+
+### M5 monthly calendar F-test checkpoint
+
+The Python snapshot advances to core `854703c`, including the monthly working-day and trading-day candidate fits with explicit significance and numerical precision. Offline verification covered 196 core files and 59 evidence files. The binding gate compares every candidate fit and exact threshold decision across the four dated monthly input series.
