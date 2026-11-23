@@ -25,7 +25,7 @@ from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
 __all__ = ["capabilities", "convolve", "core_version", "x13_automatic",
            "x13_automatic_fit", "x13_fit", "tramo_critical_value", "tramo_seasonality",
-           "tramo_transform_decision", "tramo_calendar_f_test", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
+           "tramo_transform_decision", "tramo_calendar_f_test", "tramo_full_initial_calendar", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
 __version__ = "0.1.0"
 
 # Decoder-pinned module scalars of the qualified envelope (docs/contracts/
@@ -167,12 +167,29 @@ def tramo_calendar_f_test(series, *, start_year, start_month, mean, significance
     of freedom, mean squares, lower-tail probabilities and selected calendar effect.
     """
     operation = "tramo_calendar_f_test"
+    arguments = _calendar_domain(series, start_year, start_month, frequency, operation)
+    return _kalos._tramo_calendar_f_test(
+        *arguments, _request_flag(mean, "mean", operation), _finite_number(significance, "significance", operation),
+        _finite_number(precision, "precision", operation))
+
+
+def _calendar_domain(series, start_year, start_month, frequency, operation):
     if _fixed_integer(frequency, "frequency", operation) != 12:
         raise ValueError(f"{operation} requires monthly data (frequency 12)")
-    return _kalos._tramo_calendar_f_test(
-        _finite_vector(series, "series", operation), _fixed_integer(start_year, "start_year", operation),
-        _fixed_integer(start_month, "start_month", operation), _request_flag(mean, "mean", operation),
-        _finite_number(significance, "significance", operation), _finite_number(precision, "precision", operation))
+    return (_finite_vector(series, "series", operation), _fixed_integer(start_year, "start_year", operation),
+            _fixed_integer(start_month, "start_month", operation))
+
+
+def tramo_full_initial_calendar(series, *, start_year, start_month, log, frequency=12):
+    """Run stock TRfull’s initial calendar module on the original monthly observations.
+
+    The result includes the calendar contrast comparison, t statistics and retention
+    decisions for the mean, leap year and Easter. The leap-year t statistic is None
+    when the candidate model has no trading-day contrast.
+    """
+    operation = "tramo_full_initial_calendar"
+    arguments = _calendar_domain(series, start_year, start_month, frequency, operation)
+    return _kalos._tramo_full_initial_calendar(*arguments, _request_flag(log, "log", operation))
 
 
 def tramo_transform_decision(series, log_preference, precision, *, frequency=12, mean=True,

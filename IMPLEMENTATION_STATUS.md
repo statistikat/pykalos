@@ -1171,3 +1171,7 @@ Core `2bf7cc3` adds the public RSA0 residual normality test and the stock initia
 ### M5 public RSA0 residual normality
 
 The installed wheel exposes `residuals["doornikhansen"]` and advertises it on the RSA0 template. It reproduced the six full-series and three short-series public JVM statistics and probabilities bit-for-bit, with two degrees of freedom. Seven fitted residuals returned an absent test. All 23 related installed-wheel tests passed. [Residual diagnostics replay](tests/test_tramoseats_fit.py)
+
+### M5 stock TRfull initial calendar decisions
+
+`tramo_full_initial_calendar` accepts dated original monthly observations and the level/log decision. It exposes the stock TRfull working-day/trading-day comparison and the rule's mean, leap-year and Easter t statistics, retention flags and module-change decision. All 20 level/log JVM fits agreed bit-for-bit on the captured numerical outputs and exactly on the optional leap-year test and all decisions. All 86 targeted installed-wheel tests passed. [Stock calendar replay](tests/test_tramo_calendar.py)

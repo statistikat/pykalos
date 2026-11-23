@@ -35,6 +35,38 @@ class CalendarFTest(unittest.TestCase):
                 selections.append(result["selected"])
         self.assertEqual((len(inputs), len(selections), len(set(selections))), (4, 14, 3))
 
+    def test_stock_initial_calendar(self):
+        count = 0
+        for line in (EVIDENCE / "full.txt").read_text().splitlines():
+            fields = line.split()
+            if fields[0] == "input":
+                _, cid, log, *data = fields
+                fit = pykalos.tramo_full_initial_calendar(list(map(from_hex, data)), start_year=1990,
+                                                         start_month=1, log=bool(int(log)))
+                continue
+            with self.subTest(case=cid, log=log):
+                kind, status, columns, mean, lp, easter, base, one, six, p1, p6, mt, lt, et = fields
+                self.assertEqual(kind, "result")
+                report = fit["comparison"]
+                self.assertEqual(report["selected"], {"0":"none", "1":"working_days", "6":"trading_days"}[columns])
+                wd, td = report["working_days"], report["trading_days"]
+                self.assertEqual(bits([report["base_ssq"], wd["residual_ssq"], td["residual_ssq"],
+                                       wd["lower_probability"], td["lower_probability"]]),
+                                 bytes.fromhex(base + one + six + p1 + p6))
+                self.assertEqual(bits([fit["mean_t"], fit["easter_t"]]), bytes.fromhex(mt + et))
+                if lt == "-":
+                    self.assertIsNone(fit["leap_year_t"])
+                else:
+                    self.assertEqual(bits([fit["leap_year_t"]]), bytes.fromhex(lt))
+                self.assertEqual((fit["keep_mean"], fit["keep_leap_year"], fit["keep_easter"]),
+                                 tuple(v == "true" for v in (mean, lp, easter)))
+                self.assertEqual(fit["module_changed"], status == "Changed")
+                count += 1
+        self.assertEqual(count, 20)
+        for options in (dict(log=1), dict(log=True, series=[-1.]*180), dict(log=False, frequency=4)):
+            with self.assertRaises((ValueError, TypeError)):
+                pykalos.tramo_full_initial_calendar(**(dict(series=[1.]*180, start_year=1990, start_month=1) | options))
+
     def test_request_boundary(self):
         data = [from_hex(x) for x in (EVIDENCE / "panel.txt").read_text().splitlines()[0].split()[2:]]
         spec = dict(start_year=1990, start_month=1, mean=True, significance=.01, precision=1e-3)

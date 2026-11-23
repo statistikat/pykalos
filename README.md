@@ -18,6 +18,9 @@ estimation scale to `tramo_calendar_f_test(series, start_year=1990,
 start_month=1, mean=True, significance=0.01, precision=1e-3)`. The result
 names the selected effect and reports both candidates' residual sums of
 squares, degrees of freedom, mean squares and lower-tail probabilities.
+Use `tramo_full_initial_calendar(series, start_year=1990, start_month=1, log=True)`
+for the stock initial TRfull rule on original observations. It returns the contrast
+comparison and the mean, leap-year and Easter t statistics and retention decisions.
 
 For complete monthly observations, `tramoseats_fit(series, start_year=1990,
 start_month=1)` estimates the RSA0 template from the original series. It

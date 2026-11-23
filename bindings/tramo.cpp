@@ -18,6 +18,18 @@ py::dict seasonality_report(const kalos::TramoSeasonalityReport& report) {
                     "qs"_a=test_report(report.qs), "friedman"_a=test_report(report.friedman),
                     "differenced"_a=report.differenced);
 }
+
+py::dict calendar_report(const kalos::TramoCalendarFTestResult& result) {
+    auto report = [](const kalos::TramoCalendarFCandidate& fit) {
+        return py::dict("residual_ssq"_a=fit.residual_ssq, "degrees_of_freedom"_a=fit.degrees_of_freedom,
+                        "mean_square"_a=fit.mean_square, "lower_probability"_a=fit.lower_probability);
+    };
+    const char* selected = "none";
+    if (result.selected == kalos::TramoTradingDays::WorkingDays) selected = "working_days";
+    if (result.selected == kalos::TramoTradingDays::TradingDays) selected = "trading_days";
+    return py::dict("base_ssq"_a=result.base_ssq, "working_days"_a=report(result.working_days),
+                    "trading_days"_a=report(result.trading_days), "selected"_a=selected);
+}
 }  // namespace
 
 void bind_tramo_preprocessing(py::module_& module) {
@@ -29,15 +41,18 @@ void bind_tramo_preprocessing(py::module_& module) {
             py::gil_scoped_release release;
             result = kalos::tramo_calendar_f_test(values, year, month, mean, significance, precision);
         }
-        auto report = [](const kalos::TramoCalendarFCandidate& fit) {
-            return py::dict("residual_ssq"_a=fit.residual_ssq, "degrees_of_freedom"_a=fit.degrees_of_freedom,
-                            "mean_square"_a=fit.mean_square, "lower_probability"_a=fit.lower_probability);
-        };
-        const char* selected = "none";
-        if (result.selected == kalos::TramoTradingDays::WorkingDays) selected = "working_days";
-        if (result.selected == kalos::TramoTradingDays::TradingDays) selected = "trading_days";
-        return py::dict("base_ssq"_a=result.base_ssq, "working_days"_a=report(result.working_days),
-                        "trading_days"_a=report(result.trading_days), "selected"_a=selected);
+        return calendar_report(result);
+    });
+    module.def("_tramo_full_initial_calendar", [](const std::vector<double>& values, int year, int month, bool log) {
+        kalos::TramoFullCalendarResult result;
+        {
+            py::gil_scoped_release release;
+            result = kalos::tramo_full_initial_calendar(values, year, month, log);
+        }
+        return py::dict("comparison"_a=calendar_report(result.comparison),
+                        "mean_t"_a=result.mean_t, "leap_year_t"_a=result.leap_year_t, "easter_t"_a=result.easter_t,
+                        "keep_mean"_a=result.keep_mean, "keep_leap_year"_a=result.keep_leap_year,
+                        "keep_easter"_a=result.keep_easter, "module_changed"_a=result.module_changed());
     });
     module.def("_tramo_seasonality", [](const std::vector<double>& values) {
         kalos::TramoSeasonalityReport report;
