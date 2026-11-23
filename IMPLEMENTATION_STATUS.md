@@ -1242,3 +1242,7 @@ The Python snapshot advances to `b736a70` with four additional public TC residua
 ### M5 residual diagnostics with transitory changes
 
 The expanded RSA1 wheel gate covers 12 monthly series, including log and level TC fits. Both `estimate_tramo_tr1` and raw `tramoseats_fit` reproduced all 36 public residual scale, Ljung–Box and Doornik–Hansen results bit-for-bit. All 21 targeted installed-wheel tests passed at `b736a70`. [Expanded residual diagnostics replay](tests/test_tramo_automatic.py)
+
+### M6 first hosted Windows wheel result
+
+The first CPython 3.12 Windows x64 job at `af8ceea` built and repaired the wheel, imported it in a clean environment, verified its private LP64 OpenBLAS and passed all WK, fitted TRAMO, raw RSA0 and smoke checks. Its three failures were checksum mismatches on `cases.csv` in the fixed X-13 and TRAMO transform suites, before numerical comparisons. The later `122fb3b` checkout fix preserves the original fixture bytes. A fresh `core.autocrlf=true` checkout at `a67bf39` verified every hash at pin `b736a70` and the three formerly failing tests passed with the local repaired wheel. A hosted run of the corrected Windows checkout remains pending. [Windows job log](https://github.com/statistikat/pykalos/actions/runs/45274458419/job/138042509415)
