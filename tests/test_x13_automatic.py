@@ -168,7 +168,13 @@ class BoundarySurfaceTest(unittest.TestCase):
         self.assertTrue(auto["x13_automatic_qualified"])
         self.assertTrue(auto["monthly_only"])
         self.assertNotIn("zero_horizon_only", auto)  # b2573fc pin, deleted at f500162
-        self.assertIn("21-H.4", auto["horizon_envelope"])
+        self.assertIn("negative annual counts", auto["horizon_envelope"])
+        self.assertEqual(auto["estimation_solver"], "pinned_levenberg_marquardt")
+        self.assertEqual(auto["estimation_solver_by_stage"], {
+            "landing_and_final": "pinned_levenberg_marquardt",
+            "differencing_and_initial_arma": "pinned_levenberg_marquardt",
+            "transform_and_outlier_requests": "bfgs",
+        })
         self.assertEqual(auto["frequency"], 12)
         self.assertEqual(auto["modes"],
                          ("additive", "multiplicative", "log_additive", "pseudo_additive"))
@@ -219,15 +225,22 @@ class BoundarySurfaceTest(unittest.TestCase):
         # (docs/contracts/x13-automatic-pipeline-contract.md, "Horizon
         # extension"). Nonzero horizons are IN envelope now; the positive
         # JVM qualification of the route runs in test_x13_automatic_horizon.py.
-        for kw in ({"backcast": 1}, {"forecast": 2}):
+        for kw, expected_backcast, expected_forecast in (
+            ({"backcast": 1}, 1, 0),
+            ({"forecast": 2}, 0, 2),
+            ({"backcast": -1, "forecast": -2}, 12, 24),
+        ):
             with self.subTest(**kw):
                 result = run(**kw)
                 self.assertEqual(result["status"], "available")
                 self.assertTrue(result["available"])
-                self.assertEqual(result["fit"]["backcast"], kw.get("backcast", 0))
-                self.assertEqual(result["fit"]["forecast"], kw.get("forecast", 0))
+                self.assertEqual(result["fit"]["backcast"], expected_backcast)
+                self.assertEqual(result["fit"]["forecast"], expected_forecast)
                 self.assertEqual(len(result["fit"]["out"]),
-                                 len(values) + kw.get("backcast", 0) + kw.get("forecast", 0))
+                                 len(values) + expected_backcast + expected_forecast)
+        for kw in ({"backcast": -2**31}, {"forecast": 2**31 - 1}):
+            with self.subTest(**kw), self.assertRaisesRegex(ValueError, "extended series"):
+                run(**kw)
         broken = list(values)
         broken[5] = float("nan")
         result = pykalos.x13_automatic(broken, start_year=c["first_year"],

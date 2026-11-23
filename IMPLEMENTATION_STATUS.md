@@ -8,6 +8,10 @@ The Python snapshot advances from `f500162` to `cb5c2de193c2cd7e2035a9a99f205186
 
 The integration gate checks the allowlist, builds and imports the wheel with checksum-pinned OpenBLAS and replays the existing 13 automatic and four horizon cases. Upstream manifest verification covered 187 core, 112 fixture and 331 evidence files. `tools/sync-core.py --verify` verified 143 core files and 11 evidence files before export, and 188 core files (including the generated revision header) and the same 11 evidence files afterwards. The first installed candidate wheel reports the exact revision and LP64 OpenBLAS 0.3.34 on macOS ARM64. Numerical qualification and Python metadata follow as separate updates.
 
+### Python automatic-fit capability and horizon contract
+
+The landing and final estimates use the pinned Levenberg–Marquardt solver at this revision. The capability also identifies the differencing and initial ARMA solver and the BFGS transform and outlier requests. The two signed horizon fields now document both monthly and annual inputs. The Python boundary checks their normalized values, extended output length and the core’s refusal of annual multiplication or combined-length overflow. All 72 automatic-boundary, corpus-shape, request-validation, NumPy and smoke tests passed on the installed checkpoint wheel with Python 3.15 and NumPy 2.5.5.
+
 ## Initial scaffold (2026-11-14)
 
 ## Implemented

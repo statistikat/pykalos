@@ -1,6 +1,6 @@
 # pykalos implementation changes needed
 
-Implementation and tests checked 2026-11-23 against the working tree based on `5771ce1`, with Kalos pinned to `f500162`. `src/pykalos` owns the Python API and defaults, `bindings` translates to the C++ request and result, and `vendor` holds the locked core and evidence. Refresh generated sources with `tools/sync-core.py` when adopting core fixes.
+Implementation and tests checked 2026-11-23 with Kalos pinned to `cb5c2de` after the 23-F.4 checkpoint. `src/pykalos` owns the Python API and defaults, `bindings` translates to the C++ request and result, and `vendor` holds the locked core and evidence. Refresh generated sources with `tools/sync-core.py` when adopting core fixes.
 
 ## P1 — Validate the Python automatic-fit request before coercion
 
@@ -10,13 +10,11 @@ Implementation and tests checked 2026-11-23 against the working tree based on `5
 
 **Fixed.** Commits `4b04c75` and `77b7925` hardened the raw parser and its input tests.
 
-The raw entry rejects unknown keys and checks both outlier budgets before conversion to `size_t`. Regression tests cover misspelled keys, negative budgets, and valid requests through both entry points. The Kalos horizon arithmetic fix is in the core working tree. This Python revision still vendors the earlier core pin. [Raw parser](bindings/module.cpp#L112) · [Budget checks](bindings/module.cpp#L358) · [Regression tests](tests/test_request_validation.py#L270)
+The raw entry rejects unknown keys and checks both outlier budgets before conversion to `size_t`. Regression tests cover misspelled keys, negative budgets, and valid requests through both entry points. The pinned core now checks signed annual horizon arithmetic and the combined extended length before estimation. [Raw parser](bindings/module.cpp#L112) · [Budget checks](bindings/module.cpp#L358) · [Regression tests](tests/test_request_validation.py#L270)
 
 ## P2 — Make the solver and horizon metadata agree with the pinned core
 
-**Planned for the next Python core-pin update.** The project records the dependency on the next pin without assigning a numbered milestone. [Deferral record](IMPLEMENTATION_STATUS.md#L949)
-
-The original review overstated the solver mismatch. At the current pin, the outer estimator selects BFGS and the inner stages use the pinned Levenberg–Marquardt solver. The capability text does omit negative annual horizon counts. At the pin update, describe the solver stages used by that revision and test the horizon description against the accepted month and annual-count inputs. [Pinned estimator](vendor/kalos/src/x13_automatic.cpp#L527) · [Pinned contract](vendor/kalos/include/kalos/x13_automatic.hpp#L25) · [Capability projection](bindings/module.cpp#L696)
+**Fixed at the M5 checkpoint.** The automatic-fit capability identifies the pinned Levenberg–Marquardt landing and final solver and reports the solver by stage. The horizon field documents nonnegative monthly and negative annual inputs. The installed-wheel tests check a one-year backcast, a two-year forecast and overflow refusals. [Pinned estimator](vendor/kalos/src/x13_automatic.cpp) · [Capability projection](bindings/module.cpp) · [Boundary tests](tests/test_x13_automatic.py)
 
 ## P2 — Exercise NumPy and make provider qualification reproducible
 

@@ -685,19 +685,23 @@ PYBIND11_MODULE(_kalos, m) {
         result["status"] = "minimal_binding";
         // Schema-3-style automatic block: the qualified stage-Z surface.
         // (3: the 21-H.4 pin advance replaced the zero_horizon_only pin with
-        // the horizon envelope key — horizons are month counts >= 0 in the
-        // product envelope and extend the downstream composition only.)
+        // the horizon envelope key for the downstream composition.)
         py::dict automatic;
         automatic["schema_version"] = 3;
         automatic["x13_automatic_qualified"] = true;
         automatic["sigma_policy_default"] = "legacy";  // maintainer 2026-11-17; applied at the Python wrapper, raw entry stays explicit
         automatic["monthly_only"] = true;
         automatic["frequency"] = 12;
-        automatic["horizon_envelope"] = "backcast/forecast month counts >= 0 (item 21-H.4 initialStep route; downstream composition only)";
+        automatic["horizon_envelope"] = "nonnegative month counts or negative annual counts (12 months per year); combined extended length must fit the core index range (21-H.4)";
         automatic["full_span_outliers_only"] = true;
         automatic["transform_function"] = "auto";
         automatic["modes"] = py::make_tuple("additive", "multiplicative", "log_additive", "pseudo_additive");
-        automatic["estimation_solver"] = "bfgs_default";
+        automatic["estimation_solver"] = "pinned_levenberg_marquardt";  // landing and final estimates
+        py::dict solvers;
+        solvers["landing_and_final"] = automatic["estimation_solver"];
+        solvers["differencing_and_initial_arma"] = "pinned_levenberg_marquardt";
+        solvers["transform_and_outlier_requests"] = "bfgs";
+        automatic["estimation_solver_by_stage"] = solvers;
         automatic["deferred"] = py::make_tuple("calendar", "easter_detection", "automatic_trading_days", "user_variables");
         automatic["refusals"] = "verbatim unsupported:/failed: statuses from the core; never a silent fallback to the restricted fit";
         automatic["entry_points"] = "pykalos.x13_automatic(), _kalos.x13_automatic_fit()";
@@ -758,7 +762,7 @@ PYBIND11_MODULE(_kalos, m) {
         "budgets are sign-checked (negative raises ValueError) before the\n"
         "size_t conversion; input is refused as text, binary or\n"
         "multivariate. Scope envelope: frequency 12, horizons\n"
-        "{0..N} month counts (item 21-H.4),\n"
+        "in months, or negative counts in years (item 21-H.4),\n"
         "the four decomposition modes, full-span outlier detection, transform\n"
         "function Auto, calendar/easter/TD/user detection deferred (explicit\n"
         "unsupported status). Shape violations raise std::invalid_argument\n"

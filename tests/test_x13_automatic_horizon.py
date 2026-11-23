@@ -2,7 +2,7 @@
 
 Replays the item 21-H.4 JVM horizon capture (vendored "evidence" snapshot
 vendor/kalos-evidence/native/x13-horizon, provenance ["evidence"], pinned in
-core.lock.json at core f500162a3be1539803566f9bc8f071e0deb4f66b; SHA256SUMS.csv
+core.lock.json, first exported at core f500162; SHA256SUMS.csv
 pins cases.csv 2e186f15..., inputs.csv 8b6f8889..., oracle-facts.csv
 ed80b837..., metadata.R a353ca5d...) through pykalos.x13_automatic with the
 captured X-11 horizons and compares against the JVM facts at the tiers the
