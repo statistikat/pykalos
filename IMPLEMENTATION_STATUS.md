@@ -1,6 +1,6 @@
 # pykalos implementation status
 
-Current Python operations at the 2026-11-24 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0, RSA1 and RSA3 fitting. RSA0 and RSA1 provide preprocessing residual diagnostics and original-series forecast errors. RSA3 returns the automatically selected model and dated residuals. The dated entries retain the earlier qualification results.
+Current Python operations at the 2026-11-24 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0, RSA1 and RSA3 fitting. RSA0 and RSA1 provide preprocessing residual diagnostics and original-series forecast errors. RSA3 returns the automatically selected model, dated residuals and their diagnostics. The dated entries retain the earlier qualification results.
 
 ## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
 
@@ -1278,3 +1278,7 @@ The Python snapshot advances to `a4dc93f` for the four additional raw RSA3 fast-
 ### M5 Python RSA3 fourth-pass fits
 
 The repaired wheel at `a4dc93f` reproduced the four public fourth-pass models, including 372 residuals and 2,580 observed and forecast values. Together the standalone and raw TR3 routes now match all 1,196 residuals from 13 fits, with 8,340 bit-exact raw component values across 130 rows. All 18 targeted tests passed, including the Java-free raw fit. [Reproducer](tests/test_tramo_automatic.py)
+
+### M5 public selected-model RSA3 residual diagnostics
+
+Standalone TR3 preprocessing and raw RSA3 now both return the residual scale, 24-lag Ljung–Box and Doornik–Hansen tests. Across 13 public fits both routes reproduced all 65 numerical values bit-for-bit and the model-specific degrees of freedom (21, 22 or 23 for independence; 2 for normality). All 25 targeted installed-wheel tests passed. [Both public routes](tests/test_tramo_automatic.py)

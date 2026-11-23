@@ -195,7 +195,7 @@ class PublicTr3(unittest.TestCase):
                                  ("ok", "available", "RSA3"))
                 self.assertEqual(raw["mode"], "multiplicative" if raw["model"]["log"] else "additive")
                 residuals += check_preprocessing(self, raw, records)
-                self.assertEqual(set(raw["residuals"]), {"tsres", "start_year", "start_month"})
+                self.assertEqual(set(raw["residuals"]), {"tsres", "start_year", "start_month", "ser", "lb", "doornikhansen"})
                 fitted = pykalos.estimate_tramo_tr3(series, **domain)
                 self.assertEqual(fitted["status"], "available")
                 check_preprocessing(self, fitted, records)
@@ -226,9 +226,33 @@ class PublicTr3(unittest.TestCase):
                                      (start + int(n), horizon))
                 self.assertEqual(fit["series_forecast_stdev_status"], "unavailable" if horizon else "no_requested_predictions")
         cap = pykalos.capabilities()["tramo_seats_fit"]["by_template"]["RSA3"]
-        self.assertEqual(cap["residuals"], ("tsres",))
+        self.assertEqual(cap["residuals"], ("tsres", "ser", "lb", "doornikhansen"))
         self.assertTrue(cap["automatic_identification"])
         self.assertFalse(cap["series_forecast_stdev"])
         for extra in (dict(series=[1.]*23), dict(series=[float("nan")]*36), dict(start_month=13), dict(frequency=4)):
             with self.subTest(extra=extra), self.assertRaises((ValueError, TypeError)):
                 pykalos.estimate_tramo_tr3(**(dict(series=[1.]*48) | domain | extra))
+
+    def test_public_residual_diagnostics(self):
+        inputs = dict(case for corpus in ("rsa3", "rsa3-additional", "rsa3-mean-retry")
+                      for case in grouped_records(corpus + "-x86_64.txt"))
+        tests = dict(case for corpus in ("rsa3-residual-diagnostics", "rsa3-mean-retry-diagnostics")
+                     for case in grouped_records(corpus + "-x86_64.txt"))
+        self.assertEqual(set(tests), set(inputs))
+        self.assertEqual(len(inputs), 13)
+        for cid, records in inputs.items():
+            _, year, month, _, *data = records[1]
+            domain = dict(start_year=int(year), start_month=int(month))
+            series = list(map(from_hex, data))
+            facts = {row[0]: row[1:] for row in tests[cid]}
+            for route, options in ((pykalos.estimate_tramo_tr3, domain),
+                                   (pykalos.tramoseats_fit, domain | {"template": "RSA3"})):
+                with self.subTest(case=cid, route=route.__name__):
+                    actual = route(series, **options)["residuals"]
+                    self.assertEqual(bits([actual["ser"]]), bytes.fromhex(facts["residuals.ser"][0]))
+                    self.assertEqual(actual["lb"]["lags"], 24)
+                    for key in ("lb", "doornikhansen"):
+                        fact = facts["residuals." + key]
+                        self.assertEqual(actual[key]["df"], float(fact[4]))
+                        self.assertEqual(bits([actual[key]["value"], actual[key]["pvalue"]]),
+                                         bytes.fromhex("".join(fact[:2])))

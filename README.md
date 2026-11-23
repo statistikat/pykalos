@@ -59,7 +59,9 @@ returns the preprocessing fit independently.
 Use `estimate_tramo_tr3(series, start_year=..., start_month=...)` for automatic
 monthly TR3 SARIMA identification, or `tramoseats_fit(series, template="RSA3", ...)`
 for its SEATS decomposition. Both return the chosen orders, coefficients,
-registered effects, likelihood and dated full residuals. RSA3 reports its
+registered effects, likelihood and dated full residuals, including their standard
+error, 24-lag independence test and Doornik–Hansen normality test. The
+independence test uses the fitted ARMA orders for the degrees of freedom. RSA3 reports its
 original-series forecast uncertainty as `unavailable` for a positive horizon.
 Model selection outside the supported controller rounds raises `ValueError`.
 

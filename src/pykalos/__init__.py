@@ -514,7 +514,7 @@ def tramoseats_fit(series, *, template="RSA0", frequency=12, start_year=1990, st
     RSA0 fits the additive airline with a mean. RSA1 chooses the transformation
     and detects outliers. RSA3 also identifies the SARIMA orders. Each returns
     observed finals, dated component rows and fitted preprocessing residuals.
-    RSA0 and RSA1 additionally report residual tests and original-series forecast errors.
+    All three report residual tests. RSA0 and RSA1 additionally report original-series forecast errors.
     Horizon counts are periods when nonnegative and years when negative.
     """
     presets = {"TR0": "RSA0", "RSA0": "RSA0", "TR1": "RSA1", "RSA1": "RSA1", "TR3": "RSA3", "RSA3": "RSA3"}

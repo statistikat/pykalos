@@ -32,12 +32,13 @@ py::dict decomposition(const kalos::tramo_seats_pipeline_result& output) {
     return result;
 }
 
-py::dict airline_residuals(int year, int month, const std::vector<double>& values, double standard_error) {
+py::dict residuals(int year, int month, const std::vector<double>& values, double standard_error,
+                   int arma_parameters) {
     kalos::LjungBoxTest lb;
     std::optional<kalos::ResidualNormalityTest> normality;
     {
         py::gil_scoped_release release;
-        lb = kalos::monthly_airline_residual_ljung_box(values);
+        lb = kalos::monthly_tramo_residual_ljung_box(values, arma_parameters);
         normality = kalos::tramo_residual_normality(values);
     }
     py::object dh = py::none();
@@ -47,7 +48,7 @@ py::dict airline_residuals(int year, int month, const std::vector<double>& value
                     "lb"_a=py::dict("value"_a=lb.value, "pvalue"_a=lb.p, "df"_a=lb.df, "lags"_a=24));
 }
 
-py::dict preprocessing(const kalos::TramoFitResult& fit, bool airline_diagnostics) {
+py::dict preprocessing(const kalos::TramoFitResult& fit) {
     py::dict result("status"_a=fit.status);
     if (fit.status != "available") {
         result["refusal_note"] = fit.refusal_note;
@@ -83,13 +84,8 @@ py::dict preprocessing(const kalos::TramoFitResult& fit, bool airline_diagnostic
     const auto& b = fit.builder;
     const auto start = kalos::TimeDomain(b.domain_year, b.domain_position + 1, 12, b.domain_length)
                            .at(b.domain_length - fit.ls_eff);
-    if (airline_diagnostics) {
-        const double ser = kalos::tramo_residual_standard_error(fit.ls_ssq, fit.ls_eff, fit.ls_npar);
-        result["residuals"] = airline_residuals(start.first, start.second, fit.full_residuals, ser);
-    } else {
-        result["residuals"] = py::dict("start_year"_a=start.first, "start_month"_a=start.second,
-                                      "tsres"_a=fit.full_residuals);
-    }
+    const double ser = kalos::tramo_residual_standard_error(fit.ls_ssq, fit.ls_eff, fit.ls_npar);
+    result["residuals"] = residuals(start.first, start.second, fit.full_residuals, ser, o.p + o.q + o.bp + o.bq);
     return result;
 }
 
@@ -114,18 +110,18 @@ kalos::tramo_seats_model_request model(std::vector<double> series, const py::dic
 }
 
 void bind_seats(py::module_& module) {
-    auto bind_preprocessor = [&](const char* name, auto estimate, bool airline) {
-        module.def(name, [estimate, airline](const std::vector<double>& series, int year, int month) {
+    auto bind_preprocessor = [&](const char* name, auto estimate) {
+        module.def(name, [estimate](const std::vector<double>& series, int year, int month) {
             kalos::TramoFitResult fit;
             {
                 py::gil_scoped_release release;
                 fit = estimate(series, year, month);
             }
-            return preprocessing(fit, airline);
+            return preprocessing(fit);
         });
     };
-    bind_preprocessor("_estimate_tramo_tr1", kalos::estimate_tramo_tr1, true);
-    bind_preprocessor("_estimate_tramo_tr3", kalos::estimate_tramo_tr3, false);
+    bind_preprocessor("_estimate_tramo_tr1", kalos::estimate_tramo_tr1);
+    bind_preprocessor("_estimate_tramo_tr3", kalos::estimate_tramo_tr3);
     module.def("_seats_extract_wk", [](std::vector<double> series, const py::dict& spec) {
         auto request = model(std::move(series), spec);
         request.innovation_variance = spec["innovation_variance"].cast<double>();
@@ -199,7 +195,7 @@ void bind_seats(py::module_& module) {
                 if (airline) errors = kalos::tramo_tr1_forecast_errors(output.preprocessing, forecast);
                 else errors.status = forecast == 0 ? "no_requested_predictions" : "unavailable";
             }
-            auto result = preprocessing(output.preprocessing, airline);
+            auto result = preprocessing(output.preprocessing);
             result["series_forecast_stdev_status"] = errors.status;
             result["series_forecast_stdev"] = errors.standard_errors;
             result["preprocessing_status"] = result["status"];
@@ -224,9 +220,8 @@ void bind_seats(py::module_& module) {
         result["series_forecast_stdev"] = errors.standard_errors;
         const auto& fit = output.preprocessing;
         const auto& model = fit.model;
-        const auto& residuals = fit.residuals;
-        result["residuals"] = airline_residuals(residuals.start_year, residuals.start_month,
-                                               residuals.values, residuals.standard_error);
+        const auto& observed = fit.residuals;
+        result["residuals"] = residuals(observed.start_year, observed.start_month, observed.values, observed.standard_error, 2);
         result["model"] = py::dict(
             "orders"_a=py::dict("p"_a=model.phi.size(), "d"_a=model.d, "q"_a=model.theta.size(),
                                 "bp"_a=model.bphi.size(), "bd"_a=model.bd, "bq"_a=model.btheta.size()),
