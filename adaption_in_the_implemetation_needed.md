@@ -22,8 +22,8 @@ The raw entry rejects unknown keys and checks both outlier budgets before conver
 
 ## Verification of the current fixes
 
-On macOS ARM64 with Python 3.15 and NumPy 2.5.5, all **65 tests passed** across `test_request_validation`, `test_numpy_interop` and `test_smoke`. The tests used the updated wrapper and compiled extension for the current binding revision. Offline verification of the locked core and evidence also passed.
+On macOS ARM64 with Python 3.15 and NumPy 2.5.5, the source-archive wheel passed all **91 tests**, including the full 13-case automatic and four-case horizon replay (**5,640 numerical checks**). Offline verification of the locked core and evidence passed. A separate Homebrew provider wheel passed all four previously failing automatic cases. [Checkpoint qualification](IMPLEMENTATION_STATUS.md#m5-checkpoint-verification-on-macos-arm64)
 
 ## Original review checks at `808e01c`
 
-The offline snapshot check and all three smoke tests passed. On macOS ARM64 with Python 3.15 and Homebrew OpenBLAS 0.3.34, full discovery ran 30 tests with four landing-coefficient failures (`ao_nodet`, `mode_logadd`, `mode_mult`, and `mode_pseudo`) and nine NumPy skips. The run used the Homebrew provider build. The subsequent Linux qualification reran all four cases successfully on pinned OpenBLAS 0.3.34 with the existing tolerances. The macOS/Homebrew discrepancy remains open. [Qualification results](IMPLEMENTATION_STATUS.md#L912)
+The offline snapshot check and all three smoke tests passed. On macOS ARM64 with Python 3.15 and Homebrew OpenBLAS 0.3.34, full discovery ran 30 tests with four landing-coefficient failures (`ao_nodet`, `mode_logadd`, `mode_mult`, and `mode_pseudo`) and nine NumPy skips. The run used the Homebrew provider build. The subsequent Linux qualification reran all four cases successfully on pinned OpenBLAS 0.3.34 with the existing tolerances. The current checkpoint also passes these four cases on macOS with both provider builds.

@@ -6,7 +6,7 @@ Current checkpoint (2026-11-23) is the M5 core snapshot described below. The dat
 
 The Python snapshot advances from `f500162` to `cb5c2de193c2cd7e2035a9a99f205186a90a4dec`. This includes the completed 23-F.4 TRAMO preprocessing assembly and the subsequent standalone build, provider selection and checked X-13 horizon changes. The public Python surface still comprises convolution and automatic monthly X-13. The 23-F request takes kernel and seam witnesses. A product TRAMO/SEATS binding depends on the assembled decomposition and end-to-end oracle.
 
-The integration gate checks the allowlist, builds and imports the wheel with checksum-pinned OpenBLAS and replays the existing 13 automatic and four horizon cases. Upstream manifest verification covered 187 core, 112 fixture and 331 evidence files. `tools/sync-core.py --verify` verified 143 core files and 11 evidence files before export, and 188 core files (including the generated revision header) and the same 11 evidence files afterwards. The first installed candidate wheel reports the exact revision and LP64 OpenBLAS 0.3.34 on macOS ARM64. Numerical qualification and Python metadata follow as separate updates.
+The integration gate checks the allowlist, builds and imports the wheel with checksum-pinned OpenBLAS and replays the existing 13 automatic and four horizon cases. Upstream manifest verification covered 187 core, 112 fixture and 331 evidence files. `tools/sync-core.py --verify` verified 143 core files and 11 evidence files before export, and 188 core files (including the generated revision header) and the same 11 evidence files afterwards. The installed wheel reports the exact revision and LP64 OpenBLAS 0.3.34 on macOS ARM64.
 
 ### Python automatic-fit capability and horizon contract
 
@@ -17,6 +17,12 @@ The landing and final estimates use the pinned Levenberg–Marquardt solver at t
 CI reads the core tooling revision from `core.lock.json`. The minimal and NumPy jobs install the built wheel into clean environments. Both log the exact binary mapped behind the extension’s OpenBLAS configuration symbol, its SHA-256, the runtime configuration, integer width and pinned source-archive digest. The NumPy job imports NumPy explicitly and exercises input shapes, strides, dtypes and read-only buffers.
 
 The wheel now uses the vendored core’s provider finder and link probes. A single CMake build directory accepted the qualified root, rejected a missing root and accepted the restored root. The source archive built an installed wheel against the checksum-pinned OpenBLAS 0.3.34. Its runtime configuration on this host was `OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING neoversen1 SINGLE_THREADED`, with a 32-bit integer ABI and binary SHA-256 `6227c1b96aa62ec2aa7317912cb980ee32dae9adccebc81c105f479482d505e6`. The checker also rejected an unrelated prefix. The three dependency-free smoke tests passed. The workflow YAML parsed locally. Hosted jobs and portable bundled wheels remain outside this local evidence.
+
+### M5 checkpoint verification on macOS ARM64
+
+The final installed wheel built from the source archive passed all **91 tests**, with NumPy installed and all 13 automatic and four horizon cases selected. The numerical replay made **4,353 automatic and 1,287 horizon checks**, with zero failures against the existing decisions and tolerances. At `multi/diff0/tmean` the relative error was **1.619e-4** against Python’s 1e-3 limit. Upstream’s Linux core record at this revision reports 3.1e-3 on that comparison under its 5e-3 limit. Full Linux Python corpus qualification remains open. [Upstream acceptance record](https://github.com/statistikat/kalos/blob/cb5c2de193c2cd7e2035a9a99f205186a90a4dec/tests/test_x13_automatic_oracle.cpp#L211)
+
+On this same host, the old `f500162` wheel failed `ao_nodet` and all three forced-mode landing-coefficient comparisons with checksum-pinned OpenBLAS. The new pin passed all four with that provider and passed **1,324/1,324** checks in a separate Homebrew OpenBLAS 0.3.34 wheel build. The Homebrew binary SHA-256 was `07bc71aac2823e9202ea4088429a4f5d05146aded15e8aa44600e285eb700415`. These runs close the earlier macOS discrepancy for this checkpoint.
 
 ## Initial scaffold (2026-11-14)
 
