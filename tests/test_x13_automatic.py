@@ -15,7 +15,7 @@ JVM facts with the core contract's tier table - NO relaxation anywhere:
   coefficients 2e-3 (refinement basin), ARMA landing coefficients 1e-2
   (G2 basin seam), downstream tables 1e-6 relative.
 
-Case selection: PYKALOS_X13AUTO_CASES (comma-separated corpus ids; default
+Case selection: PYKALOS_X13AUTO_CASES (all or comma-separated corpus ids; default
 the outlier-detection-free cases, which the core itself designates as the
 cheap tier). Detection-on cases (~230 s each single-process upstream) run
 when listed explicitly.
@@ -26,11 +26,10 @@ import struct
 import unittest
 
 import pykalos
-from x13auto_corpus import EVIDENCE, HORIZON_EVIDENCE, load_corpus, verify_sha256sums
+from x13auto_corpus import EVIDENCE, HORIZON_EVIDENCE, load_corpus, selected_ids, verify_sha256sums
 
 CORPUS = load_corpus()
-DEFAULT_CASES = ",".join(sorted(cid for cid, c in CORPUS.items() if not c["outliers"]))
-SELECTED = [c for c in os.environ.get("PYKALOS_X13AUTO_CASES", DEFAULT_CASES).split(",") if c]
+SELECTED = selected_ids(CORPUS, os.environ.get("PYKALOS_X13AUTO_CASES"))
 
 TYPE_NAMES = {0: "AO", 1: "LS", 2: "TC", 3: "SO"}
 

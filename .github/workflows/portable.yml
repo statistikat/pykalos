@@ -2,6 +2,9 @@ name: Bundled Python wheels
 on: [push, pull_request]
 permissions:
   contents: read
+env:
+  PYKALOS_X13AUTO_CASES: all
+  PYKALOS_X13HZ_CASES: all
 jobs:
   portable:
     strategy:
@@ -64,9 +67,9 @@ jobs:
           source "$RUNNER_TEMP/test-env/bin/activate"
           python -m pip install --no-deps wheelhouse/*.whl
           python tools/check-wheel-provider.py --bundled
-          PYTHONPATH=tests python -m unittest -v test_smoke test_java_free test_x13_fixed test_preparation test_estimation test_interrupt test_tramo_transform test_seats test_tramoseats_fit
+          PYTHONPATH=tests python -m unittest -v test_smoke test_java_free
           python -m pip install numpy
-          PYTHONPATH=tests python -m unittest -v test_numpy_interop test_provider_import_order
+          python -m unittest discover -s tests -v
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-bundled-wheel
@@ -142,10 +145,10 @@ jobs:
           & $python tools/check-wheel-provider.py --bundled
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           $env:PYTHONPATH = "tests"
-          & $python -m unittest -v test_smoke test_java_free test_x13_fixed test_preparation test_estimation test_interrupt test_tramo_transform test_seats test_tramoseats_fit
+          & $python -m unittest -v test_smoke test_java_free
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           & $python -m pip install numpy
-          & $python -m unittest -v test_numpy_interop test_provider_import_order
+          & $python -m unittest discover -s tests -v
       - uses: actions/upload-artifact@v4
         with:
           name: Windows-bundled-wheel

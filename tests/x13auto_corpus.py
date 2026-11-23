@@ -34,6 +34,15 @@ TYPE = {"AO": 0, "LS": 1, "TC": 2, "SO": 3}
 SLOW_CASES = set()  # outlier-detection-on cases, filled by load_corpus()
 
 
+def selected_ids(corpus, selection):
+    """Select the complete corpus, named cases, or the default quick tier."""
+    if selection is None:
+        return sorted(cid for cid, case in corpus.items() if not case["outliers"])
+    if selection == "all":
+        return sorted(corpus)
+    return [cid for cid in selection.split(",") if cid]
+
+
 def reals(field, sep=";"):
     return [float(t) for t in field.split(sep) if t]
 

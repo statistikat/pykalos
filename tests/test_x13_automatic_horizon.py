@@ -31,7 +31,7 @@ coefficients and loglik/aicc reuse the existing zero-horizon contract bands
 contract, byte-identical to the zero-horizon oracle captures, so the same
 measured basins apply verbatim.
 
-Case selection: PYKALOS_X13HZ_CASES (comma-separated capture ids; default the
+Case selection: PYKALOS_X13HZ_CASES (all or comma-separated capture ids; default the
 outlier-detection-free cases - quick_h6 - cheap tier). Detection-on captures
 (ao_b3, multi_b3h6, so_h6, ~230 s each upstream) run when listed explicitly,
 same envelope as the zero-horizon oracle gate.
@@ -40,13 +40,12 @@ import os
 import unittest
 
 import pykalos
-from x13auto_corpus import HORIZON_EVIDENCE, load_horizon_corpus, verify_sha256sums
+from x13auto_corpus import HORIZON_EVIDENCE, load_horizon_corpus, selected_ids, verify_sha256sums
 from test_x13_automatic import (BASIN_BAND, COEFF_BASIN_BAND, Scoreboard,
                                 TYPE_NAMES)
 
 HZCORPUS = load_horizon_corpus()
-DEFAULT_CASES = ",".join(sorted(cid for cid, c in HZCORPUS.items() if not c["outliers"]))
-SELECTED = [c for c in os.environ.get("PYKALOS_X13HZ_CASES", DEFAULT_CASES).split(",") if c]
+SELECTED = selected_ids(HZCORPUS, os.environ.get("PYKALOS_X13HZ_CASES"))
 
 # Upstream acceptance bands for the boundary-exposed tables, transcribed
 # from tests/jvm_x13_automatic_horizon.h kCases at f500162 (0 would be a
