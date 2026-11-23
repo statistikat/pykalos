@@ -178,3 +178,56 @@ class PublicTr1(unittest.TestCase):
                       dict(start_year=1.), dict(frequency=4)):
             with self.subTest(extra=extra), self.assertRaises((ValueError, TypeError)):
                 pykalos.estimate_tramo_tr1(**(spec | extra))
+
+
+class PublicTr3(unittest.TestCase):
+    def test_raw_rsa3_product(self):
+        cases = grouped_records("rsa3-x86_64.txt") + grouped_records("rsa3-additional-x86_64.txt")
+        residuals = rows = values = 0
+        for cid, records in cases:
+            with self.subTest(case=cid):
+                _, year, month, _, *data = records[1]
+                series = list(map(from_hex, data))
+                domain = dict(start_year=int(year), start_month=int(month))
+                raw = pykalos.tramoseats_fit(series, template="tr3", **domain)
+                self.assertEqual((raw["status"], raw["preprocessing_status"], raw["template"]),
+                                 ("ok", "available", "RSA3"))
+                self.assertEqual(raw["mode"], "multiplicative" if raw["model"]["log"] else "additive")
+                residuals += check_preprocessing(self, raw, records)
+                self.assertEqual(set(raw["residuals"]), {"tsres", "start_year", "start_month"})
+                fitted = pykalos.estimate_tramo_tr3(series, **domain)
+                self.assertEqual(fitted["status"], "available")
+                check_preprocessing(self, fitted, records)
+                product, = (row for row in records if row[0] == "product")
+                self.assertEqual(raw["model_changed"], product[3] == "true")
+                expected = [row for row in records if row[0] == "merged"]
+                rows += len(expected)
+                values += check_hex_rows(self, raw["merged"], expected)
+                for key, component in (("finalSA", "SeasonallyAdjusted"), ("finalTrend", "Trend"),
+                                       ("finalSeasonal", "Seasonal"), ("finalIrregular", "Irregular")):
+                    row, = (r for r in expected if r[1:3] == [component, "Value"])
+                    self.assertEqual(bits(raw[key]), bytes.fromhex("".join(row[6:])))
+                self.assertEqual((raw["series_forecast_stdev_status"], raw["series_forecast_stdev"]), ("unavailable", []))
+        self.assertEqual((len(cases), residuals, rows, values), (9, 824, 90, 5760))
+
+    def test_horizons_and_capabilities(self):
+        _, year, month, n, *data = grouped_records("rsa3-x86_64.txt")[0][1][1]
+        domain = dict(start_year=int(year), start_month=int(month))
+        start = 12 * int(year) + int(month) - 1
+        for horizon in (0, 7):
+            with self.subTest(horizon=horizon):
+                fit = pykalos.tramoseats_fit(list(map(from_hex, data)), template="RSA3", forecast=horizon, **domain)
+                rows = {row["information"]: row for row in fit["merged"] if row["component"] == "Series"}
+                self.assertEqual(set(rows), {"Value", "Forecast"} if horizon else {"Value"})
+                if horizon:
+                    forecast = rows["Forecast"]
+                    self.assertEqual((12*forecast["start_year"] + forecast["start_month"]-1, len(forecast["values"])),
+                                     (start + int(n), horizon))
+                self.assertEqual(fit["series_forecast_stdev_status"], "unavailable" if horizon else "no_requested_predictions")
+        cap = pykalos.capabilities()["tramo_seats_fit"]["by_template"]["RSA3"]
+        self.assertEqual(cap["residuals"], ("tsres",))
+        self.assertTrue(cap["automatic_identification"])
+        self.assertFalse(cap["series_forecast_stdev"])
+        for extra in (dict(series=[1.]*23), dict(series=[float("nan")]*36), dict(start_month=13), dict(frequency=4)):
+            with self.subTest(extra=extra), self.assertRaises((ValueError, TypeError)):
+                pykalos.estimate_tramo_tr3(**(dict(series=[1.]*48) | domain | extra))

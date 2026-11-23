@@ -56,6 +56,13 @@ qualified uncertainty and residual fields for each template. For RSA1,
 mode. An unsupported fitted outlier raises `ValueError`. `estimate_tramo_tr1`
 returns the preprocessing fit independently.
 
+Use `estimate_tramo_tr3(series, start_year=..., start_month=...)` for automatic
+monthly TR3 SARIMA identification, or `tramoseats_fit(series, template="RSA3", ...)`
+for its SEATS decomposition. Both return the chosen orders, coefficients,
+registered effects, likelihood and dated full residuals. RSA3 reports its
+original-series forecast uncertainty as `unavailable` for a positive horizon.
+Model selection outside the supported controller rounds raises `ValueError`.
+
 For a fixed monthly SEATS model, `seats_extract_wk(series, innovation_variance, ...)`
 takes the fitted SARIMA coefficients and returns ordered `initial` and `final`
 component rows. Each row includes a component, information type, start year,

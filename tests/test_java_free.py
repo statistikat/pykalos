@@ -41,9 +41,10 @@ def run_isolated():
         "test_x13_automatic.Test_quick.test_case",
         "test_tramoseats_fit.Rsa0Fit.test_raw_series_oracle",
         "test_tramo_automatic.PublicTr1.test_raw_rsa1_product",
+        "test_tramo_automatic.PublicTr3.test_raw_rsa3_product",
     ])
     result = unittest.TextTestRunner(verbosity=1).run(tests)
-    if not result.wasSuccessful() or result.skipped or result.testsRun != 4 or jvm_loaded():
+    if not result.wasSuccessful() or result.skipped or result.testsRun != 5 or jvm_loaded():
         raise RuntimeError("Installed-wheel Java-free numerical qualification failed")
 
 

@@ -12,7 +12,7 @@ Available operations:
   never coerced) is documented in the ``x13_automatic`` docstring;
 * the fixed-coefficient quarterly/monthly X-13 fit, ``x13_fit``;
 * the TRAMO critical value, seasonality and log/level preprocessing decisions;
-* fixed WK extraction, fitted TRAMO decomposition and ordinary monthly RSA0 and RSA1 fitting.
+* fixed WK extraction, fitted TRAMO decomposition and ordinary monthly RSA0, RSA1 and RSA3 fitting.
 """
 from . import _kalos
 from ._estimation import estimate_sarima_fixed
@@ -25,7 +25,7 @@ from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
 __all__ = ["capabilities", "convolve", "core_version", "x13_automatic",
            "x13_automatic_fit", "x13_fit", "tramo_critical_value", "tramo_seasonality",
-           "tramo_transform_decision", "tramo_calendar_f_test", "tramo_full_initial_calendar", "tramo_residual_trading_days", "estimate_tramo_tr1", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
+           "tramo_transform_decision", "tramo_calendar_f_test", "tramo_full_initial_calendar", "tramo_residual_trading_days", "estimate_tramo_tr1", "estimate_tramo_tr3", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
 __version__ = "0.1.0"
 
 # Decoder-pinned module scalars of the qualified envelope (docs/contracts/
@@ -215,6 +215,12 @@ def estimate_tramo_tr1(series, *, start_year, start_month, frequency=12):
     """
     operation = "estimate_tramo_tr1"
     return _kalos._estimate_tramo_tr1(*_calendar_domain(series, start_year, start_month, frequency, operation))
+
+
+def estimate_tramo_tr3(series, *, start_year, start_month, frequency=12):
+    """Fit the monthly TR3 automatic SARIMA model and return its dated full residuals."""
+    operation = "estimate_tramo_tr3"
+    return _kalos._estimate_tramo_tr3(*_calendar_domain(series, start_year, start_month, frequency, operation))
 
 
 def tramo_transform_decision(series, log_preference, precision, *, frequency=12, mean=True,
@@ -503,17 +509,17 @@ def seats_from_tramo(series, ssq, effective, estimated, *, frequency=12, start_y
 
 def tramoseats_fit(series, *, template="RSA0", frequency=12, start_year=1990, start_month=1,
                    forecast=-2, backcast=0):
-    """Fit RSA0 or RSA1 to dated complete monthly observations.
+    """Fit RSA0, RSA1 or RSA3 to dated complete monthly observations.
 
     RSA0 fits the additive airline with a mean. RSA1 chooses the transformation
-    and detects outliers before fitting and decomposing the model. Each returns
-    observed finals, dated component rows, fitted preprocessing residuals and
-    diagnostics, and original-series forecast errors from the fitted model.
+    and detects outliers. RSA3 also identifies the SARIMA orders. Each returns
+    observed finals, dated component rows and fitted preprocessing residuals.
+    RSA0 and RSA1 additionally report residual tests and original-series forecast errors.
     Horizon counts are periods when nonnegative and years when negative.
     """
-    presets = {"TR0": "RSA0", "RSA0": "RSA0", "TR1": "RSA1", "RSA1": "RSA1"}
+    presets = {"TR0": "RSA0", "RSA0": "RSA0", "TR1": "RSA1", "RSA1": "RSA1", "TR3": "RSA3", "RSA3": "RSA3"}
     if not isinstance(template, str) or template.upper() not in presets:
-        raise ValueError("tramoseats_fit: supported monthly templates are RSA0 (TR0) and RSA1 (TR1)")
+        raise ValueError("tramoseats_fit: supported monthly templates are RSA0 (TR0), RSA1 (TR1) and RSA3 (TR3)")
     preset = presets[template.upper()]
     spec = dict(frequency=frequency, start_year=start_year, start_month=start_month,
                 forecast=forecast, backcast=backcast)
@@ -523,10 +529,8 @@ def tramoseats_fit(series, *, template="RSA0", frequency=12, start_year=1990, st
     # The covariance projection takes months. Domain validation checks these
     # normalized counts against the native integer range before conversion.
     months = [count if count >= 0 else -12 * count for count in (spec["backcast"], spec["forecast"])]
-    if preset == "RSA0":
-        result = _kalos._tramoseats_rsa0(data, spec["start_year"], spec["start_month"], *months)
-    else:
-        result = _kalos._tramoseats_rsa1(data, spec["start_year"], spec["start_month"], *months)
+    run = {"RSA0": _kalos._tramoseats_rsa0, "RSA1": _kalos._tramoseats_rsa1, "RSA3": _kalos._tramoseats_rsa3}[preset]
+    result = run(data, spec["start_year"], spec["start_month"], *months)
     first_year, first_period = divmod(12 * spec["start_year"] + spec["start_month"] - 1 + len(data), 12)
     result["series_forecast_domain"] = dict(start_year=first_year, start_month=first_period + 1, length=months[1])
     mode = "multiplicative" if result["model"]["log"] else "additive"

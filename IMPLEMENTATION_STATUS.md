@@ -1,6 +1,6 @@
 # pykalos implementation status
 
-Current Python operations at the 2026-11-24 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0/RSA1 fitting. Both templates provide preprocessing residual diagnostics. Both templates provide original-series preprocessing forecast errors. The dated entries retain the earlier qualification results.
+Current Python operations at the 2026-11-24 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0, RSA1 and RSA3 fitting. RSA0 and RSA1 provide preprocessing residual diagnostics and original-series forecast errors. RSA3 returns the automatically selected model and dated residuals. The dated entries retain the earlier qualification results.
 
 ## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
 
@@ -1264,3 +1264,9 @@ The repaired macOS ARM64 wheel returns the public preprocessing forecast standar
 ### M5 seasonality restart integration checkpoint
 
 At `095f3ed` the raw TR3 route reconsiders the selected model after a seasonality change. The RSA3 Python integration gate now includes the three additional public fits with a restart and multiple outliers as well as the six original cases.
+
+### M5 Python raw RSA3 and standalone TR3
+
+The installed wheel exposes `estimate_tramo_tr3` and `tramoseats_fit(..., template="RSA3")`. Both reproduced the JVM-selected orders, every fitted coefficient, likelihood and all 824 dated residuals across nine monthly series. The raw fit also reproduced all 5,760 values across 90 observed and forecast rows bit-for-bit, including the seasonality restart and multiple-outlier models. Custom and zero horizons and all five Java-free product routes passed. Residual tests and original-series forecast errors for RSA3 are tracked separately. [Installed-wheel replay](tests/test_tramo_automatic.py)
+
+The repaired macOS ARM64 wheel at core `095f3ed` passed all 126 tests in 195.439 seconds with NumPy and one execution thread. The 4,353 automatic X-13 and 1,287 extended-horizon comparisons passed, along with the earlier RSA0/RSA1 diagnostics, public forecast errors, estimation and provider import-order checks.
