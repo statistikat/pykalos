@@ -210,6 +210,12 @@
         "evidence"
       ],
       "files": {
+        "native/tramo-transform/SHA256SUMS.csv": "fad47e4875274c9a505f5f902c44629f2b80cea8d32864b7e14851944889e4f9",
+        "native/tramo-transform/cases.csv": "ddac1f18a73cc1e000e9e9a4f7199d76694f3c57ca612e617c52539ab56b1443",
+        "native/tramo-transform/inputs.csv": "a9d16ef14e6207bcb04277485e30c838a47a4309df5543ca3efeeb5fc9577151",
+        "native/tramo-transform/metadata.R": "f83998fd26bbe6cadfe9bdc0153edc068d1c0b4a53986817f957cdf0974cb056",
+        "native/tramo-transform/transform-events.csv": "f70bacb94b189ef1492427f117748a1477d897a6c4e85817825277b1b125bd26",
+        "native/tramo-transform/transform-facts.csv": "cfac8743a2ea54fb15bd02159d413cce410ac53859240a2021b082becf1be13c",
         "native/x13-automatic/SHA256SUMS.csv": "8822670eb877a60c31429cf5fc111c288ac1ce35e5d9fe6ab9f3e2f90eea0c6f",
         "native/x13-automatic/cases.csv": "5c72a6f5f36ccacbe913515f24e199fed437e015ef5d7f71a51a8bd1e3ff873d",
         "native/x13-automatic/inputs.csv": "abdf2465ab43cfb9826546537b46ee2c424f44e0460000647b5232141b06670c",

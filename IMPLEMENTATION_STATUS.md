@@ -24,6 +24,10 @@ The final installed wheel built from the source archive passed all **91 tests**,
 
 On this same host, the old `f500162` wheel failed `ao_nodet` and all three forced-mode landing-coefficient comparisons with checksum-pinned OpenBLAS. The new pin passed all four with that provider and passed **1,324/1,324** checks in a separate Homebrew OpenBLAS 0.3.34 wheel build. The Homebrew binary SHA-256 was `07bc71aac2823e9202ea4088429a4f5d05146aded15e8aa44600e285eb700415`. These runs close the earlier macOS discrepancy for this checkpoint.
 
+### M5 TRAMO preprocessing evidence checkpoint
+
+At the existing core pin `cb5c2de`, the Python evidence allowlist now includes the frozen 23-B transform corpus. The export added six evidence files, bringing the offline-verified totals to 188 core files and 17 evidence files. The Python acceptance gate is a replay of all 29 captured cases, including robust pre-correction refusals, plus checks of shape, frequency, ownership and capability reporting.
+
 ## Initial scaffold (2026-11-14)
 
 ## Implemented

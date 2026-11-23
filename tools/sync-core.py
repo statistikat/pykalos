@@ -30,7 +30,8 @@ def sha(data):
 # (item 21-H.4 JVM horizon corpus) entered the allowlist with the pin advance
 # to f500162, qualified by tests/test_x13_automatic_horizon.py.
 EVIDENCE_ALLOWLIST = ("validation/evidence/native/x13-automatic/",
-                      "validation/evidence/native/x13-horizon/")
+                      "validation/evidence/native/x13-horizon/",
+                      "validation/evidence/native/tramo-transform/")
 
 
 def safe_path(value):
