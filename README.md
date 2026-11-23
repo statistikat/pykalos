@@ -22,7 +22,9 @@ and merged components. Use `fit["finalSA"]`, `fit["finalTrend"]`,
 standard errors on `fit["series_forecast_domain"]`; `Series/StdevForecast`
 rows contain the independently estimated WK errors.
 The preprocessing residuals are in `fit["residuals"]`, with their start year
-and month, the residual vector (`tsres`) and its standard error (`ser`).
+and month, the residual vector (`tsres`), its standard error (`ser`) and
+the 24-lag independence test (`lb`). The test returns `value`, `pvalue`,
+`df` and `lags`. Up to 24 residuals give an undefined statistic and probability.
 The supported template and approximation boundary are reported by
 `capabilities()["tramo_seats_fit"]`.
 

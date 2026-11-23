@@ -1,4 +1,5 @@
 """Replay original observations through the complete monthly RSA0 entry."""
+import math
 import unittest
 
 import pykalos
@@ -71,6 +72,36 @@ class Rsa0Fit(unittest.TestCase):
                 self.assertEqual(len(errors), 24)
                 for actual, reference in zip(errors, map(from_hex, public[4:])):
                     self.assertLessEqual(abs(actual-reference), 2e-8 * (1 + abs(reference)))
+
+    def test_residual_independence(self):
+        raw = dict(grouped_records("rsa0-x86_64.txt"))
+        count = 0
+        for cid, records in grouped_records("rsa0-ljung-box-x86_64.txt"):
+            domain = raw[cid][1]
+            values = list(map(from_hex, domain[4:]))
+            for row in records[1:]:
+                with self.subTest(case=cid, entry=row[:3]):
+                    if row[0] == "short":
+                        n, innovations = map(int, row[1:3])
+                        reference = row[3:5]
+                    else:
+                        self.assertEqual(row[0], "residuals.lb")
+                        n, innovations = len(values), len(values) - 13
+                        reference = row[1:3]
+                    result = pykalos.tramoseats_fit(values[:n], start_year=int(domain[1]),
+                                                    start_month=int(domain[2]))
+                    residual = result["residuals"]
+                    self.assertEqual(len(residual["tsres"]), innovations)
+                    test = residual["lb"]
+                    self.assertEqual((test["df"], test["lags"]), (22, 24))
+                    for key, token in zip(("value", "pvalue"), reference):
+                        if math.isnan(from_hex(token)):
+                            self.assertTrue(math.isnan(test[key]))
+                        else:
+                            self.assertEqual(bits([test[key]]), bytes.fromhex(token))
+                    count += 1
+        self.assertEqual(count, 9)
+        self.assertTrue(pykalos.capabilities()["tramo_seats_fit"]["residual_ljung_box"])
 
     def test_horizons_and_refusals(self):
         domain = grouped_records("rsa0-x86_64.txt")[0][1][1]

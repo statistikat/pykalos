@@ -453,6 +453,7 @@ def tramoseats_fit(series, *, template="RSA0", frequency=12, start_year=1990, st
     finalSA, finalTrend, finalSeasonal and finalIrregular on the observed span.
     series_forecast_stdev contains preprocessing-model forecast uncertainty.
     The final WK rows independently contain component forecast uncertainty.
+    residuals["lb"] contains the public monthly residual independence test.
     """
     if not isinstance(template, str) or template.upper() not in ("RSA0", "TR0"):
         raise ValueError("tramoseats_fit: the supported template is RSA0 (TR0)")

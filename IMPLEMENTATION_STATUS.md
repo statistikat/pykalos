@@ -1,6 +1,6 @@
 # pykalos implementation status
 
-Current Python operations at the 2026-11-23 checkpoint include convolution, fixed-coefficient and automatic X-13, three TRAMO preprocessing decisions, fixed WK extraction, fitted-model decomposition and ordinary monthly RSA0 fitting. The dated entries retain the earlier qualification results.
+Current Python operations at the 2026-11-23 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, three TRAMO preprocessing decisions, fixed WK extraction, fitted-model decomposition and ordinary monthly RSA0 fitting with forecast errors and residual diagnostics. The dated entries retain the earlier qualification results.
 
 ## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
 
@@ -1126,3 +1126,7 @@ The binding snapshot advances to core `c5bcf97`. The exported source includes th
 ### M5 monthly Legacy approximation at the Python boundary
 
 The installed fixed-model WK operation now reproduces the classical airline retry and the degenerate model's JVM matrix-error status. Across the 36 captured WK requests it matched all 1,095 component rows and 58,020 values bit-for-bit, preserving the four named refusal cases. All six fitted-TRAMO bridge fixtures passed, including both mixed AO/LS horizons, with 11,343 values bit-for-bit across the final and merged rows. All 21 targeted wheel tests passed, including NumPy coexistence, Java-free execution and raw RSA0. [Installed-wheel oracle replay](tests/test_seats.py)
+
+### M5 public RSA0 residual independence
+
+The ordinary monthly fit now returns `residuals["lb"]` with the public statistic, upper-tail probability, 22 reference degrees of freedom and 24 lags. The installed wheel matched all six full-series JVM statistics and probabilities bit-for-bit. AirPassengers prefixes of 36, 37 and 38 observations returned the expected undefined, undefined and finite tests, respectively. All 22 targeted wheel tests passed, including fixed-model WK, fitted-model and raw RSA0 components, Java-free imports and NumPy coexistence. [Diagnostic replay](tests/test_tramoseats_fit.py)
