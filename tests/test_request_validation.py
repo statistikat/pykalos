@@ -438,7 +438,7 @@ class CoreStatusPinnedTest(unittest.TestCase):
     def test_fractional_frequency_never_reaches_core(self):
         # The contrast pair: 4 (well-formed, unsupported) reaches the core,
         # 4.9 (malformed) is a boundary TypeError — and the seasonal default
-        # is never allocated from a to-be-refunded frequency.
+        # is never allocated from a to-be-refused frequency.
         with self.assertRaises(TypeError):
             quick_request(frequency=4.9)
 

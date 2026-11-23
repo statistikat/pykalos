@@ -792,3 +792,177 @@ change, none** — the zero-horizon surface is bit-stable and the horizon
 acceptance is JVM-qualified at the core's own tiers. CI note: the
 `smoke.yml` core-tools checkout ref `4f0625c` needs no move —
 `tools/build-openblas.py` is the identical blob (`69285ff…`) at f500162.
+
+## REVIEW-1: request-validation hardening at the Python and raw-bindings boundary — 2026-11-23
+
+Adopts the two P1 sections of `adaption_in_the_implemetation_needed.md`
+(external review dated 2026-11-23 at `808e01c`, tracked at the repo root,
+referenced never edited): **"Validate the Python automatic-fit request
+before coercion"** and **"Reject unknown raw keys and negative budgets"**.
+Core pin unchanged (`f500162…`); no `vendor/` file touched; the raw
+entry's explicit-sigma contract and the convenience entry's legacy
+default are verbatim unchanged (pinned by
+`test_explicit_sigma_contract_unchanged`).
+
+**Python boundary (`src/pykalos/__init__.py`).** New private validators
+(`_request_int/_request_flag/_request_float/_request_span/_request_series`)
+run before any use of a request value; the function body contains no
+`int()`/`bool()`/`float()` coercion left. Documented policy table lives on
+the `x13_automatic` docstring (pointer from the module docstring),
+mirrored in C++ comments. Decisions: integer slots accept `int` and
+`__index__` integer scalars (numpy integers) — the review's RECOMMENDED
+strict set — and refuse `bool` and EVERY float including an integral one;
+flags accept `bool` and `numpy.bool_` only (duck-typed, no numpy import;
+the type-name check covers numpy 1 `bool_` and numpy 2 `bool` spellings);
+`outlier_span` takes exactly two integer endpoints; the series refuses
+`str`/`bytes`/bytearray/memoryview, mappings, sets, 0-D/>1-D arrays and
+text/non-scalar elements, keeps ordered iterables, 1-D arrays and numeric
+scalars, and leaves NaN/Inf elements to the core's documented
+"complete finite series" status (M2 convolve doctrine). The per-month
+seasonal default is allocated only from the validated frequency.
+Well-formed-but-unsupported requests are NOT pre-empted: `frequency=4`
+still reaches the core and keeps `unsupported:x13 automatic fit monthly
+series only`; deliberately NO range rules were added at the boundary
+(negative `backcast`/`forecast` are legal 21-H.4 semantics; any range
+check would pre-empt core statuses).
+
+**Raw boundary (`bindings/module.cpp`).** `validate_request_keys` checks
+every dict key against the 44-required/6-optional raw schema and raises
+`TypeError` naming all unknown keys — the `use_calender_detection` typo
+can no longer silently vanish (the review's observation that the same
+status came back is pinned fixed). Both budgets are sign-checked BEFORE
+the `size_t` conversion (negative → `ValueError` naming field and value;
+the old `-1 → SIZE_MAX` wraparound is pinned fixed). Every field is read
+through explicit typed getters (`req_int/req_bool/req_double/req_str/
+req_series` + manual `outlier_types`/span parsing): integers must
+implement `__index__` (`bool` refused; note EVERY ndarray satisfies
+`PyIndex_Check` because numpy fills the slot, so the conversion itself is
+the scalar test in `req_series`), flags must be real Python `bool`s (the
+raw entry refuses `numpy.bool_` — documented asymmetry versus the product
+entry), text/binary containers and per-element text are refused, and all
+failure messages name the field and the offending type (replacing
+pybind11's anonymous `Unable to cast … type '?'` `RuntimeError`s with
+`TypeError`s). One deliberate widening: a **generator** `input` now
+reaches the core (the old vector caster rejected it with the anonymous
+RuntimeError while the wrapper's `float()` path had always accepted
+generators; the raw entry now matches the documented iterable policy).
+
+**Coercion before/after (probe list; `tmp_opencode/review1/pre-probe*.log`
+BEFORE on the pre-change wheel — extracted from `dist/` — and
+`post/final-probe*.log` AFTER on the final wheel).**
+
+| input (entry) | BEFORE | AFTER |
+|---|---|---|
+| `frequency=12.9` (wrapper) | sent `frequency=12` | `TypeError: … 'frequency must be an integer, got the float 12.9; fractional values are refused (no truncation) …'` |
+| `start_period=1.9` (wrapper) | sent `first_period=1` | `TypeError` naming `start_period` |
+| `forecast=0.9` (wrapper) | sent `forecast=0` (horizon silently removed) | `TypeError` naming `forecast` |
+| `backcast=float('nan')` (wrapper) | `ValueError` from `int()` | `TypeError` (consistent class) |
+| `frequency='12'` / `frequency=True` (wrapper) | sent 12 / sent **1** (`["msr"]*1` allocated) | `TypeError` both |
+| `start_year=1970.5`, `trend_length=0.9` (wrapper) | sent 1970 / 0 | `TypeError` both |
+| `outlier_span=(0,5,9)` (wrapper) | sent `(0, 5)` (third dropped) | `TypeError: … needs exactly two integer endpoints, got 3 values …` |
+| `outlier_span=(0.9,5.9)` (wrapper) | sent `(0, 5)` | `TypeError` naming `outlier_span[0]` |
+| `outlier_span='12'` (wrapper) | sent `(1, 2)` (string indexing!) | `TypeError` (text refused) |
+| `use_calendar_detection='False'`, `outliers='False'` (wrapper) | sent **True** | `TypeError: … 'False' would have meant True` |
+| `use_user_variables=1` (wrapper) | coerced True by truthiness | `TypeError` |
+| digit-string / bytes series (wrapper) | reached the core as `[1.0,2.0,…]` | `TypeError` (text/binary refused) |
+| multivariate list / 2-D ndarray / np scalar / **dict** / `['1.5',…]` series (wrapper) | confusing `TypeError` / **dict iterated its keys silently** / strings float()-parsed | clear `TypeError`s, all refused |
+| `frequency=np.int64(12)`, `np.bool_` flags, np-int span, int64/float64 1-D arrays (wrapper) | accepted | **still accepted** (pinned) |
+| unknown key `use_calender_detection` (raw) | **silently ignored, same status** | `TypeError: … unknown key(s): use_calender_detection …` |
+| `outlier_max_round=-1` / `outlier_max_outliers=-2` (raw) | status `available` (SIZE_MAX budget) | `ValueError: … must be non-negative, got -1` |
+| budgets negative via `**overrides` (wrapper) | same wraparound | same `ValueError` (raw parser, pinned) |
+| flag `'False'`/`1`/`np.True_` (raw) | str → anonymous `RuntimeError`; **int/np.True_ coerced to True** | `TypeError` naming field, all three |
+| digit-string/bytes/memoryview `input` (raw) | anonymous `RuntimeError` | `TypeError` naming `'input'` |
+| `input=['101.0',…]` (raw) | `RuntimeError` (whole list rejected) | `TypeError` ("text elements are refused") |
+| 2-D ndarray `input` (raw) | anonymous `RuntimeError` | `TypeError` ("non-scalar element of type ndarray") |
+| `sigma=b'legacy'` (raw) | **accepted** (string caster took bytes) | `TypeError` |
+| `frequency=12.9`/`True`, `backcast=0.9`, `outlier_span=(0.9,5.9)`/3-tuple (raw) | anonymous `RuntimeError` | `TypeError`s naming fields |
+| input generator (raw) | `RuntimeError` (rejected) | **accepted** (documented widening) |
+| valid monthly request (both entries), quarterly `frequency=4`, NaN series, narrow span, deferred flags | core statuses | **identical** core statuses (pinned rows) |
+
+**Tests.** New `tests/test_request_validation.py`: **52 tests + 51
+subtests** — every malformed probe-list input through the entry that
+accepted it (wrapper slots/flags/span/series; raw keys/budgets/flags/
+input/span incl. the mapping/set raw-input regression), the
+typo/negative/valid trio through **both** entries, accepted-interop pins
+(numpy int scalars, `np.bool_` on the product entry only), and status
+rows pinning the existing core responses unchanged: monthly valid
+`available`, quarterly valid `…monthly series only`, deferred-flag,
+NaN-series finite, narrow-span refusal, missing `mode` `KeyError`
+message, explicit-sigma contract.
+
+**Gates (all under `env -u LD_LIBRARY_PATH`, provider
+`SCRATCH/openblas`, wheel `pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`
+sha256 `5d08fdd5f03d84a583e1f2d9e0650a3e29f520fcb0b6b494c4c60da7da1876e8`,
+zero compiler warnings, `ldd` → pinned 0.3.34 + system `libgomp`).**
+Default `pytest tests`: **30 passed + 7 subtests → 82 passed + 58
+subtests** (30 + the 52 new), 0 failures, 3m01s; smoke stays 3/3,
+discovery baseline 30 confirmed (`unittest discover` runs the new file
+identically to pytest). **Bit-unchanged verdict: proven** — the M4 and
+horizon scoreboard blocks (worst relative deviations per family, `-s`
+capture `pre-default-suite.log` vs `final-default-suite.log`) are
+**byte-identical pre/post** apart from the pytest summary line: landing
+coefficients keep worst `9.747e-03` at `ao_nodet/arma1` (the four
+review-named landing cases live in the default tier), landing stats
+`4.482e-07` at `ao_nodet/aicc`, tables `5.385e-16` at
+`mode_logadd/e11[64]`, hz quick tier `1.845e-07` at `quick_h6/out[101]`
+— identical in both captures. The detection tier was re-verified on the
+final wheel separately: `ao,ls,multi,so` → 11 passed + 7 subtests, 1375
+checks 0 failures (tmean `7.423e-04` multi/diff0, tables `5.036e-07`
+multi/out[48]); horizon `ao_b3,multi_b3h6,so_h6` → 5 passed, 974 checks
+0 failures (out `1.047e-06` so_h6, d11final `3.130e-07`, e11
+`3.763e-07`) — every worst reproduces the M4/M5 records verbatim.
+
+**Review-check diagnostic ("four landing-coefficient failures on
+macOS/Homebrew — repeat with the qualification provider BEFORE changing
+tolerances").** On Linux x86-64 with the **qualified OpenBLAS 0.3.34
+provider** the four cases (`ao_nodet`, `mode_logadd`, `mode_mult`,
+`mode_pseudo`) **PASS both before and after this change** — they live in
+the default (outlier-free/forced-mode) tier, so the pre/post default
+suite replays above already carry them (byte-identical landing
+coefficient worst `9.747e-03` at `ao_nodet/arma1`); a dedicated
+four-case run added the isolated evidence: pre-change wheel 11 passed +
+7 subtests, 1324 checks 0 failures (167.75s), post-change wheel 11
+passed + 7 subtests, same 1324 checks 0 failures, worsts reproducing the
+M4 record (landing coefficients `9.747e-03` at `ao_nodet/arma1`, panel
+BIC2 `8.095e-03` at `ao_nodet/arma0/panel2/bic`, tmean `4.841e-04` at
+`ao_nodet/diff0/tmean`). No tolerance was touched and none is needed on
+this provider; the divergence is a property of the reviewer's Homebrew
+provider build, not of the pinned-qualification path.
+
+**Adjudication (where the review over-states or under-states).**
+(1) The `'False' → True` flag coercion is a WRAPPER behavior only — the
+raw entry already refused strings, albeit with an anonymous
+`RuntimeError` (`flag='False'` BEFORE rows above); the fix still had to
+land in both places because the raw entry accepted `1`/`np.True_` as
+True. (2) "digit string and bytes reached the core as series input" is
+confirmed via the wrapper's `float()` path and a raw request dict
+carrying them; the raw container cast itself rejected them. (3) "check
+scalar integer fields for exact values **and range**" was implemented as
+exactness+type only: boundary range rules would pre-empt documented core
+statuses (monthly-only, negative-horizon envelope) — recorded deviation,
+tests pin the core statuses instead. (4) Undocumented siblings found and
+fixed while at it: dict series iterated keys silently; `frequency=True`
+became 1 and `["msr"]*1` allocated from it; `sigma=b'legacy'` accepted
+raw. (5) Reviewer's `__init__.py#L119`/`module.cpp#L63/#L473/#L424` line
+refs verified against the pre-change tree (drift < 10 lines).
+
+**Deferred (dated, deliberate — nothing silently dropped).**
+All remain gated on the **next core pin advance**, per slice
+instruction "both ride the pin advance":
+- P2 "solver and horizon metadata agree with the pinned core"
+  (`capabilities()["automatic"]["estimation_solver"] = "bfgs_default"`
+  vs the pinned header's `PinnedLevenbergMarquardt`; `horizon_envelope`
+  wording vs negative = annual-frequency semantics; capability-test
+  extension): the alignment must quote the NEW core's contract, so it
+  lands with the pin advance, not against the old header.
+- P2 "Exercise NumPy and make provider qualification reproducible"
+  (dedicated NumPy CI lane in `smoke.yml`, provider
+  version/config/fingerprint logging from the wheel test env,
+  `smoke.yml` core-tools tooling-pin `4f0625c` bump): the workflow's
+  provider-tooling ref and the capability-dict edits belong to the same
+  pin-advance batch so CI and the lock move atomically.
+- NumPy test lane stays skip-clean today (numpy IS installed in the
+  qualification venv; the 9 interop tests + this slice's numpy cases
+  ran here, not skipped).
+Datable hygiene: no dated external data involved — nothing to pin.
+
