@@ -18,6 +18,9 @@ start_month=1)` estimates the RSA0 template from the original series. It
 returns the fitted airline MA coefficients, mean, likelihood and dated WK
 and merged components. Use `fit["finalSA"]`, `fit["finalTrend"]`,
 `fit["finalSeasonal"]` and `fit["finalIrregular"]` for the observed period.
+`fit["series_forecast_stdev"]` contains the preprocessing model’s original-series
+standard errors on `fit["series_forecast_domain"]`; `Series/StdevForecast`
+rows contain the independently estimated WK errors.
 The supported template and approximation boundary are reported by
 `capabilities()["tramo_seats_fit"]`.
 

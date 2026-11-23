@@ -639,6 +639,8 @@ def tramoseats_fit(series, *, template="RSA0", frequency=12, start_year=1990, st
     and backcast counts are periods when nonnegative and years when negative.
     The default requests two forecast years. A successful result includes
     finalSA, finalTrend, finalSeasonal and finalIrregular on the observed span.
+    series_forecast_stdev contains preprocessing-model forecast uncertainty.
+    The final WK rows independently contain component forecast uncertainty.
     """
     if not isinstance(template, str) or template.upper() not in ("RSA0", "TR0"):
         raise ValueError("tramoseats_fit: the supported template is RSA0 (TR0)")
@@ -647,8 +649,12 @@ def tramoseats_fit(series, *, template="RSA0", frequency=12, start_year=1990, st
     data = _seats_domain(series, spec, "tramoseats_fit")
     if spec["frequency"] != 12:
         raise ValueError("tramoseats_fit: RSA0 requires monthly observations")
-    result = _kalos._tramoseats_rsa0(data, spec["start_year"], spec["start_month"],
-                                    spec["backcast"], spec["forecast"])
+    # The covariance projection takes months. Domain validation checks these
+    # normalized counts against the native integer range before conversion.
+    months = [count if count >= 0 else -12 * count for count in (spec["backcast"], spec["forecast"])]
+    result = _kalos._tramoseats_rsa0(data, spec["start_year"], spec["start_month"], *months)
+    first_year, first_period = divmod(12 * spec["start_year"] + spec["start_month"] - 1 + len(data), 12)
+    result["series_forecast_domain"] = dict(start_year=first_year, start_month=first_period + 1, length=months[1])
     result.update(template="RSA0", method="tramoseats", mode="additive", series=data)
     if result["status"] == "ok":
         observed = {row["component"]: row["values"] for row in result["merged"] if row["information"] == "Value"}

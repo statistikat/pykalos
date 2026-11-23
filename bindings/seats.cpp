@@ -115,11 +115,15 @@ void bind_seats(py::module_& module) {
     module.def("_tramoseats_rsa0", [](const std::vector<double>& series, int year, int month,
                                       int backcast, int forecast) {
         kalos::tramo_seats_rsa0_result output;
+        kalos::tramo_tr0_forecast_errors_result errors;
         {
             py::gil_scoped_release release;
             output = kalos::run_tramo_seats_rsa0(series, year, month, backcast, forecast);
+            errors = kalos::tramo_tr0_forecast_errors(output.preprocessing, forecast);
         }
         auto result = decomposition(output.decomposition);
+        result["series_forecast_stdev_status"] = errors.status;
+        result["series_forecast_stdev"] = errors.standard_errors;
         const auto& fit = output.preprocessing;
         const auto& model = fit.model;
         result["model"] = py::dict(

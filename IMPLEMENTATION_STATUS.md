@@ -1046,3 +1046,7 @@ On macOS ARM64 a repaired 2.98 MB wheel passed all 76 targeted tests, including 
 ### M5 RSA0 forecast uncertainty checkpoint
 
 The core pin advances to `2fe3d8e8c8b6bfeae9fa4224517e9e0c12228fe8`. It supplies independent original-series forecast errors from the fitted preprocessing model and the existing WK forecast uncertainty. Offline verification covers 194 core and 47 evidence files. The binding gate checks six forecast domains against 144 original-series standard errors at the core’s covariance threshold and 144 WK values bit-for-bit, plus signed and zero horizons.
+
+### M5 Python forecast uncertainty on the original series
+
+`tramoseats_fit` now returns the preprocessing model’s `series_forecast_stdev`, its own status and the dated forecast domain. The WK Series/StdevForecast row remains available for component uncertainty. Python normalizes the signed horizon once for both projections. The repaired private-provider wheel passed all 77 targeted tests. For all six fits, 144 original-series standard errors passed the frozen covariance budget (2e−8 × (1 + |reference|)); all 144 paired WK standard errors were bit-exact. Alternate and zero horizons passed. [Prediction tests](tests/test_tramoseats_fit.py)
