@@ -96,7 +96,7 @@ class TramoTransformTest(unittest.TestCase):
         self.assertFalse(caps["fit"])
         self.assertEqual(caps["primitives"], ("convolve", "x13_automatic", "x13_fit", "tramo_critical_value",
                                               "tramo_seasonality", "tramo_transform_decision", "tramo_calendar_f_test",
-                                              "tramo_full_initial_calendar",
+                                              "tramo_full_initial_calendar", "estimate_tramo_tr1",
                                               "seats_extract_wk", "seats_from_tramo", "tramoseats_fit",
                                               "prepare_regression", "prepare_series", "estimate_sarima_fixed"))
         for count in (True, -1, 2**31, 12.5, "50"):

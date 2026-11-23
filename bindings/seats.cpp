@@ -2,6 +2,7 @@
 #include <pybind11/stl.h>
 #include <kalos/tramo_seats_pipeline.hpp>
 #include <kalos/arma_diagnostics.hpp>
+#include <kalos/numerics.hpp>
 #include <optional>
 
 namespace py = pybind11;
@@ -31,6 +32,47 @@ py::dict decomposition(const kalos::tramo_seats_pipeline_result& output) {
     return result;
 }
 
+py::dict preprocessing(const kalos::TramoFitResult& fit) {
+    py::dict result("status"_a=fit.status);
+    if (fit.status != "available") {
+        result["refusal_note"] = fit.refusal_note;
+        return result;
+    }
+    const auto& o = fit.orders;
+    py::dict model("orders"_a=py::dict("p"_a=o.p, "d"_a=o.d, "q"_a=o.q, "bp"_a=o.bp, "bd"_a=o.bd, "bq"_a=o.bq),
+                   "log"_a=fit.log, "mean_correction"_a=fit.mean);
+    // Fit parameters are in JVM order, with regular and seasonal AR preceding MA.
+    const std::pair<const char*, int> sizes[] = {{"phi", o.p}, {"bphi", o.bp}, {"theta", o.q}, {"btheta", o.bq}};
+    std::size_t offset = 0;
+    for (const auto& [name, count] : sizes) {
+        const auto length = static_cast<std::size_t>(count);
+        if (length > fit.parameters.size() - offset) throw std::logic_error("incomplete fitted TRAMO model");
+        model[name] = std::vector<double>(fit.parameters.begin() + offset, fit.parameters.begin() + offset + length);
+        offset += length;
+    }
+    if (offset != fit.parameters.size()) throw std::logic_error("unexpected fitted TRAMO parameters");
+    result["model"] = std::move(model);
+    py::list variables;
+    static constexpr const char* types[] = {"AO", "LS", "TC", "SO"};
+    if (fit.mean) variables.append(py::dict("name"_a="const", "coefficient"_a=fit.regression_coefficients.at(0)));
+    for (std::size_t i = 0; i < fit.variables.size(); ++i) {
+        const auto& variable = fit.variables[i];
+        variables.append(py::dict("name"_a=variable.name, "type"_a=types[static_cast<int>(variable.type)],
+                                  "position"_a=variable.position,
+                                  "coefficient"_a=fit.regression_coefficients.at(i + static_cast<std::size_t>(fit.mean))));
+    }
+    result["variables"] = std::move(variables);
+    result["likelihood"] = py::dict("log_likelihood"_a=fit.ls_ll, "transformation_adjustment"_a=fit.ls_tadj,
+                                    "adjusted_log_likelihood"_a=fit.ls_all, "ssq"_a=fit.ls_ssq,
+                                    "effective"_a=fit.ls_eff, "estimated"_a=fit.ls_npar);
+    const auto& b = fit.builder;
+    const auto start = kalos::TimeDomain(b.domain_year, b.domain_position + 1, 12, b.domain_length)
+                           .at(b.domain_length - fit.ls_eff);
+    result["residuals"] = py::dict("start_year"_a=start.first, "start_month"_a=start.second,
+                                   "tsres"_a=fit.full_residuals);
+    return result;
+}
+
 kalos::tramo_seats_model_request model(std::vector<double> series, const py::dict& spec) {
     kalos::tramo_seats_model_request request;
     request.series = std::move(series);
@@ -52,6 +94,14 @@ kalos::tramo_seats_model_request model(std::vector<double> series, const py::dic
 }
 
 void bind_seats(py::module_& module) {
+    module.def("_estimate_tramo_tr1", [](const std::vector<double>& series, int year, int month) {
+        kalos::TramoFitResult fit;
+        {
+            py::gil_scoped_release release;
+            fit = kalos::estimate_tramo_tr1(series, year, month);
+        }
+        return preprocessing(fit);
+    });
     module.def("_seats_extract_wk", [](std::vector<double> series, const py::dict& spec) {
         auto request = model(std::move(series), spec);
         request.innovation_variance = spec["innovation_variance"].cast<double>();

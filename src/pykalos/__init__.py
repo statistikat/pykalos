@@ -25,7 +25,7 @@ from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
 __all__ = ["capabilities", "convolve", "core_version", "x13_automatic",
            "x13_automatic_fit", "x13_fit", "tramo_critical_value", "tramo_seasonality",
-           "tramo_transform_decision", "tramo_calendar_f_test", "tramo_full_initial_calendar", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
+           "tramo_transform_decision", "tramo_calendar_f_test", "tramo_full_initial_calendar", "estimate_tramo_tr1", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
 __version__ = "0.1.0"
 
 # Decoder-pinned module scalars of the qualified envelope (docs/contracts/
@@ -190,6 +190,17 @@ def tramo_full_initial_calendar(series, *, start_year, start_month, log, frequen
     operation = "tramo_full_initial_calendar"
     arguments = _calendar_domain(series, start_year, start_month, frequency, operation)
     return _kalos._tramo_full_initial_calendar(*arguments, _request_flag(log, "log", operation))
+
+
+def estimate_tramo_tr1(series, *, start_year, start_month, frequency=12):
+    """Fit public TR1 preprocessing to dated, complete monthly observations.
+
+    Returns the chosen transformation, fitted SARIMA model in JVM coefficient
+    convention, registered outliers with zero-based observation positions,
+    likelihood statistics and dated full residuals.
+    """
+    operation = "estimate_tramo_tr1"
+    return _kalos._estimate_tramo_tr1(*_calendar_domain(series, start_year, start_month, frequency, operation))
 
 
 def tramo_transform_decision(series, log_preference, precision, *, frequency=12, mean=True,

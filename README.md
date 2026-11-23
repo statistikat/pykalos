@@ -22,6 +22,11 @@ Use `tramo_full_initial_calendar(series, start_year=1990, start_month=1, log=Tru
 for the stock initial TRfull rule on original observations. It returns the contrast
 comparison and the mean, leap-year and Easter t statistics and retention decisions.
 
+Call `estimate_tramo_tr1(series, start_year=1990, start_month=1)` for stock
+TR1 preprocessing of a complete monthly series. Its result gives the fitted
+model, regression variables in model order with zero-based outlier positions,
+likelihood statistics and dated residuals.
+
 For complete monthly observations, `tramoseats_fit(series, start_year=1990,
 start_month=1)` estimates the RSA0 template from the original series. It
 returns the fitted airline MA coefficients, mean, likelihood and dated WK

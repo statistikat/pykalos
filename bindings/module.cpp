@@ -669,7 +669,7 @@ PYBIND11_MODULE(_kalos, m) {
         result["fit"] = false;
         result["primitives"] = py::make_tuple("convolve", "x13_automatic", "x13_fit", "tramo_critical_value",
                                               "tramo_seasonality", "tramo_transform_decision", "tramo_calendar_f_test",
-                                              "tramo_full_initial_calendar", "seats_extract_wk", "seats_from_tramo",
+                                              "tramo_full_initial_calendar", "estimate_tramo_tr1", "seats_extract_wk", "seats_from_tramo",
                                               "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed");
         result["status"] = "minimal_binding";
         py::dict restricted;

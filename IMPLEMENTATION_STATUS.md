@@ -1183,3 +1183,7 @@ A fresh checkout with `core.autocrlf=true` modified the locked source and fixtur
 ### M5 raw TR1 and M6 finite state prediction checkpoint
 
 Core `5350e96` contains the public fixed-airline TR1 preprocessor from original observations and the optimized finite state predictor. The Python integration checks the six public TR1 preprocessing records, reruns fixed-order oracle agreement, and repeats the original eight-case fixed-order timing matrix with the same JVM, wheel toolchain and thread settings.
+
+### M5 raw monthly TR1 preprocessing
+
+`estimate_tramo_tr1` fits the stock TR1 preprocessing specification from dated complete observations and returns its transformation, model, registered outliers, likelihood and dated full residuals. The repaired wheel matched reference dates, orders, zero-based outlier positions, parameter and regression coefficients, likelihood fields and all 570 residuals across the six public JVM fits. All 92 targeted installed-wheel tests passed, including the 27 fixed-order controls, stock calendar decisions, residual diagnostics and existing adjustment routes. [TR1 replay](tests/test_tramo_automatic.py)
