@@ -622,6 +622,11 @@ PYBIND11_MODULE(_kalos, m) {
         result["version"] = kalos::version;
         result["commit"] = kalos::core_revision;
         result["provider"] = kalos::lapack::provider_name();
+#ifdef PYKALOS_BUNDLED_OPENBLAS
+        result["provider_linkage"] = "private_static";
+#else
+        result["provider_linkage"] = "external";
+#endif
         result["provider_version"] = kalos::lapack::provider_version();
         result["blas_integer_bits"] = 32;
         result["openmp"] = kalos::parallel_info().compiled;

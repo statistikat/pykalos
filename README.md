@@ -59,9 +59,12 @@ Install an LP64 OpenBLAS with CBLAS/LAPACKE development headers (baseline 0.3.34
 a C++17 compiler, CMake and Python 3.10+. Then run `python -m pip install .`.
 Set `CMAKE_ARGS="-DOpenBLAS_ROOT=/path/to/openblas"` if discovery needs help.
 Core sources are bundled and never fetched during installation. The current
-source-built wheel links external OpenBLAS. The NumPy test lane exercises array
-inputs and both library import orders. Portable wheels with private OpenBLAS
-remain a distribution milestone.
+source-built wheel links external OpenBLAS by default. An opt-in POSIX build
+(`-DPYKALOS_BUNDLE_OPENBLAS=ON -DOpenBLAS_ROOT=<pinned-provider>`) links the
+LP64 static archive privately into the extension. The portable workflow repairs
+Fortran and OpenMP runtime dependencies, installs the wheel in isolation, checks
+provider visibility, and exercises both NumPy import orders. Hosted Linux and
+macOS qualification is tracked in IMPLEMENTATION_STATUS.md.
 
 Inputs are copied into owned vectors. Computation releases the GIL, and signal
 checks reacquire it only on the calling thread. Optional OpenMP is owned by Kalos.

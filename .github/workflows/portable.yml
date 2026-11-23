@@ -1,0 +1,69 @@
+name: Bundled Python wheels
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  portable:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: pykalos
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Read the provider tooling revision
+        id: core
+        run: |
+          python -c 'import json; print("revision=" + json.load(open("pykalos/core.lock.json"))["commit"])' >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v5
+        with:
+          repository: statistikat/kalos
+          ref: ${{ steps.core.outputs.revision }}
+          path: core-build-tools
+      - name: Build and repair the manylinux wheel
+        if: runner.os == 'Linux'
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/workspace" -w /workspace/pykalos \
+            quay.io/pypa/manylinux_2_28_x86_64 bash -eu -o pipefail -c '
+              export PATH=/opt/python/cp312-cp312/bin:$PATH
+              python -m pip install build ninja cmake auditwheel
+              python ../core-build-tools/tools/build-openblas.py --prefix /tmp/pykalos-openblas --jobs 2
+              export CMAKE_ARGS="-DPYKALOS_BUNDLE_OPENBLAS=ON -DOpenBLAS_ROOT=/tmp/pykalos-openblas"
+              python -m build
+              auditwheel repair --plat manylinux_2_28_x86_64 -w wheelhouse dist/*.whl
+              auditwheel show wheelhouse/*.whl'
+      - name: Build and repair the macOS wheel
+        if: runner.os == 'macOS'
+        working-directory: pykalos
+        run: |
+          brew install gcc ninja
+          python -m pip install build delocate
+          export MACOSX_DEPLOYMENT_TARGET="$(sw_vers -productVersion | cut -d. -f1).0"
+          python ../core-build-tools/tools/build-openblas.py --prefix "$RUNNER_TEMP/pykalos-openblas" --jobs 2
+          export CMAKE_ARGS="-DPYKALOS_BUNDLE_OPENBLAS=ON -DOpenBLAS_ROOT=$RUNNER_TEMP/pykalos-openblas"
+          python -m build
+          delocate-wheel --require-archs "$(uname -m)" --require-target-macos-version "$MACOSX_DEPLOYMENT_TARGET" -w wheelhouse dist/*.whl
+          delocate-listdeps --all wheelhouse/*.whl
+      - name: Validate the repaired wheel in an isolated environment
+        working-directory: pykalos
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          KALOS_NUM_THREADS: '1'
+        run: |
+          python -m venv "$RUNNER_TEMP/test-env"
+          source "$RUNNER_TEMP/test-env/bin/activate"
+          python -m pip install --no-deps wheelhouse/*.whl
+          python tools/check-wheel-provider.py --bundled
+          PYTHONPATH=tests python -m unittest -v test_smoke test_x13_fixed test_tramo_transform test_seats test_tramoseats_fit
+          python -m pip install numpy
+          PYTHONPATH=tests python -m unittest -v test_numpy_interop test_provider_import_order
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ runner.os }}-bundled-wheel
+          path: pykalos/wheelhouse/*.whl
+          if-no-files-found: error
