@@ -1175,3 +1175,7 @@ The installed wheel exposes `residuals["doornikhansen"]` and advertises it on th
 ### M5 stock TRfull initial calendar decisions
 
 `tramo_full_initial_calendar` accepts dated original monthly observations and the level/log decision. It exposes the stock TRfull working-day/trading-day comparison and the rule's mean, leap-year and Easter t statistics, retention flags and module-change decision. All 20 level/log JVM fits agreed bit-for-bit on the captured numerical outputs and exactly on the optional leap-year test and all decisions. All 86 targeted installed-wheel tests passed. [Stock calendar replay](tests/test_tramo_calendar.py)
+
+### M6 Windows checkout of the locked source and evidence
+
+A fresh checkout with `core.autocrlf=true` modified the locked source and fixture bytes and failed offline verification on this host. Git now preserves the committed bytes under both vendor trees. A second fresh CRLF-configured checkout verified every hash for all 196 core files and 63 evidence files at `2bf7cc3`. Both portable jobs verify this immediately after checkout and before building the provider.

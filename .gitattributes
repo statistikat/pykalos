@@ -1,0 +1,3 @@
+# Preserve the source and numerical evidence bytes recorded in core.lock.json.
+vendor/kalos/** -text
+vendor/kalos-evidence/** -text

@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Verify the locked source and evidence checkout
+        run: python pykalos/tools/sync-core.py --verify
       - name: Read the provider tooling revision
         id: core
         run: |
@@ -85,6 +87,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Verify the locked source and evidence checkout
+        run: python pykalos/tools/sync-core.py --verify
       - name: Record native CPython and the pinned provider tooling
         id: core
         shell: pwsh
