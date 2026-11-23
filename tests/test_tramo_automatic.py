@@ -182,7 +182,8 @@ class PublicTr1(unittest.TestCase):
 
 class PublicTr3(unittest.TestCase):
     def test_raw_rsa3_product(self):
-        cases = grouped_records("rsa3-x86_64.txt") + grouped_records("rsa3-additional-x86_64.txt")
+        cases = [case for corpus in ("rsa3", "rsa3-additional", "rsa3-mean-retry")
+                 for case in grouped_records(corpus + "-x86_64.txt")]
         residuals = rows = values = 0
         for cid, records in cases:
             with self.subTest(case=cid):
@@ -208,7 +209,7 @@ class PublicTr3(unittest.TestCase):
                     row, = (r for r in expected if r[1:3] == [component, "Value"])
                     self.assertEqual(bits(raw[key]), bytes.fromhex("".join(row[6:])))
                 self.assertEqual((raw["series_forecast_stdev_status"], raw["series_forecast_stdev"]), ("unavailable", []))
-        self.assertEqual((len(cases), residuals, rows, values), (9, 824, 90, 5760))
+        self.assertEqual((len(cases), residuals, rows, values), (13, 1196, 130, 8340))
 
     def test_horizons_and_capabilities(self):
         _, year, month, n, *data = grouped_records("rsa3-x86_64.txt")[0][1][1]

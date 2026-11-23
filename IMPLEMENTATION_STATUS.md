@@ -1274,3 +1274,7 @@ The repaired macOS ARM64 wheel at core `095f3ed` passed all 126 tests in 195.439
 ### M5 TR3 fourth-pass and selected-model diagnostics integration checkpoint
 
 The Python snapshot advances to `a4dc93f` for the four additional raw RSA3 fast-mean fits and public residual diagnostics on all 13 models. The two independent JVM diagnostic panels contain 65 scales, statistics and probabilities in addition to the degrees of freedom.
+
+### M5 Python RSA3 fourth-pass fits
+
+The repaired wheel at `a4dc93f` reproduced the four public fourth-pass models, including 372 residuals and 2,580 observed and forecast values. Together the standalone and raw TR3 routes now match all 1,196 residuals from 13 fits, with 8,340 bit-exact raw component values across 130 rows. All 18 targeted tests passed, including the Java-free raw fit. [Reproducer](tests/test_tramo_automatic.py)
