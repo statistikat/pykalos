@@ -1130,3 +1130,7 @@ The installed fixed-model WK operation now reproduces the classical airline retr
 ### M5 public RSA0 residual independence
 
 The ordinary monthly fit now returns `residuals["lb"]` with the public statistic, upper-tail probability, 22 reference degrees of freedom and 24 lags. The installed wheel matched all six full-series JVM statistics and probabilities bit-for-bit. AirPassengers prefixes of 36, 37 and 38 observations returned the expected undefined, undefined and finite tests, respectively. All 22 targeted wheel tests passed, including fixed-model WK, fitted-model and raw RSA0 components, Java-free imports and NumPy coexistence. [Diagnostic replay](tests/test_tramoseats_fit.py)
+
+### M2 Python signal delivery and module reuse
+
+An installed-wheel subprocess now interrupts a long convolution and a separate fixed-order estimation from a Python timer thread. Both operations delivered `KeyboardInterrupt` to the calling thread, joined the timer and then completed another native operation successfully. The two-process check passed locally in 0.75 seconds. The portable and NumPy jobs run it on their installed wheels. [Signal tests](tests/test_interrupt.py)
