@@ -30,7 +30,9 @@ rows contain the independently estimated WK errors.
 The preprocessing residuals are in `fit["residuals"]`, with their start year
 and month, the residual vector (`tsres`), its standard error (`ser`) and
 the 24-lag independence test (`lb`). The test returns `value`, `pvalue`,
-`df` and `lags`. Up to 24 residuals give an undefined statistic and probability.
+`df` and `lags`. Up to 24 residuals give an undefined independence statistic and probability.
+The Doornik–Hansen normality test is returned as `doornikhansen` and is
+`None` when there are at most seven fitted residuals.
 The supported template and approximation boundary are reported by
 `capabilities()["tramo_seats_fit"]`.
 

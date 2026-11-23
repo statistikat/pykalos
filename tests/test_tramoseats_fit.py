@@ -73,10 +73,10 @@ class Rsa0Fit(unittest.TestCase):
                 for actual, reference in zip(errors, map(from_hex, public[4:])):
                     self.assertLessEqual(abs(actual-reference), 2e-8 * (1 + abs(reference)))
 
-    def test_residual_independence(self):
+    def check_diagnostic(self, corpus, name, df):
         raw = dict(grouped_records("rsa0-x86_64.txt"))
         count = 0
-        for cid, records in grouped_records("rsa0-ljung-box-x86_64.txt"):
+        for cid, records in grouped_records(corpus):
             domain = raw[cid][1]
             values = list(map(from_hex, domain[4:]))
             for row in records[1:]:
@@ -85,15 +85,17 @@ class Rsa0Fit(unittest.TestCase):
                         n, innovations = map(int, row[1:3])
                         reference = row[3:5]
                     else:
-                        self.assertEqual(row[0], "residuals.lb")
+                        self.assertEqual(row[0], "residuals." + name)
                         n, innovations = len(values), len(values) - 13
                         reference = row[1:3]
                     result = pykalos.tramoseats_fit(values[:n], start_year=int(domain[1]),
                                                     start_month=int(domain[2]))
                     residual = result["residuals"]
                     self.assertEqual(len(residual["tsres"]), innovations)
-                    test = residual["lb"]
-                    self.assertEqual((test["df"], test["lags"]), (22, 24))
+                    test = residual[name]
+                    self.assertEqual(test["df"], df)
+                    if name == "lb":
+                        self.assertEqual(test["lags"], 24)
                     for key, token in zip(("value", "pvalue"), reference):
                         if math.isnan(from_hex(token)):
                             self.assertTrue(math.isnan(test[key]))
@@ -101,7 +103,19 @@ class Rsa0Fit(unittest.TestCase):
                             self.assertEqual(bits([test[key]]), bytes.fromhex(token))
                     count += 1
         self.assertEqual(count, 9)
+
+    def test_residual_independence(self):
+        self.check_diagnostic("rsa0-ljung-box-x86_64.txt", "lb", 22)
         self.assertTrue(pykalos.capabilities()["tramo_seats_fit"]["residual_ljung_box"])
+
+    def test_residual_normality(self):
+        self.check_diagnostic("rsa0-doornik-hansen-x86_64.txt", "doornikhansen", 2)
+        self.assertTrue(pykalos.capabilities()["tramo_seats_fit"]["residual_doornik_hansen"])
+        case = dict(grouped_records("rsa0-x86_64.txt"))["fit_tr0_air"][1]
+        values = list(map(from_hex, case[4:24]))
+        fit = pykalos.tramoseats_fit(values, start_year=int(case[1]), start_month=int(case[2]))
+        self.assertEqual(len(fit["residuals"]["tsres"]), 7)
+        self.assertIsNone(fit["residuals"]["doornikhansen"])
 
     def test_horizons_and_refusals(self):
         domain = grouped_records("rsa0-x86_64.txt")[0][1][1]

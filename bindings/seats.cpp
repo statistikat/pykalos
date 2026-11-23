@@ -2,6 +2,7 @@
 #include <pybind11/stl.h>
 #include <kalos/tramo_seats_pipeline.hpp>
 #include <kalos/arma_diagnostics.hpp>
+#include <optional>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -118,11 +119,13 @@ void bind_seats(py::module_& module) {
         kalos::tramo_seats_rsa0_result output;
         kalos::tramo_tr0_forecast_errors_result errors;
         kalos::LjungBoxTest lb;
+        std::optional<kalos::ResidualNormalityTest> normality;
         {
             py::gil_scoped_release release;
             output = kalos::run_tramo_seats_rsa0(series, year, month, backcast, forecast);
             errors = kalos::tramo_tr0_forecast_errors(output.preprocessing, forecast);
             lb = kalos::rsa0_residual_ljung_box(output.preprocessing.residuals.values);
+            normality = kalos::rsa0_residual_normality(output.preprocessing.residuals.values);
         }
         auto result = decomposition(output.decomposition);
         result["series_forecast_stdev_status"] = errors.status;
@@ -130,8 +133,10 @@ void bind_seats(py::module_& module) {
         const auto& fit = output.preprocessing;
         const auto& model = fit.model;
         const auto& residuals = fit.residuals;
+        py::object dh = py::none();
+        if (normality) dh = py::dict("value"_a=normality->value, "pvalue"_a=normality->p, "df"_a=normality->df);
         result["residuals"] = py::dict("start_year"_a=residuals.start_year, "start_month"_a=residuals.start_month,
-                                      "tsres"_a=residuals.values, "ser"_a=residuals.standard_error,
+                                      "tsres"_a=residuals.values, "ser"_a=residuals.standard_error, "doornikhansen"_a=dh,
                                       "lb"_a=py::dict("value"_a=lb.value, "pvalue"_a=lb.p, "df"_a=lb.df, "lags"_a=24));
         result["model"] = py::dict(
             "orders"_a=py::dict("p"_a=model.phi.size(), "d"_a=model.d, "q"_a=model.theta.size(),

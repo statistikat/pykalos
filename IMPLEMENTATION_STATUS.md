@@ -1167,3 +1167,7 @@ The repaired macOS ARM64 wheel at core `c5bcf97` passed the complete 111-test di
 ### M5 normality and stock TRfull calendar checkpoint
 
 Core `2bf7cc3` adds the public RSA0 residual normality test and the stock initial TRfull calendar module on monthly original observations. The qualification gates compare the diagnostic structure and binary64 values on the nine RSA0 fits and the calendar decisions, t statistics and candidate fits on the 20 stock level/log cases. The wheel retains its restricted raw-series fit templates until the corresponding final component fixtures pass.
+
+### M5 public RSA0 residual normality
+
+The installed wheel exposes `residuals["doornikhansen"]` and advertises it on the RSA0 template. It reproduced the six full-series and three short-series public JVM statistics and probabilities bit-for-bit, with two degrees of freedom. Seven fitted residuals returned an absent test. All 23 related installed-wheel tests passed. [Residual diagnostics replay](tests/test_tramoseats_fit.py)

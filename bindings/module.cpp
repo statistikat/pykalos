@@ -688,7 +688,7 @@ PYBIND11_MODULE(_kalos, m) {
             py::arg("mode")="additive", py::arg("approximation_retry")=true,
             py::arg("approximation_policy")="monthly_airline_legacy",
             py::arg("series_forecast_stdev")=true, py::arg("residuals")=true,
-            py::arg("residual_ljung_box")=true);
+            py::arg("residual_ljung_box")=true, py::arg("residual_doornik_hansen")=true);
         // Schema-3-style automatic block: the qualified stage-Z surface.
         // (3: the 21-H.4 pin advance replaced the zero_horizon_only pin with
         // the horizon envelope key for the downstream composition.)
