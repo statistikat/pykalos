@@ -1091,3 +1091,7 @@ The binding snapshot advances from `2fe3d8e` to `5c95dc1`, including the raw TR0
 ### Java-free installed-wheel numerical gate
 
 A fresh process now starts with an empty executable search directory, missing JDK/JRE homes and an empty classpath. It rejects process creation during the fits and checks the process image list for a JVM before and after running the fixed X-13 corpus, the automatic X-13 quick case and all six original-series RSA0 oracles. The installed private-provider wheel passed on macOS ARM64 without NumPy. The portable Linux, macOS and Windows jobs run the same test before installing NumPy. [Java-free wheel test](tests/test_java_free.py)
+
+### M6 RSA0 forecast covariance performance checkpoint
+
+The source snapshot advances to `9e3afba`, which computes the RSA0 forecast covariance from the fitted monthly model using the specialized projection. The wheel gate repeats the 144 preprocessing and 144 WK uncertainty comparisons, raw fits, import-order and Java-free checks, then repeats the same warmed Python/JVM benchmark on the original two series. The portable workflow still verifies the private provider and checks the installed wheel.
