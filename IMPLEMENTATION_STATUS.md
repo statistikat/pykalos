@@ -1103,3 +1103,14 @@ The Python binding now composes the frozen window, regressor alignment and mean/
 ### M2 fixed-order estimation evidence checkpoint
 
 The Python export at core `9e3afba` now includes both fixed-order estimation-control corpora. The binding gate replays the frozen Zero, Default, Hannan–Rissanen and Multiple cases with the core's applicable decision, likelihood and parameter budgets, plus fixed-coordinate and rejection checks. The solver and starting policy remain explicit client inputs.
+
+### M6 repeated installed-wheel and JVM timings after the RSA0 covariance change
+
+The `9e3afba` wheel passed all 79 targeted tests, including the complete raw-RSA0, WK, bridge, residual and forecast-error corpora and the Java-free subprocess. The matched Apple M2 benchmark repeated the same four-process warmup, batch size, JVM flags, toolchains and 24-month forecasts. The observed adjustment vectors again agreed bit-for-bit, with identical 50-row payloads. The largest original-series standard-error difference on the timed cases was 7.11e−14.
+
+| Ordinary RSA0 workload | Python median ms (interquartile range) | JDemetra+ median ms (interquartile range) | Python / JVM | Earlier Python median ms |
+|---|---:|---:|---:|---:|
+| Airline | 2.880 (2.681–3.145) | 5.638 (4.906–6.250) | 0.511× | 45.422 |
+| Multiple-outlier input | 3.672 (3.471–3.868) | 8.227 (6.903–9.909) | 0.446× | 34.473 |
+
+The specialized covariance reduced the measured Python medians by factors of 15.8 and 9.4 respectively. On this host both Python medians were below the contemporary JVM medians. Each JVM measurement was repeated; the earlier medians of 4.039 and 6.237 ms document run-to-run variation. [Raw samples](tools/benchmark/results/2026-11-23-macos-arm64-specialized.json)

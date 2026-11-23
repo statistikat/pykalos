@@ -1,0 +1,232 @@
+{
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "host_cpu": "Apple M2, 4 performance and 4 efficiency cores",
+  "wheel_compiler": "Homebrew Clang 23.1.5; OpenBLAS Fortran built with Homebrew GCC 16.2.0",
+  "extension_sha256": "44b5ffb0143c229b2062f6600577da68d5f1b30c66ff744533d274f995c644e2",
+  "python": "3.15.2 (main, Oct 25 2026, 16:57:51) [Clang 21.0.0 (clang-2100.3.34.2)]",
+  "core": {
+    "version": "0.1.0",
+    "commit": "9e3afba78bee010ac244bfe2dcf26658714460de",
+    "provider": "OpenBLAS",
+    "provider_linkage": "private_static",
+    "provider_version": "OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING neoversen1 SINGLE_THREADED",
+    "blas_integer_bits": 32,
+    "openmp": true
+  },
+  "java_runtime": "21.0.11+10-LTS",
+  "java_arch": "arm64",
+  "jvm_flags": [
+    "-XX:ActiveProcessorCount=1",
+    "-Djava.util.concurrent.ForkJoinPool.common.parallelism=1",
+    "-XX:+UnlockDiagnosticVMOptions",
+    "-XX:DisableIntrinsic=_dexp,_dlog"
+  ],
+  "kalos_threads": 1,
+  "openblas_threads": 1,
+  "warmup": 20,
+  "samples_per_process": 7,
+  "fresh_processes": 4,
+  "fits_per_sample": 5,
+  "results": {
+    "python": {
+      "fit_tr0_air": {
+        "ms": [
+          2.6107,
+          2.6007166,
+          2.8266584,
+          2.5367084,
+          3.1523082,
+          3.012825,
+          2.8445082,
+          3.4340166,
+          3.021625,
+          3.249925,
+          2.8634666,
+          3.271425,
+          3.1427668,
+          2.6223666,
+          3.4708916,
+          2.8040668,
+          3.13005,
+          2.7657918,
+          3.0705166,
+          3.284725,
+          3.346475,
+          2.5622334,
+          2.8968832,
+          3.0823,
+          2.6415666,
+          2.7682918,
+          2.68405,
+          2.6702582
+        ],
+        "oracle": {
+          "adjusted": {
+            "n": 144,
+            "exact": 144,
+            "max_abs": 0.0
+          },
+          "errors": {
+            "n": 24,
+            "exact": 2,
+            "max_abs": 7.105427357601002e-14
+          }
+        },
+        "materialized_rows_and_values": [
+          50,
+          3912
+        ],
+        "median_ms": 2.8801749
+      },
+      "fit_multi": {
+        "ms": [
+          3.6576916,
+          3.2682334,
+          3.8396666,
+          3.4377168,
+          3.6898,
+          3.588425,
+          3.486775,
+          3.9542,
+          4.0229916,
+          3.7100084,
+          3.6855334,
+          4.0466918,
+          3.7188668,
+          4.0630084,
+          4.0563084,
+          4.0287332,
+          3.6213,
+          3.6584668,
+          4.0003918,
+          3.7324832,
+          3.58495,
+          3.1039584,
+          3.20095,
+          3.7025666,
+          3.2440916,
+          3.4826584,
+          3.367875,
+          3.19155
+        ],
+        "oracle": {
+          "adjusted": {
+            "n": 96,
+            "exact": 96,
+            "max_abs": 0.0
+          },
+          "errors": {
+            "n": 24,
+            "exact": 5,
+            "max_abs": 8.881784197001252e-15
+          }
+        },
+        "materialized_rows_and_values": [
+          50,
+          2808
+        ],
+        "median_ms": 3.6720001
+      }
+    },
+    "java": {
+      "fit_tr0_air": {
+        "ms": [
+          6.8992332,
+          7.2224916,
+          6.3877668,
+          5.8970834,
+          6.14555,
+          4.9936166,
+          5.6080834,
+          6.7911416,
+          5.6522916,
+          6.2953,
+          6.234375,
+          7.5473666,
+          4.6421668,
+          5.47135,
+          5.6228082,
+          5.6107916,
+          4.6095334,
+          6.2030666,
+          5.1786666,
+          4.4335166,
+          4.0222582,
+          5.7922832,
+          5.4160082,
+          6.6588166,
+          4.44445,
+          4.05445,
+          5.7388916,
+          3.637925
+        ],
+        "oracle": {
+          "adjusted": {
+            "n": 144,
+            "exact": 144,
+            "max_abs": 0.0
+          },
+          "errors": {
+            "n": 24,
+            "exact": 24,
+            "max_abs": 0.0
+          }
+        },
+        "materialized_rows_and_values": [
+          50,
+          3912
+        ],
+        "median_ms": 5.6375499
+      },
+      "fit_multi": {
+        "ms": [
+          8.71265,
+          11.2316582,
+          9.146375,
+          8.7247666,
+          9.8703082,
+          6.5086416,
+          7.8179584,
+          10.3467668,
+          8.4405168,
+          10.1591668,
+          8.8898584,
+          10.7297834,
+          7.5789834,
+          7.7640668,
+          8.3985,
+          10.9246666,
+          10.37615,
+          6.85915,
+          8.0547334,
+          6.7336332,
+          5.3653334,
+          7.493275,
+          10.0258834,
+          6.91745,
+          5.5674834,
+          6.175575,
+          7.913725,
+          5.414675
+        ],
+        "oracle": {
+          "adjusted": {
+            "n": 96,
+            "exact": 96,
+            "max_abs": 0.0
+          },
+          "errors": {
+            "n": 24,
+            "exact": 24,
+            "max_abs": 0.0
+          }
+        },
+        "materialized_rows_and_values": [
+          50,
+          2808
+        ],
+        "median_ms": 8.226616700000001
+      }
+    }
+  }
+}
