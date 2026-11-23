@@ -40,6 +40,8 @@ A subprocess regression now loads NumPy before pykalos and then pykalos before N
 
 On macOS ARM64, the OpenBLAS 0.3.34 wheel and NumPy 2.5.5 (Apple Accelerate) passed both import orders. All 68 NumPy-lane tests passed. In an environment without NumPy, the smoke and TRAMO tests passed and the coexistence test skipped. This verifies the external-provider wheel on this host. Bundling and hosted Linux wheel qualification remain open.
 
+The 23-B source-archive wheel passed all 93 tests present at build time, including the 13 automatic and four horizon X-13 cases (5,640 numerical checks). A second installed wheel linked to Homebrew OpenBLAS 0.3.34 passed the entire 29-case TRAMO fixture and both NumPy import orders. The added oversize refusal also passed on the final wheel. The offline verifier confirmed the 188 core and 17 evidence files.
+
 ## Initial scaffold (2026-11-14)
 
 ## Implemented
