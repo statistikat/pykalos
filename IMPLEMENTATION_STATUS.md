@@ -1198,3 +1198,7 @@ At core `5350e96`, the eight historical monthly cases returned exactly the same 
 | Monthly mixed factors | 1,623.7 | 552.7 | 18.3 | 16.2 |
 
 The installed Python elapsed-time medians improved 2.85× and 2.94× on the shared host. The separate interleaved direct-C++ experiment measured 2.20× and 2.27× lower CPU time for the same fits. The remaining elapsed-time ratios range from 30.1× to 85.5× across the two JVM frontends and model families. [Repeated samples and numerical agreement](tools/benchmark/results/2026-11-23-macos-arm64-fixed-order-sparse.json)
+
+### M5 raw RSA1 seasonal-adjustment checkpoint
+
+The Python binding snapshot advances to core `0e0f272`, containing the monthly public RSA1 pipeline from dated observations. The binding gate checks all six JVM models and likelihoods, dated residuals, product model-change decisions, observed and forecast components and the Java-free wheel route.
