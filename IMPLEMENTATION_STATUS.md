@@ -1187,3 +1187,14 @@ Core `5350e96` contains the public fixed-airline TR1 preprocessor from original 
 ### M5 raw monthly TR1 preprocessing
 
 `estimate_tramo_tr1` fits the stock TR1 preprocessing specification from dated complete observations and returns its transformation, model, registered outliers, likelihood and dated full residuals. The repaired wheel matched reference dates, orders, zero-based outlier positions, parameter and regression coefficients, likelihood fields and all 570 residuals across the six public JVM fits. All 92 targeted installed-wheel tests passed, including the 27 fixed-order controls, stock calendar decisions, residual diagnostics and existing adjustment routes. [TR1 replay](tests/test_tramo_automatic.py)
+
+### M6 installed-wheel fixed-order timing after sparse prediction
+
+At core `5350e96`, the eight historical monthly cases returned exactly the same coefficient, adjusted likelihood and Jacobian differences against all 16 JVM method/case references as before. The independent repeat used the same checked R and JVM pins, wheels' compiler and provider profile, processor, single-thread settings, warmups and batches.
+
+| Prepared fit | Previous Python ms | Current Python ms | Current JD+ RG0 ms | Current JD+ TR0 ms |
+|---|---:|---:|---:|---:|
+| Monthly airline | 3,489.2 | 1,226.1 | 16.1 | 14.3 |
+| Monthly mixed factors | 1,623.7 | 552.7 | 18.3 | 16.2 |
+
+The installed Python elapsed-time medians improved 2.85× and 2.94× on the shared host. The separate interleaved direct-C++ experiment measured 2.20× and 2.27× lower CPU time for the same fits. The remaining elapsed-time ratios range from 30.1× to 85.5× across the two JVM frontends and model families. [Repeated samples and numerical agreement](tools/benchmark/results/2026-11-23-macos-arm64-fixed-order-sparse.json)

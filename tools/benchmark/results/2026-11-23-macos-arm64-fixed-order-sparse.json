@@ -1,0 +1,339 @@
+{
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "cpu": "Apple M2, 4 performance and 4 efficiency cores",
+  "wheel_compiler": "Homebrew Clang 23.1.5; OpenBLAS Fortran built with Homebrew GCC 16.2.0",
+  "python": "3.15.2 (main, Oct 25 2026, 16:57:51) [Clang 21.0.0 (clang-2100.3.34.2)]",
+  "extension_sha256": "1438d7a39cb41157b061f8012ef51cfe3eaa6fb3213eed9d5c4210da3b30eb46",
+  "core": {
+    "version": "0.1.0",
+    "commit": "5350e96960fe8f57dc6a96bd688d1164cf61e5a9",
+    "provider": "OpenBLAS",
+    "provider_linkage": "private_static",
+    "provider_version": "OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING neoversen1 SINGLE_THREADED",
+    "blas_integer_bits": 32,
+    "openmp": true
+  },
+  "reference": {
+    "java": {
+      "version": "27.0.1.0.2",
+      "vendor": "Eclipse Adoptium",
+      "runtime_version": "27.0.1.0.2+1",
+      "vm_name": "OpenJDK 64-Bit Server VM",
+      "architecture": "aarch64"
+    },
+    "r": "R version 4.5.2 (2025-10-31)",
+    "packages": {
+      "rjd3toolkit": "3.9.0",
+      "rjd3x13": "3.9.0",
+      "rjd3tramoseats": "3.9.0",
+      "rjd3jars": "0.0.6",
+      "rJava": "1.0-11",
+      "RProtoBuf": "0.4.28",
+      "digest": "0.6.39"
+    },
+    "jvm_flags": [
+      "-XX:ActiveProcessorCount=1",
+      "-Djava.util.concurrent.ForkJoinPool.common.parallelism=1"
+    ],
+    "generator_sha256": "32425ecde18cff78d044eaf15021a855065f64e558a26faa8de4e2a542282ac4",
+    "manifest_sha256": "a2394411ca585589c5308ae423c1299050774f7d50a79fcbac566878f85be23c"
+  },
+  "threads": {
+    "KALOS_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1"
+  },
+  "warmup": 3,
+  "samples": 5,
+  "batch": 3,
+  "scope": "prepared fit, arithmetic mean of four case medians per model",
+  "summary_ms": {
+    "python": {
+      "airline": 1226.0688055833334,
+      "mixed_factors": 552.7273368333333
+    },
+    "x13": {
+      "airline": 16.0833333333334,
+      "mixed_factors": 18.3333333333333
+    },
+    "tramo": {
+      "airline": 14.3333333333333,
+      "mixed_factors": 16.166666666666625
+    }
+  },
+  "samples_ms": {
+    "python": {
+      "12-airline-complete-none": [
+        1848.9008473333333,
+        1098.5542083333332,
+        1440.822486,
+        1837.147264,
+        804.7469443333333
+      ],
+      "12-airline-complete-log": [
+        1795.8051806666667,
+        1137.159278,
+        1606.1030136666666,
+        1245.8992776666666,
+        950.8595833333334
+      ],
+      "12-airline-gaps-none": [
+        1719.8026943333334,
+        1232.3118056666667,
+        1454.8491526666667,
+        1046.0295,
+        792.5886806666666
+      ],
+      "12-airline-gaps-log": [
+        1502.4794306666668,
+        985.241653,
+        1386.5971806666666,
+        888.9304583333334,
+        895.6574446666667
+      ],
+      "12-mixed_factors-complete-none": [
+        952.0150833333333,
+        506.7679723333333,
+        808.7329863333333,
+        479.86680533333333,
+        470.0949303333333
+      ],
+      "12-mixed_factors-complete-log": [
+        616.1625276666666,
+        508.17033333333336,
+        716.6423056666666,
+        475.31068066666666,
+        434.21733333333333
+      ],
+      "12-mixed_factors-gaps-none": [
+        693.1599583333333,
+        591.370236,
+        970.8197223333333,
+        540.5624443333334,
+        508.1535973333333
+      ],
+      "12-mixed_factors-gaps-log": [
+        671.997625,
+        604.6008056666667,
+        1093.5284723333334,
+        525.2671806666667,
+        475.09425
+      ]
+    },
+    "x13": {
+      "12-airline-complete-none": [
+        15,
+        16,
+        17.0000000000001,
+        12.0000000000002,
+        18.6666666666667
+      ],
+      "12-airline-complete-log": [
+        22.6666666666667,
+        12.9999999999999,
+        18.6666666666667,
+        10.0000000000001,
+        14.0000000000002
+      ],
+      "12-airline-gaps-none": [
+        16.3333333333333,
+        19.3333333333334,
+        23.6666666666666,
+        23.3333333333334,
+        16.3333333333332
+      ],
+      "12-airline-gaps-log": [
+        22.6666666666667,
+        17.6666666666666,
+        8.6666666666666,
+        8.33333333333345,
+        15
+      ],
+      "12-mixed_factors-complete-none": [
+        23.6666666666666,
+        26.3333333333332,
+        19.0000000000001,
+        15.3333333333334,
+        17.6666666666666
+      ],
+      "12-mixed_factors-complete-log": [
+        24.3333333333333,
+        8.66666666666675,
+        23,
+        14.6666666666665,
+        28.6666666666668
+      ],
+      "12-mixed_factors-gaps-none": [
+        21.3333333333334,
+        23,
+        12.9999999999999,
+        14.6666666666665,
+        14.3333333333334
+      ],
+      "12-mixed_factors-gaps-log": [
+        14.0000000000001,
+        19.6666666666667,
+        15.6666666666666,
+        20.3333333333333,
+        16.6666666666666
+      ]
+    },
+    "tramo": {
+      "12-airline-complete-none": [
+        13.3333333333333,
+        15.3333333333331,
+        15,
+        13.3333333333333,
+        13.3333333333333
+      ],
+      "12-airline-complete-log": [
+        19.0000000000001,
+        15,
+        11.6666666666667,
+        5.33333333333334,
+        7.33333333333341
+      ],
+      "12-airline-gaps-none": [
+        16.9999999999998,
+        11.0000000000001,
+        16.3333333333335,
+        16,
+        13.9999999999999
+      ],
+      "12-airline-gaps-log": [
+        29.6666666666668,
+        18.6666666666667,
+        9.33333333333319,
+        16.3333333333332,
+        5.99999999999993
+      ],
+      "12-mixed_factors-complete-none": [
+        33.3333333333332,
+        14.3333333333334,
+        17.0000000000001,
+        20.6666666666668,
+        14.3333333333334
+      ],
+      "12-mixed_factors-complete-log": [
+        21.6666666666668,
+        16.3333333333332,
+        8.00000000000001,
+        12.6666666666668,
+        18.6666666666667
+      ],
+      "12-mixed_factors-gaps-none": [
+        19.6666666666667,
+        18.3333333333335,
+        15,
+        10.3333333333332,
+        10.0000000000001
+      ],
+      "12-mixed_factors-gaps-log": [
+        25.0000000000001,
+        6.66666666666652,
+        20.6666666666665,
+        16.3333333333332,
+        16
+      ]
+    }
+  },
+  "agreement": {
+    "12-airline-complete-none": {
+      "x13": {
+        "coefficient_max_abs": 1.345914483197319e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 1.9610979506978765e-12
+      },
+      "tramo": {
+        "coefficient_max_abs": 1.345914483197319e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 1.9610979506978765e-12
+      }
+    },
+    "12-airline-complete-log": {
+      "x13": {
+        "coefficient_max_abs": 1.345914483197319e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 1.8189894035458565e-12
+      },
+      "tramo": {
+        "coefficient_max_abs": 1.345914483197319e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 1.8189894035458565e-12
+      }
+    },
+    "12-airline-gaps-none": {
+      "x13": {
+        "coefficient_max_abs": 1.8436920229403242e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 2.4442670110147446e-12
+      },
+      "tramo": {
+        "coefficient_max_abs": 1.8436920229403242e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 2.4442670110147446e-12
+      }
+    },
+    "12-airline-gaps-log": {
+      "x13": {
+        "coefficient_max_abs": 1.8650246735862908e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 1.8189894035458565e-12
+      },
+      "tramo": {
+        "coefficient_max_abs": 1.8650246735862908e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 1.8189894035458565e-12
+      }
+    },
+    "12-mixed_factors-complete-none": {
+      "x13": {
+        "coefficient_max_abs": 2.1899954338877592e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 2.6005864128819667e-12
+      },
+      "tramo": {
+        "coefficient_max_abs": 4.95724843008194e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 1.1624479157035239e-11
+      }
+    },
+    "12-mixed_factors-complete-log": {
+      "x13": {
+        "coefficient_max_abs": 2.1899954338877592e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 2.5863755581667647e-12
+      },
+      "tramo": {
+        "coefficient_max_abs": 4.95724843008194e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 1.1596057447604835e-11
+      }
+    },
+    "12-mixed_factors-gaps-none": {
+      "x13": {
+        "coefficient_max_abs": 3.295097856792495e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 4.277467269275803e-12
+      },
+      "tramo": {
+        "coefficient_max_abs": 2.6511059161848927e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 2.6432189770275727e-12
+      }
+    },
+    "12-mixed_factors-gaps-log": {
+      "x13": {
+        "coefficient_max_abs": 3.171086854492078e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 3.836930773104541e-12
+      },
+      "tramo": {
+        "coefficient_max_abs": 2.4667544198941904e-07,
+        "jacobian_abs": 0.0,
+        "adjustedll_abs": 2.5011104298755527e-12
+      }
+    }
+  }
+}
