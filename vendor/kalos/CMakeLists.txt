@@ -268,6 +268,10 @@ if(KALOS_BUILD_TESTS)
     else()
       target_compile_options(${test_name} PRIVATE -UNDEBUG)
     endif()
+    if(test_name STREQUAL "test_tramo_outlier_scan")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_CALENDAR_OUTLIERS_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-calendar-ftest/calendar-outliers.txt")
+    endif()
     if(test_name STREQUAL "test_tramo_differencing_battery")
       target_compile_definitions(${test_name} PRIVATE
         KALOS_SEASONAL_PEAKS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-differencing-battery/monthly-spectral-peaks.txt"

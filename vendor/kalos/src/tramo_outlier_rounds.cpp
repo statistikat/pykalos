@@ -12,7 +12,7 @@ namespace kalos {
 bool tramo_stationary_scan_supported(const TramoOutlierScanRequest& request) {
     return request.frequency == 12 && request.d == 0 && request.bd == 0 &&
            (request.p == 1 || request.p == 2) && request.q == 0 && request.bp == 0 && request.bq == 0 &&
-           request.mean && !request.maximum_likelihood && !request.so && request.prespec.empty() &&
+           request.mean && !request.maximum_likelihood && !request.so && request.prespec.empty() && request.calendar_regressors.empty() &&
            std::all_of(request.y.begin(), request.y.end(), [](double y) { return std::isfinite(y); });
 }
 
@@ -46,6 +46,7 @@ TramoOutlierRoundsResult tramo_outlier_rounds(
         throw std::invalid_argument(
             "tramo_outlier_rounds: resolved span bounds must be ordered");
     }
+    detail::validate_scan_regressors(request);
     for (const auto& pre : request.prespec) {
         if (pre.second == TramoOutlierKind::So) {
             throw std::invalid_argument("tramo_outlier_rounds: a pre-registered "
@@ -102,6 +103,7 @@ TramoOutlierRoundsResult tramo_outlier_rounds(
     sm.upper_bound = request.upper_bound;
     sm.factories = detail::register_factories(
         request.ao, request.ls, request.tc, request.tc_rate, request.so);
+    sm.user_raw = request.calendar_regressors;
     detail::prestage(sm, request.y, request.prespec,
         "tramo_outlier_rounds: the log requires strictly positive observations");
     if (sm.failed) {

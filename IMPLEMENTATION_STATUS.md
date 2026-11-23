@@ -1260,3 +1260,7 @@ The Python snapshot advances to Kalos `5a72228`, containing the TR3 automatic id
 ### M5 original-series RSA1 forecast errors
 
 The repaired macOS ARM64 wheel returns the public preprocessing forecast standard errors on both original scales, accounting for estimated drift and stock AO, LS and TC effects. Twelve public RSA1 fits passed all 288 24-month comparisons at the core’s 2e-8 scaled tolerance. The separate WK forecast errors reproduced all 288 reference values bit-for-bit. All 12 zero- and seven-month checks returned the expected dated domains, statuses and lengths. All 22 targeted tests passed, including the raw and fixed routes, calendar module, estimation and Java-free checks. [Forecast replay](tests/test_tramo_automatic.py)
+
+### M5 seasonality restart integration checkpoint
+
+At `095f3ed` the raw TR3 route reconsiders the selected model after a seasonality change. The RSA3 Python integration gate now includes the three additional public fits with a restart and multiple outliers as well as the six original cases.
