@@ -57,6 +57,16 @@ class IntegerSlotTest(unittest.TestCase):
         self.assertEqual(result["status"], MONTHLY_ONLY)
         self.assertEqual(fit.call_args.args[0]["seasonal"], [])
 
+    def test_invalid_index_protocol_is_not_coerced(self):
+        class InvalidIndex:
+            def __index__(self):
+                return 12.5
+        with self.assertRaises(TypeError):
+            quick_request(frequency=InvalidIndex())
+        with self.assertRaises(TypeError):
+            pykalos.x13_fit(QUICK["values"], seasonal=["s3x9"] * 12,
+                            trend_length=13, frequency=InvalidIndex())
+
     def test_fractional_frequency_refused(self):
         with self.assertRaises(TypeError) as ctx:
             quick_request(frequency=12.9, seasonal=["msr"] * 12)

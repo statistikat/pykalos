@@ -52,6 +52,8 @@ At core `cb5c2de`, the export allowlist now includes the seven allocation-seam a
 
 At thread settings 1, 2 and 8 the installed wheel passed all 16 fixed runs across the allocation and fit corpora and both out-of-envelope horizon cases. Each run of the suite compared **44,712 table values** and the exact final-component triplets. Non-log outputs and `a1` were bit-exact. Log-model outputs met the pinned 1e-15 preadjustment, 1e-12 results and 1e-9 finals thresholds. The fourteen directly captured `x13_fast` tables (1,344 values) also matched. Shape, policy, field and integer-range refusals passed. Offline verification covered 188 core and 34 evidence files. [Python oracle replay](tests/test_x13_fixed.py)
 
+Both public X-13 fits now use Python’s integer-index protocol for integer fields. An object whose `__index__` returned a fractional value was previously truncated. The regression failed on the preceding wheel and passed after the correction. All 71 targeted validation, fixed-fit, TRAMO, smoke and NumPy-provider tests passed on the updated installed wheel.
+
 ## Initial scaffold (2026-11-14)
 
 ## Implemented

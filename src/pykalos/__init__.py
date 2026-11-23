@@ -13,6 +13,8 @@ Available operations:
 * the fixed-coefficient quarterly/monthly X-13 fit, ``x13_fit``;
 * the 23-B TRAMO critical value, seasonality and log/level preprocessing decisions.
 """
+from operator import index as _index
+
 from . import _kalos
 from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
@@ -110,7 +112,7 @@ def _request_int(value, name, operation="x13_automatic"):
             f"{operation}: {name} must be an integer, got the boolean "
             f"{value!r}; booleans are never accepted as numbers")
     if hasattr(value, "__index__"):   # Python int, numpy integer scalars, ...
-        return int(value.__index__())
+        return _index(value)
     if isinstance(value, float):
         raise TypeError(
             f"{operation}: {name} must be an integer, got the float "
