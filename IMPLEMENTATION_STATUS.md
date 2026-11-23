@@ -1,6 +1,14 @@
 # pykalos implementation status
 
-Updated: 2026-11-14. Minimal initial binding, as requested.
+Current checkpoint (2026-11-23) is the M5 core snapshot described below. The dated entries retain the earlier qualification results.
+
+## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
+
+The Python snapshot advances from `f500162` to `cb5c2de193c2cd7e2035a9a99f205186a90a4dec`. This includes the completed 23-F.4 TRAMO preprocessing assembly and the subsequent standalone build, provider selection and checked X-13 horizon changes. The public Python surface still comprises convolution and automatic monthly X-13. The 23-F request takes kernel and seam witnesses. A product TRAMO/SEATS binding depends on the assembled decomposition and end-to-end oracle.
+
+The integration gate checks the allowlist, builds and imports the wheel with checksum-pinned OpenBLAS and replays the existing 13 automatic and four horizon cases. Upstream manifest verification covered 187 core, 112 fixture and 331 evidence files. `tools/sync-core.py --verify` verified 143 core files and 11 evidence files before export, and 188 core files (including the generated revision header) and the same 11 evidence files afterwards. The first installed candidate wheel reports the exact revision and LP64 OpenBLAS 0.3.34 on macOS ARM64. Numerical qualification and Python metadata follow as separate updates.
+
+## Initial scaffold (2026-11-14)
 
 ## Implemented
 
