@@ -102,6 +102,7 @@ struct TramoFitVariable {
     int position = 0;
     double coefficient = 0.0;
     std::vector<double> column;
+    double tc_rate = 0.7;  // monthly decay for extrapolating a fitted transitory change
 };
 
 // The resolved TramoSpec scalars of the fit request (one-for-one with the
@@ -305,6 +306,9 @@ struct TramoFitResult {
     TramoKernelRoundsRun kernel;
     std::vector<TramoFitSeamCheck> seam_checks;
     std::size_t seams_live = 0, seams_fact = 0;
+    bool first_candidate_computed = false; // first automatic order selection and refit
+    bool reference_model_computed = false; // first fitted model from observations and options
+    bool initial_regression_checked = false; // public pre-stage decision from intermediate likelihood
     bool final_model_computed = false; // independently projected from the final estimator
     std::size_t regression_tests_checked = 0; // mean decision and post-test t-statistics
     std::size_t statistics_checked = 0; // model-statistics rows reproduced from live estimation

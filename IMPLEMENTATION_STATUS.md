@@ -1214,3 +1214,7 @@ The Python binding snapshot advances to core `0e0f272`, containing the monthly p
 ### M5 RSA1 outlier-restoration scope and full regression
 
 The per-template capabilities expose restored outlier types for additive and multiplicative RSA1 fits. At core `0e0f272`, a shifted historical input selected a level-model AO. Standalone TR1 returned its fitted coefficient and full RSA1 reported the unsupported restoration. All 13 installed-wheel product tests passed. The full RSA1 wheel replay at this pin passed 120 tests in 199.527 seconds, including all 4,353 automatic X-13 and 1,287 extended-horizon comparisons. [Public product tests](tests/test_tramo_automatic.py)
+
+### M5 additive and multiplicative outlier restoration checkpoint
+
+The Python snapshot advances to core `bf5c08f`. It includes six additional raw RSA1 JVM fixtures covering level-model AO and LS and stock monthly TC in both modes. The binding gate compares every raw and fitted merged component, original-series model and residual against this evidence.
