@@ -1134,3 +1134,16 @@ The ordinary monthly fit now returns `residuals["lb"]` with the public statistic
 ### M2 Python signal delivery and module reuse
 
 An installed-wheel subprocess now interrupts a long convolution and a separate fixed-order estimation from a Python timer thread. Both operations delivered `KeyboardInterrupt` to the calling thread, joined the timer and then completed another native operation successfully. The two-process check passed locally in 0.75 seconds. The portable and NumPy jobs run it on their installed wheels. [Signal tests](tests/test_interrupt.py)
+
+### M6 historical monthly fixed-order estimator timings
+
+The prepared Python estimator and both pinned JVM frontend calls were compared on the original monthly airline and mixed-factor cases. Each model covers level/log responses with complete observations or five gaps. Both estimate drift and an external regressor, with a second regressor fixed at 0.2. The mixed model has a free regular AR, fixed regular MA of 0.2, free seasonal MA and one seasonal difference. The original R 4.5.2 oracle manifest verifies the JDemetra+ 3.9.0 packages, JAR hashes and Eclipse Adoptium 27.0.1.0.2 on ARM64.
+
+| Prepared fit | Python ms | JD+ RG0 ms | JD+ TR0 ms |
+|---|---:|---:|---:|
+| Monthly airline | 3,489.2 | 18.1 | 17.0 |
+| Monthly mixed factors | 1,623.7 | 16.8 | 17.0 |
+
+Each number is the arithmetic mean of four case medians after three warmup rounds and five timed batches of three fits per case. Both frontends received prebuilt requests. Python returned its fit record, while each R/JVM frontend returned its public preprocessing result. The shared Apple M2 was running other builds and tests. The raw samples record that variability. All 16 method/case comparisons passed the original coefficient, adjusted likelihood and Jacobian budgets, with maximum absolute differences of 4.96e−7, 1.17e−11 and zero, respectively. Fixed coordinates remained exact. [Reproduction script](tools/benchmark/fixed_order.py) and [samples, versions and thread settings](tools/benchmark/results/2026-11-23-macos-arm64-fixed-order.json)
+
+The generic fixed-order estimator still needs performance work. In a separate direct-C++ probe of the level airline input, one evaluation of `sarima_innovations` with saved gains took 20.8 ms on complete data and 25.0 ms with gaps. The full physical objective measured 21.6 and 25.0 ms respectively, and the optimizer recorded 86 and 85 evaluations. The monthly RSA0 forecast-covariance optimization addresses a separate call path.
