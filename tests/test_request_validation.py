@@ -340,6 +340,15 @@ class RawBoundaryTest(unittest.TestCase):
                     pykalos.x13_automatic_fit(_raw_request(input=bad))
                 self.assertIn("'input'", str(ctx.exception))
 
+    def test_mapping_and_set_input_refused_raw(self):
+        # The old caster refused these; the explicit iterable policy keeps
+        # them refused (mapping keys / unordered sets are never a series).
+        with self.assertRaises(TypeError) as ctx:
+            pykalos.x13_automatic_fit(_raw_request(input={i: 1.0 for i in range(60)}))
+        self.assertIn("'input'", str(ctx.exception))
+        with self.assertRaises(TypeError):
+            pykalos.x13_automatic_fit(_raw_request(input=set(range(60))))
+
     def test_list_of_strings_input_refused_raw(self):
         # The per-element PyFloat path used to parse ["101.0", ...].
         with self.assertRaises(TypeError) as ctx:

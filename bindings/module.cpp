@@ -202,6 +202,11 @@ std::vector<double> req_series(const py::dict& d, const char* key) {
                              + "' must be a one-dimensional sequence of numbers; got the "
                                "buffer-like type " + type_name(v)
                              + " — binary views are refused, 1-D ndarrays are accepted");
+    if (PyDict_Check(v.ptr()) || PyAnySet_Check(v.ptr()))
+        throw py::type_error(std::string("x13_automatic request field '") + key
+                             + "' must be an ordered sequence of numbers, got type "
+                             + type_name(v)
+                             + " — mapping keys and unordered sets are never a series");
     if (!(PyIter_Check(v.ptr()) || PySequence_Check(v.ptr())))
         throw py::type_error(std::string("x13_automatic request field '") + key
                              + "' must be an iterable of numbers, got the non-iterable type "
