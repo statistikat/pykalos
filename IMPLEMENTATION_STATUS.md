@@ -1099,3 +1099,7 @@ The source snapshot advances to `9e3afba`, which computes the RSA0 forecast cova
 ### M2 Python preparation of dated regressors and transformed series
 
 The Python binding now composes the frozen window, regressor alignment and mean/drift preparation units. It returns the extended and observed column vectors, source and observation offsets, ordered coefficient names and fixed/free states. The response preparation entry exposes native transformations and masked log-Jacobian contributions. Shared request checks cover both entries and the existing product fits. On an installed wheel, all 60 preparation, TRAMO boundary, X-13 request validation and Java-free tests passed. The preparation cases covered both frequencies, all eight nonzero regular/seasonal differencing combinations, a window crossing year zero, out-of-window missing values, fixed coefficients, masked Jacobian rows and named refusals. [Tests](tests/test_preparation.py)
+
+### M2 fixed-order estimation evidence checkpoint
+
+The Python export at core `9e3afba` now includes both fixed-order estimation-control corpora. The binding gate replays the frozen Zero, Default, Hannan–Rissanen and Multiple cases with the core's applicable decision, likelihood and parameter budgets, plus fixed-coordinate and rejection checks. The solver and starting policy remain explicit client inputs.

@@ -216,6 +216,14 @@
         "evidence"
       ],
       "files": {
+        "native/estimation-control-hr/SHA256SUMS.csv": "a714c639be1c1cc01f0649a6a7defa2ad08033ef935c85221a4107c3fa610aba",
+        "native/estimation-control-hr/cases.csv": "11be33a518486055edb67dfefc3ae861a06320ec1afc20058b928ce527c50ec6",
+        "native/estimation-control-hr/inputs.csv": "ad37aa4ef43fbcc619a6737ac3a2a8b6b45ca4f4391ca1c0476802cc516863cc",
+        "native/estimation-control-hr/metadata.R": "ac3deb4b5d7ed9d40fb9683d138ba6b3fceccb3d302ba86d63d00f348f236d0d",
+        "native/estimation-control/SHA256SUMS.csv": "a3b72edff04d1cd53ad8944b73393030f1ba38005dceb18fae8b5931ef0f9177",
+        "native/estimation-control/cases.csv": "c761fc595317be66bed812089f7f1c60d064130a0ab1c9ad9dd79b5cc7480231",
+        "native/estimation-control/inputs.csv": "9e2bb8aac39f188a676065ef5b0ee6d40bf7b958ea19c8ff916a61f02ad7e5f9",
+        "native/estimation-control/metadata.R": "b7ca7fa0281d8b4871dcdb6d4a94eb683dd16f0d1c91f3b4a3afeee43f0869c7",
         "native/seats-wk-extraction/SHA256SUMS.csv": "77a73ead2175d1f7b122afb8ea3eeca0d7eac29c2801ee622b71159048df02f8",
         "native/seats-wk-extraction/cases.csv": "3ee90b7c60051284408ae79fde16ab777a724510096f8757fd2f8c446a15d33f",
         "native/seats-wk-extraction/inputs.csv": "bba254b20ff21b29768759cc1cc427f375985ae32abc1dec068c6b227da21783",
