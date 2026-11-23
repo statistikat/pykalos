@@ -82,3 +82,11 @@ python -m unittest discover -s tests
 
 Do not edit `vendor/kalos`; refresh the pinned snapshot. See
 [implementation status](IMPLEMENTATION_STATUS.md) for this repository's scope.
+
+`prepare_regression(length, start=(year, period), frequency=..., ...)` aligns
+named, dated columns to a selected estimation window and its optional backcast
+and forecast extensions. Its `design` contains observed columns, coefficients
+and fixed flags. `prepare_series(series, transformation="log", degree=...)`
+returns the transformed data, an explicit missing mask and the source and local
+rows contributing to the likelihood Jacobian. Periods are one-based and row
+offsets are zero-based.

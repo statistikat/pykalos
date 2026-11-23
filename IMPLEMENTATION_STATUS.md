@@ -1095,3 +1095,7 @@ A fresh process now starts with an empty executable search directory, missing JD
 ### M6 RSA0 forecast covariance performance checkpoint
 
 The source snapshot advances to `9e3afba`, which computes the RSA0 forecast covariance from the fitted monthly model using the specialized projection. The wheel gate repeats the 144 preprocessing and 144 WK uncertainty comparisons, raw fits, import-order and Java-free checks, then repeats the same warmed Python/JVM benchmark on the original two series. The portable workflow still verifies the private provider and checks the installed wheel.
+
+### M2 Python preparation of dated regressors and transformed series
+
+The Python binding now composes the frozen window, regressor alignment and mean/drift preparation units. It returns the extended and observed column vectors, source and observation offsets, ordered coefficient names and fixed/free states. The response preparation entry exposes native transformations and masked log-Jacobian contributions. Shared request checks cover both entries and the existing product fits. On an installed wheel, all 60 preparation, TRAMO boundary, X-13 request validation and Java-free tests passed. The preparation cases covered both frequencies, all eight nonzero regular/seasonal differencing combinations, a window crossing year zero, out-of-window missing values, fixed coefficients, masked Jacobian rows and named refusals. [Tests](tests/test_preparation.py)
