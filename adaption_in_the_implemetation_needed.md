@@ -1,18 +1,16 @@
 # pykalos implementation changes needed
 
-Status checked 2026-11-23 at `8c4eea5`, with Kalos pinned to `f500162`. `src/pykalos` owns the Python API and defaults, `bindings` translates to the C++ request and result, and `vendor` holds the locked core and evidence. Refresh generated sources with `tools/sync-core.py` when adopting core fixes.
+Implementation and tests checked 2026-11-23 against the working tree based on `5771ce1`, with Kalos pinned to `f500162`. `src/pykalos` owns the Python API and defaults, `bindings` translates to the C++ request and result, and `vendor` holds the locked core and evidence. Refresh generated sources with `tools/sync-core.py` when adopting core fixes.
 
 ## P1 — Validate the Python automatic-fit request before coercion
 
-**Partially fixed; needs work now.** The targeted request-validation tests passed locally (42 passed and 10 NumPy-dependent tests skipped).
-
-The wrapper now rejects fractional integer fields, non-boolean flags, malformed spans, text, and multivariate input. The remaining issue is the seasonal default: a probe with unsupported `frequency=97` still constructed 97 entries before the core returned its monthly-only status. Avoid allocation proportional to an unsupported frequency while preserving that status. Add a test that checks the constructed request size. [Request construction](src/pykalos/__init__.py#L337) · [Regression tests](tests/test_request_validation.py#L53)
+**Fixed.** The monthly route constructs twelve default MSR filters. Other frequencies receive an empty default and the core returns its existing monthly-only status. The regression test calls the real adapter with the maximum signed 32-bit frequency and inspects the request handed to it. [Request construction](src/pykalos/__init__.py) · [Validation tests](tests/test_request_validation.py)
 
 ## P1 — Reject unknown raw keys and negative budgets
 
 **Fixed.** Commits `4b04c75` and `77b7925` hardened the raw parser and its input tests.
 
-The raw entry rejects unknown keys and checks both outlier budgets before conversion to `size_t`. Regression tests cover misspelled keys, negative budgets, and valid requests through both entry points. Checked horizon arithmetic remains a separate Kalos finding. [Raw parser](bindings/module.cpp#L112) · [Budget checks](bindings/module.cpp#L358) · [Regression tests](tests/test_request_validation.py#L270)
+The raw entry rejects unknown keys and checks both outlier budgets before conversion to `size_t`. Regression tests cover misspelled keys, negative budgets, and valid requests through both entry points. The Kalos horizon arithmetic fix is in the core working tree. This Python revision still vendors the earlier core pin. [Raw parser](bindings/module.cpp#L112) · [Budget checks](bindings/module.cpp#L358) · [Regression tests](tests/test_request_validation.py#L270)
 
 ## P2 — Make the solver and horizon metadata agree with the pinned core
 
@@ -25,6 +23,10 @@ The original review overstated the solver mismatch. At the current pin, the oute
 **Planned for the next Python core-pin update.** The NumPy CI lane, provider fingerprint, and tooling pin are deferred together. [Deferral record](IMPLEMENTATION_STATUS.md#L958)
 
 The smoke workflow installs the wheel without dependencies and has no explicit NumPy installation. The NumPy class skips when NumPy is absent. Install NumPy in a dedicated test lane and run the input-shape, dtype, stride, and read-only buffer assertions there. Keep a minimal dependency lane for the base API. The workflow fetches provider tooling at a separate older Kalos commit. Use the locked provider recipe or an explicit, independently checked tooling pin, and log the actual provider version, build configuration, and library fingerprint from the wheel test environment. [Smoke workflow](.github/workflows/smoke.yml#L8) · [NumPy tests](tests/test_numpy_interop.py#L13) · [Core lock](core.lock.json#L1)
+
+## Verification of the current fixes
+
+On macOS ARM64 with Python 3.15 and NumPy 2.5.5, all **65 tests passed** across `test_request_validation`, `test_numpy_interop` and `test_smoke`. The tests used the updated wrapper and compiled extension for the current binding revision. Offline verification of the locked core and evidence also passed.
 
 ## Original review checks at `808e01c`
 

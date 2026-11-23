@@ -252,7 +252,7 @@ def x13_automatic(series, *, frequency=12, start_year=1970, start_period=1,
       ``"legacy (explicit)"`` / ``"accurate (explicit)"``.
     * ``_X13_AUTOMATIC_DEFAULTS`` (module scalars, overridable via
       ``**overrides``), the decoder X-11 block (``seasonal=None`` ->
-      ``["msr"] * frequency``, automatic Henderson ``trend_length=0``)
+      twelve monthly ``"msr"`` entries, automatic Henderson ``trend_length=0``)
       and the ``"undefined"`` decomposition mode (the decoder's
       X11Spec default).
 
@@ -334,7 +334,7 @@ def x13_automatic(series, *, frequency=12, start_year=1970, start_period=1,
             + "; the automatic preprocessing takes no regression inputs "
               "(user-variable detection is deferred to item 21-I)")
     # REVIEW-1: every slot is validated BEFORE any use — the per-month
-    # seasonal default is allocated from the validated frequency only, and
+    # seasonal default is allocated only for the supported monthly route, and
     # no value reaches the request through int()/bool()/float() coercion.
     frequency = _request_int(frequency, "frequency")
     start_year = _request_int(start_year, "start_year")
@@ -361,7 +361,7 @@ def x13_automatic(series, *, frequency=12, start_year=1970, start_period=1,
         if t not in _OUTLIER_TYPE_CODES:
             raise ValueError(f"unknown outlier type: {t!r}; expected one of {sorted(_OUTLIER_TYPE_CODES)}")
     if seasonal is None:
-        seasonal = ["msr"] * frequency
+        seasonal = ["msr"] * 12 if frequency == 12 else []
     seasonal = [str(s) for s in seasonal]
     for s in seasonal:
         if s not in _SEASONAL_NAMES:

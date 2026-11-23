@@ -50,6 +50,13 @@ def quick_request(**kw):
 class IntegerSlotTest(unittest.TestCase):
     """Scalar integer fields: exact values only; the reviewer's probe trio."""
 
+    def test_unsupported_frequency_has_bounded_default(self):
+        from unittest.mock import patch
+        with patch.object(pykalos, "x13_automatic_fit", wraps=pykalos.x13_automatic_fit) as fit:
+            result = quick_request(frequency=2**31 - 1)
+        self.assertEqual(result["status"], MONTHLY_ONLY)
+        self.assertEqual(fit.call_args.args[0]["seasonal"], [])
+
     def test_fractional_frequency_refused(self):
         with self.assertRaises(TypeError) as ctx:
             quick_request(frequency=12.9, seasonal=["msr"] * 12)
