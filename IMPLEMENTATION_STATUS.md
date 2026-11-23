@@ -1,6 +1,6 @@
 # pykalos implementation status
 
-Current Python operations at the 2026-11-23 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0/RSA1 fitting. RSA0 also provides preprocessing forecast errors and residual diagnostics. The dated entries retain the earlier qualification results.
+Current Python operations at the 2026-11-24 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0/RSA1 fitting. Both templates provide preprocessing residual diagnostics. RSA0 also provides preprocessing forecast errors. The dated entries retain the earlier qualification results.
 
 ## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
 
@@ -1234,3 +1234,7 @@ Core `d17a7a5` qualifies the stock RSA1 residual standard error, monthly airline
 ### M5 public RSA1 residual standard error, independence and normality
 
 Raw `tramoseats_fit(..., template="RSA1")` and standalone `estimate_tramo_tr1` both return `ser`, `lb` and `doornikhansen` with dated residuals. Both routes reproduced all 24 public JVM results on eight fitted series, including two additive outlier fits. The scales, test statistics and probabilities matched bit-for-bit and both tests reported the reference degrees of freedom. All 21 targeted installed-wheel tests passed, including the prior short-series RSA0 diagnostics. [Diagnostic replay](tests/test_tramo_automatic.py)
+
+### M5 TC residual diagnostics and M6 QR integration checkpoint
+
+The Python snapshot advances to `b736a70` with four additional public TC residual diagnostic fits and the shared finite state QR workspace. The integration gate replays the 12 RSA1 fits through both Python entry points and repeats the original matched eight-case fixed-order timing and accuracy matrix.

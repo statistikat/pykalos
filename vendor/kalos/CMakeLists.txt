@@ -78,6 +78,7 @@ add_library(kalos STATIC
   src/tramo_outlier_scan.cpp
   src/tramo_outlier_rounds.cpp
   src/tramo_regression_tests.cpp
+  src/tramo_seasonal_spectrum.cpp
   src/tramo_seats_bridge.cpp
   src/tramo_seats_model_validator.cpp
   src/tramo_tr0.cpp
@@ -264,6 +265,10 @@ if(KALOS_BUILD_TESTS)
       target_compile_options(${test_name} PRIVATE /UNDEBUG)
     else()
       target_compile_options(${test_name} PRIVATE -UNDEBUG)
+    endif()
+    if(test_name STREQUAL "test_tramo_differencing_battery")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_SEASONAL_PEAKS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-differencing-battery/monthly-spectral-peaks.txt")
     endif()
     if(test_name STREQUAL "test_arma_diagnostics")
       target_compile_definitions(${test_name} PRIVATE
