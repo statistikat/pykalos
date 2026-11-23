@@ -1210,3 +1210,7 @@ The Python binding snapshot advances to core `0e0f272`, containing the monthly p
 ### M5 residual trading-day significance
 
 `tramo_residual_trading_days` evaluates dated monthly residuals against the fitted estimation domain. The installed wheel reproduced all 32 JVM decisions across eight inputs, including binary64 probabilities and statistic values, decisions on both sides of equality and absent tests for degenerate fits. All 34 targeted wheel tests passed. [Residual trading-day replay](tests/test_tramo_calendar.py)
+
+### M5 RSA1 outlier-restoration scope and full regression
+
+The per-template capabilities expose restored outlier types for additive and multiplicative RSA1 fits. At core `0e0f272`, a shifted historical input selected a level-model AO. Standalone TR1 returned its fitted coefficient and full RSA1 reported the unsupported restoration. All 13 installed-wheel product tests passed. The full RSA1 wheel replay at this pin passed 120 tests in 199.527 seconds, including all 4,353 automatic X-13 and 1,287 extended-horizon comparisons. [Public product tests](tests/test_tramo_automatic.py)

@@ -48,7 +48,10 @@ Use `tramoseats_fit(series, template="RSA1", ...)` for the stock transformation
 and outlier detection followed by monthly SEATS. The result includes the TR1
 preprocessing record, product model-change flag, dated components and
 forecasts. `capabilities()["tramo_seats_fit"]["by_template"]` lists the
-qualified uncertainty and residual fields for each template.
+qualified uncertainty and residual fields for each template. For RSA1,
+`restored_outliers_by_mode` lists the outliers supported by each decomposition
+mode. An unsupported fitted outlier raises `ValueError`. `estimate_tramo_tr1`
+returns the preprocessing fit independently.
 
 For a fixed monthly SEATS model, `seats_extract_wk(series, innovation_variance, ...)`
 takes the fitted SARIMA coefficients and returns ordered `initial` and `final`
