@@ -30,17 +30,19 @@ jobs:
           path: core-build-tools
       - run: python tools/sync-core.py --verify
       - run: sudo apt-get update && sudo apt-get install -y gfortran ninja-build
-      - run: python ../core-build-tools/tools/build-openblas.py --prefix "${{ runner.temp }}/openblas" --jobs 2
+      - uses: ./pykalos/.github/actions/openblas
+        with:
+          profile: native
       - run: python -m pip install build
       - run: python -m build
         env:
-          CMAKE_ARGS: -DOpenBLAS_ROOT=${{ runner.temp }}/openblas
+          CMAKE_ARGS: -DOpenBLAS_ROOT=${{ github.workspace }}/pykalos/build/openblas
       - name: Create an isolated wheel test environment
         run: |
           python -m venv "$RUNNER_TEMP/test-env"
           echo "$RUNNER_TEMP/test-env/bin" >> "$GITHUB_PATH"
       - run: python -m pip install --no-deps dist/*.whl
-      - run: python tools/check-wheel-provider.py "${{ runner.temp }}/openblas"
+      - run: python tools/check-wheel-provider.py "${{ github.workspace }}/pykalos/build/openblas"
       - if: matrix.dependencies == 'minimal'
         name: Test the dependency-free wheel
         run: |

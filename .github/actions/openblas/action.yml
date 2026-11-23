@@ -1,0 +1,74 @@
+name: Build the pinned OpenBLAS provider
+description: Cache the checksum-verified archive build for one runner toolchain and ABI
+inputs:
+  profile:
+    description: native, manylinux or ucrt64
+    required: true
+  image:
+    description: manylinux container image
+    required: false
+    default: quay.io/pypa/manylinux_2_28_x86_64
+outputs:
+  image_id:
+    description: Exact local manylinux image used to build the cached provider
+    value: ${{ steps.container.outputs.image_id }}
+runs:
+  using: composite
+  steps:
+    - name: Identify the native compiler toolchain
+      if: inputs.profile == 'native'
+      id: native
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        tag=$( (uname -sm; cc --version; gfortran --version; echo "${ImageVersion:-unknown}") | shasum -a 256)
+        echo "tag=${tag%% *}" >> "$GITHUB_OUTPUT"
+    - name: Identify the manylinux toolchain
+      if: inputs.profile == 'manylinux'
+      id: container
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        IMAGE: ${{ inputs.image }}
+      run: |
+        docker pull "$IMAGE"
+        echo "image_id=$(docker image inspect "$IMAGE" --format '{{.Id}}')" >> "$GITHUB_OUTPUT"
+    - name: Identify the UCRT64 compiler toolchain
+      if: inputs.profile == 'ucrt64'
+      id: windows
+      shell: msys2 {0}
+      working-directory: ${{ github.workspace }}
+      run: |
+        tag=$(pacman -Q | grep "^mingw-w64-ucrt-x86_64-" | sha256sum)
+        echo "tag=${tag%% *}" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache/restore@v4
+      id: provider
+      with:
+        path: pykalos/build/openblas
+        key: pykalos-blas-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.profile }}-${{ steps.native.outputs.tag }}${{ steps.container.outputs.image_id }}${{ steps.windows.outputs.tag }}-${{ hashFiles('core-build-tools/tools/build-openblas.py', 'core-build-tools/dependencies/openblas.lock.json') }}
+    - if: steps.provider.outputs.cache-hit != 'true' && inputs.profile == 'native'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        if [[ "$RUNNER_OS" == macOS ]]; then
+          export MACOSX_DEPLOYMENT_TARGET="$(sw_vers -productVersion | cut -d. -f1).0"
+        fi
+        python core-build-tools/tools/build-openblas.py --prefix "$PWD/pykalos/build/openblas" --jobs 2
+    - if: steps.provider.outputs.cache-hit != 'true' && inputs.profile == 'manylinux'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        IMAGE: ${{ steps.container.outputs.image_id }}
+      run: |
+        docker run --rm -v "$GITHUB_WORKSPACE:/workspace" -w /workspace "$IMAGE" \
+          /opt/python/cp312-cp312/bin/python core-build-tools/tools/build-openblas.py \
+          --prefix /workspace/pykalos/build/openblas --jobs 2
+    - if: steps.provider.outputs.cache-hit != 'true' && inputs.profile == 'ucrt64'
+      shell: msys2 {0}
+      working-directory: ${{ github.workspace }}
+      run: /usr/bin/python core-build-tools/tools/build-openblas.py --prefix "$PWD/pykalos/build/openblas" --jobs 2
+    - uses: actions/cache/save@v4
+      if: steps.provider.outputs.cache-hit != 'true'
+      with:
+        path: pykalos/build/openblas
+        key: ${{ steps.provider.outputs.cache-primary-key }}

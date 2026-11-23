@@ -25,15 +25,22 @@ jobs:
           repository: statistikat/kalos
           ref: ${{ steps.core.outputs.revision }}
           path: core-build-tools
+      - if: runner.os == 'macOS'
+        run: brew install gcc ninja
+      - uses: ./pykalos/.github/actions/openblas
+        id: provider
+        with:
+          profile: ${{ runner.os == 'Linux' && 'manylinux' || 'native' }}
       - name: Build and repair the manylinux wheel
         if: runner.os == 'Linux'
+        env:
+          IMAGE: ${{ steps.provider.outputs.image_id }}
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/workspace" -w /workspace/pykalos \
-            quay.io/pypa/manylinux_2_28_x86_64 bash -eu -o pipefail -c '
+            "$IMAGE" bash -eu -o pipefail -c '
               export PATH=/opt/python/cp312-cp312/bin:$PATH
               python -m pip install build ninja cmake auditwheel
-              python ../core-build-tools/tools/build-openblas.py --prefix /tmp/pykalos-openblas --jobs 2
-              export CMAKE_ARGS="-DPYKALOS_BUNDLE_OPENBLAS=ON -DOpenBLAS_ROOT=/tmp/pykalos-openblas"
+              export CMAKE_ARGS="-DPYKALOS_BUNDLE_OPENBLAS=ON -DOpenBLAS_ROOT=/workspace/pykalos/build/openblas"
               python -m build
               auditwheel repair --plat manylinux_2_28_x86_64 -w wheelhouse dist/*.whl
               auditwheel show wheelhouse/*.whl'
@@ -41,11 +48,9 @@ jobs:
         if: runner.os == 'macOS'
         working-directory: pykalos
         run: |
-          brew install gcc ninja
           python -m pip install build delocate
           export MACOSX_DEPLOYMENT_TARGET="$(sw_vers -productVersion | cut -d. -f1).0"
-          python ../core-build-tools/tools/build-openblas.py --prefix "$RUNNER_TEMP/pykalos-openblas" --jobs 2
-          export CMAKE_ARGS="-DPYKALOS_BUNDLE_OPENBLAS=ON -DOpenBLAS_ROOT=$RUNNER_TEMP/pykalos-openblas"
+          export CMAKE_ARGS="-DPYKALOS_BUNDLE_OPENBLAS=ON -DOpenBLAS_ROOT=$PWD/build/openblas"
           python -m build
           delocate-wheel --require-archs "$(uname -m)" --require-target-macos-version "$MACOSX_DEPLOYMENT_TARGET" -w wheelhouse dist/*.whl
           delocate-listdeps --all wheelhouse/*.whl
@@ -96,6 +101,9 @@ jobs:
             make perl python
             mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-gcc-fortran
             mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+      - uses: ./pykalos/.github/actions/openblas
+        with:
+          profile: ucrt64
       - name: Build with UCRT64 against the native CPython ABI and repair the DLLs
         shell: msys2 {0}
         working-directory: pykalos
@@ -103,7 +111,6 @@ jobs:
           set -euo pipefail
           python_exe=$(cygpath -u "$PYKALOS_CPYTHON")
           "$python_exe" -m pip install build delvewheel
-          /usr/bin/python ../core-build-tools/tools/build-openblas.py --prefix "$PWD/build/openblas" --jobs 2
           licenses="$PWD/build/runtime-licenses"
           mkdir -p "$licenses"
           for dll in /ucrt64/bin/libwinpthread-1.dll /ucrt64/bin/libgfortran-*.dll /ucrt64/bin/libstdc++-6.dll; do
