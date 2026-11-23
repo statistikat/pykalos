@@ -102,11 +102,13 @@ class PublicTr1(unittest.TestCase):
         self.assertEqual((cases, residuals, values), (6, 498, 3600))
 
     def test_public_rsa1_residual_diagnostics(self):
-        inputs = dict(grouped_records("rsa1-x86_64.txt"))
-        inputs.update(("level_" + cid, rows) for cid, rows in grouped_records("rsa1-level-effects-x86_64.txt"))
+        corpora = {"": "rsa1", "level_": "rsa1-level-effects",
+                   "level_tc_": "rsa1-level-tc", "log_tc_": "rsa1-log-tc"}
+        inputs = {prefix + cid: rows for prefix, corpus in corpora.items()
+                  for cid, rows in grouped_records(corpus + "-x86_64.txt")}
         diagnostics = dict(grouped_records("rsa1-residual-diagnostics-x86_64.txt"))
         self.assertEqual(set(diagnostics), set(inputs))
-        self.assertEqual(len(inputs), 8)
+        self.assertEqual(len(inputs), 12)
         for cid, records in inputs.items():
             _, year, month, _, *data = records[1]
             series = list(map(from_hex, data))

@@ -1238,3 +1238,7 @@ Raw `tramoseats_fit(..., template="RSA1")` and standalone `estimate_tramo_tr1` b
 ### M5 TC residual diagnostics and M6 QR integration checkpoint
 
 The Python snapshot advances to `b736a70` with four additional public TC residual diagnostic fits and the shared finite state QR workspace. The integration gate replays the 12 RSA1 fits through both Python entry points and repeats the original matched eight-case fixed-order timing and accuracy matrix.
+
+### M5 residual diagnostics with transitory changes
+
+The expanded RSA1 wheel gate covers 12 monthly series, including log and level TC fits. Both `estimate_tramo_tr1` and raw `tramoseats_fit` reproduced all 36 public residual scale, Ljung–Box and Doornik–Hansen results bit-for-bit. All 21 targeted installed-wheel tests passed at `b736a70`. [Expanded residual diagnostics replay](tests/test_tramo_automatic.py)
