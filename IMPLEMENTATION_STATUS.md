@@ -1226,3 +1226,7 @@ The Python snapshot advances to core `bf5c08f`. It includes six additional raw R
 ### Full installed-wheel replay after outlier restoration
 
 The repaired macOS ARM64 wheel at core `bf5c08f` passed all 122 tests in 119.003 seconds with NumPy and one execution thread. All 4,353 automatic X-13 comparisons and all 1,287 extended-horizon comparisons passed, alongside the new level/log raw and fitted TC product gates.
+
+### M5 public RSA1 residual diagnostics checkpoint
+
+Core `d17a7a5` qualifies the stock RSA1 residual standard error, monthly airline independence test and Doornik–Hansen normality test on eight original-series JVM fits. The binding gate replays these values through standalone TR1 preprocessing and raw seasonal adjustment.
