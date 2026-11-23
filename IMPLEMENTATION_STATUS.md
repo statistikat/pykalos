@@ -1066,3 +1066,16 @@ The clean source-archive wheel at Python `eb15c8f` and core `fa7edea` passed the
 The source-wheel and portable-wheel workflows now reuse a provider build keyed by the core’s OpenBLAS archive lock, build script, runner OS, architecture, profile and toolchain. The manylinux profile uses the exact container image digest for both provider and wheel. UCRT64 keys its installed toolchain packages; native builds key their compilers and runner image. A successful provider build is cached before the independent wheel tests, and each installed wheel still runs its provider and numerical checks. The workflow YAML and Bash/MSYS scripts parsed locally and the native toolchain fingerprint executed on macOS. [Provider action](.github/actions/openblas/action.yml)
 
 The import-order regression also overlaps two concurrent RSA0 workers with two NumPy linear-solve workers. Each import order checks all six seasonal adjustments against the frozen binary64 oracle and twelve NumPy solves against their known solutions. The external provider passed at a Kalos thread limit of two. The private-provider wheel passed at limits one, two and eight with OpenBLAS limited to one thread.
+
+### M6 installed Python wheel and JDemetra+ RSA0 timings
+
+On an eight-core Apple M2 running macOS 27.0.1, native ARM64 CPython 3.15.2 and Temurin 21.0.11+10 ran the same two ordinary monthly fits with one Kalos/OpenMP/OpenBLAS thread and one JVM active processor. The private wheel used core `2fe3d8e`, Clang 23.1.5 and OpenBLAS 0.3.34 built with GNU Fortran 16.2.0. The six JD+ 3.9.0 jars were checked against the frozen bridge reference. Each engine started four fresh processes, with engine order alternating between rounds. Each process warmed each workload with 20 fits, then measured seven batches of five fits. Startup, file loading, JAR checks and oracle comparisons were outside the timings.
+
+| Ordinary RSA0 workload | Observations | Python median ms (interquartile range) | JDemetra+ median ms (interquartile range) | Python / JVM |
+|---|---:|---:|---:|---:|
+| Airline (`fit_tr0_air`) | 144 | 45.422 (44.230–48.675) | 4.039 (3.732–4.379) | 11.25× |
+| Mixed factors (`fit_multi`) | 96 | 34.473 (33.416–36.202) | 6.237 (5.624–6.633) | 5.53× |
+
+Both public routes materialized all 50 initial, final and merged rows, with 3,912 and 2,808 values respectively. They also returned the observed seasonal adjustment and 24 original-series forecast standard errors. All 240 observed adjustments matched the oracle bit-for-bit in both engines. The largest Python forecast-error differences were 2.42e−13 and 1.25e−14. The native ARM64 JVM matched the captured x86-64 public errors exactly on these two cases. The measured end-to-end latency gap remains open. [Raw samples and build identity](tools/benchmark/results/2026-11-23-macos-arm64.json) · [Benchmark driver](tools/benchmark/rsa0.py)
+
+To repeat, install the wheel for this checkout and run `python tools/benchmark/rsa0.py --jdk <native-Java-21.0.11-home> --jar-dir <toolkit-and-sa-jars> --jar-dir <tramoseats-jars>`. The driver reports all sample times in milliseconds per fit and checks the returned values before emitting the report.
