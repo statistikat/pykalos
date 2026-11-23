@@ -9,7 +9,8 @@ from test_seats import bits, check_hex_rows, from_hex, grouped_records
 class Rsa0Fit(unittest.TestCase):
     def test_raw_series_oracle(self):
         cases = grouped_records("rsa0-x86_64.txt")
-        points = rows = 0
+        residuals = dict(grouped_records("rsa0-residuals-x86_64.txt"))
+        points = rows = residual_points = 0
         for cid, records in cases:
             with self.subTest(case=cid):
                 domain, expected_fit = records[1], records[2]
@@ -18,6 +19,14 @@ class Rsa0Fit(unittest.TestCase):
                 self.assertEqual((result["status"], result["method"], result["template"], result["mode"]),
                                  ("ok", "tramoseats", "RSA0", "additive"))
                 self.assertEqual(result["series"], data)
+                _, tsres, ser = residuals[cid]
+                self.assertEqual((tsres[0], ser[0]), ("residuals.tsres", "residuals.ser"))
+                residual = result["residuals"]
+                self.assertEqual((residual["start_year"], residual["start_month"]), tuple(map(int, tsres[1:3])))
+                self.assertEqual(len(residual["tsres"]), int(tsres[3]))
+                self.assertEqual(bits(residual["tsres"]), bytes.fromhex("".join(tsres[4:])))
+                self.assertEqual(bits([residual["ser"]]), bytes.fromhex(ser[1]))
+                residual_points += len(residual["tsres"])
                 model, likelihood = result["model"], result["likelihood"]
                 self.assertEqual(model["orders"], dict(p=0, d=1, q=1, bp=0, bd=1, bq=1))
                 self.assertEqual((model["phi"], model["bphi"], model["log"], model["mean_correction"]),
@@ -37,7 +46,7 @@ class Rsa0Fit(unittest.TestCase):
                 for row in oracle:
                     if row[2] == "Value" and row[1] in names:
                         self.assertEqual(bits(result[names[row[1]]]), bytes.fromhex("".join(row[6:])))
-        self.assertEqual((len(cases), rows, points), (6, 60, 3960))
+        self.assertEqual((len(cases), rows, points, residual_points), (6, 60, 3960, 570))
 
     def test_preprocessing_and_wk_forecast_uncertainty(self):
         forecasts = dict(grouped_records("rsa0-forecast-errors-x86_64.txt"))

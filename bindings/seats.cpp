@@ -126,6 +126,9 @@ void bind_seats(py::module_& module) {
         result["series_forecast_stdev"] = errors.standard_errors;
         const auto& fit = output.preprocessing;
         const auto& model = fit.model;
+        const auto& residuals = fit.residuals;
+        result["residuals"] = py::dict("start_year"_a=residuals.start_year, "start_month"_a=residuals.start_month,
+                                      "tsres"_a=residuals.values, "ser"_a=residuals.standard_error);
         result["model"] = py::dict(
             "orders"_a=py::dict("p"_a=model.phi.size(), "d"_a=model.d, "q"_a=model.theta.size(),
                                 "bp"_a=model.bphi.size(), "bd"_a=model.bd, "bq"_a=model.btheta.size()),

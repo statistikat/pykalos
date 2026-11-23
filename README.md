@@ -21,6 +21,8 @@ and merged components. Use `fit["finalSA"]`, `fit["finalTrend"]`,
 `fit["series_forecast_stdev"]` contains the preprocessing model’s original-series
 standard errors on `fit["series_forecast_domain"]`; `Series/StdevForecast`
 rows contain the independently estimated WK errors.
+The preprocessing residuals are in `fit["residuals"]`, with their start year
+and month, the residual vector (`tsres`) and its standard error (`ser`).
 The supported template and approximation boundary are reported by
 `capabilities()["tramo_seats_fit"]`.
 

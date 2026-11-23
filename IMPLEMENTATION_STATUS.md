@@ -1083,3 +1083,7 @@ To repeat, install the wheel for this checkout and run `python tools/benchmark/r
 ### M5 RSA0 residual checkpoint
 
 The binding snapshot advances from `2fe3d8e` to `5c95dc1`, including the raw TR0 residual projection and its six JVM captures. The integration gate verifies the export, then compares all public residual dates, lengths, values and standard errors at the installed wheel. The prior private-provider snapshot passed all 104 tests, including 5,640 X-13 automatic and horizon checks, in 379.2 seconds. Hosted macOS also passed the private wheel repair, deployment target, numerical and NumPy checks at `cc1e239`. [Hosted macOS job](https://github.com/statistikat/pykalos/actions/runs/45272946518/job/138037208162)
+
+### M5 dated RSA0 preprocessing residuals
+
+`tramoseats_fit` returns the dated preprocessing residuals (`residuals.tsres`) and their public standard error (`residuals.ser`) in its residuals dictionary, and advertises the projection in the restricted RSA0 capability. The repaired installed wheel matched all six residual start dates, all 570 residuals and all six standard errors bit-for-bit. All 78 targeted tests passed, including the forecast-error, full component, NumPy import-order and concurrent-fit regressions. Offline verification covered 194 core and 48 evidence files. [Oracle replay](tests/test_tramoseats_fit.py)
