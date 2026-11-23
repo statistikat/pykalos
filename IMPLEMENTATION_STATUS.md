@@ -1218,3 +1218,7 @@ The per-template capabilities expose restored outlier types for additive and mul
 ### M5 additive and multiplicative outlier restoration checkpoint
 
 The Python snapshot advances to core `bf5c08f`. It includes six additional raw RSA1 JVM fixtures covering level-model AO and LS and stock monthly TC in both modes. The binding gate compares every raw and fitted merged component, original-series model and residual against this evidence.
+
+### M5 AO, LS and stock TC restoration on both scales
+
+`tramoseats_fit` and `seats_from_tramo` restore AO, LS and monthly TC effects on additive and multiplicative fits. The fitted-model input accepts `TC` with the stock decay of 0.7. On six public RSA1 fixtures, the raw route reproduced the fitted parameters, regression coefficients, likelihood and all 498 residuals. Both public routes independently reproduced the same 3,600 observed and forecast values bit-for-bit. All 20 targeted installed-wheel tests passed, including the fixed-model, fixed-order estimation and Java-free product replays. [Installed outlier-restoration replay](tests/test_tramo_automatic.py)

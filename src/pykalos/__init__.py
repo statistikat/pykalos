@@ -473,8 +473,9 @@ def seats_from_tramo(series, ssq, effective, estimated, *, frequency=12, start_y
 
     Pass the interpolated original-scale observations, fitted residual sum of
     squares, effective observations and number of estimated parameters. Each
-    outlier mapping contains type (AO or LS), zero-based observed position
-    and coefficient. The result includes initial, final WK and merged rows.
+    outlier mapping contains type (AO, LS or TC), zero-based observed position
+    and coefficient. A TC uses the stock monthly decay of 0.7. The result
+    includes initial, final WK and merged rows.
     """
     spec = locals().copy()
     data = _seats_model(spec.pop("series"), spec, "seats_from_tramo")
@@ -490,13 +491,13 @@ def seats_from_tramo(series, ssq, effective, estimated, *, frequency=12, start_y
         if not hasattr(row, "keys") or set(row.keys()) != {"type", "position", "coefficient"}:
             raise ValueError("seats_from_tramo: outlier fields must be type, position and coefficient")
         kind = row["type"]
-        if not isinstance(kind, str) or kind not in ("AO", "LS"):
-            raise ValueError("seats_from_tramo: outlier type must be AO or LS")
+        if not isinstance(kind, str) or kind not in ("AO", "LS", "TC"):
+            raise ValueError("seats_from_tramo: outlier type must be AO, LS or TC")
         position = _fixed_integer(row["position"], "position", "seats_from_tramo")
         if not 0 <= position < len(data):
             raise ValueError("seats_from_tramo: outlier position is outside the observations")
         coefficient = _finite_number(row["coefficient"], "coefficient", "seats_from_tramo")
-        spec["outliers"].append(dict(type=kind, position=position, coefficient=coefficient))
+        spec["outliers"].append(dict(type=_OUTLIER_TYPE_CODES[kind], position=position, coefficient=coefficient))
     return _kalos._seats_from_tramo(data, spec)
 
 

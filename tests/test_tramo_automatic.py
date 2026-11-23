@@ -72,19 +72,34 @@ class PublicTr1(unittest.TestCase):
         self.assertTrue(capability["RSA0"]["series_forecast_stdev"])
         self.assertFalse(capability["RSA1"]["series_forecast_stdev"])
 
-    def test_rsa1_outlier_restoration_scope(self):
-        capability = pykalos.capabilities()["tramo_seats_fit"]["by_template"]["RSA1"]
-        self.assertEqual(capability["restored_outliers_by_mode"],
-                         {"additive": (), "multiplicative": ("AO", "LS")})
-        records = dict(grouped_records("rsa1-x86_64.txt"))["fit_ao"]
-        _, year, month, _, *data = records[1]
-        series = [from_hex(value) - 1000 for value in data]
-        domain = dict(start_year=int(year), start_month=int(month))
-        fit = pykalos.estimate_tramo_tr1(series, **domain)
-        self.assertFalse(fit["model"]["log"])
-        self.assertIn("AO", [v.get("type") for v in fit["variables"]])
-        with self.assertRaisesRegex(ValueError, "level-model outlier effects"):
-            pykalos.tramoseats_fit(series, template="RSA1", **domain)
+    def test_rsa1_outlier_restoration(self):
+        scope = pykalos.capabilities()["tramo_seats_fit"]["by_template"]["RSA1"]["restored_outliers_by_mode"]
+        self.assertEqual(scope, {mode: ("AO", "LS", "TC") for mode in ("additive", "multiplicative")})
+        cases = residuals = values = 0
+        for corpus in ("rsa1-level-effects", "rsa1-level-tc", "rsa1-log-tc"):
+            for cid, records in grouped_records(corpus + "-x86_64.txt"):
+                with self.subTest(corpus=corpus, case=cid):
+                    _, year, month, _, *data = records[1]
+                    series = list(map(from_hex, data))
+                    domain = dict(start_year=int(year), start_month=int(month))
+                    raw = pykalos.tramoseats_fit(series, template="RSA1", **domain)
+                    residuals += check_preprocessing(self, raw, records)
+                    model = raw["model"]
+                    likelihood = raw["likelihood"]
+                    spec = {k: model[k] for k in ("phi", "theta", "bphi", "btheta", "log", "mean_correction")}
+                    spec.update({k: model["orders"][k] for k in ("d", "bd")})
+                    spec.update({k: likelihood[k] for k in ("ssq", "effective", "estimated")})
+                    effects = [{k: v[k] for k in ("type", "position", "coefficient")}
+                               for v in raw["variables"] if "type" in v]
+                    fitted = pykalos.seats_from_tramo(series, outliers=effects, **domain, **spec)
+                    expected = [r for r in records if r[0] == "merged"]
+                    self.assertEqual((raw["status"], fitted["status"]), ("ok", "ok"))
+                    product, = (r for r in records if r[0] == "product")
+                    self.assertEqual(raw["model_changed"], product[3] == "true")
+                    values += check_hex_rows(self, raw["merged"], expected)
+                    check_hex_rows(self, fitted["merged"], expected)
+                    cases += 1
+        self.assertEqual((cases, residuals, values), (6, 498, 3600))
 
     def test_rsa1_horizons(self):
         records = dict(grouped_records("rsa1-x86_64.txt"))["fit_noout"]

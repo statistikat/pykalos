@@ -58,8 +58,9 @@ takes the fitted SARIMA coefficients and returns ordered `initial` and `final`
 component rows. Each row includes a component, information type, start year,
 one-based start month and values. `seats_from_tramo(series, ssq, effective,
 estimated, ...)` also restores fitted deterministic effects into `merged`
-rows. Supply AO/LS effects as mappings with `type`, zero-based observation
-`position` and `coefficient`. Both operations use negative horizons for
+rows. Supply AO, LS and TC effects as mappings with `type`, zero-based
+observation `position` and `coefficient`. TC uses the stock monthly decay
+of 0.7 in additive and multiplicative decompositions. Both operations use negative horizons for
 years and positive horizons for periods. The default forecast is two years.
 Legacy approximation covers the monthly airline retry and the mean-free
 (2,1,0)(1,1,0) seasonal re-estimation used in the mixed AO/LS fitted models.

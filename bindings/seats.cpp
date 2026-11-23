@@ -152,7 +152,7 @@ void bind_seats(py::module_& module) {
         for (const auto& item : spec["outliers"].cast<py::list>()) {
             const auto row = item.cast<py::dict>();
             kalos::TramoFitVariable variable;
-            variable.type = row["type"].cast<std::string>() == "AO" ? kalos::TramoOutlierKind::Ao : kalos::TramoOutlierKind::Ls;
+            variable.type = static_cast<kalos::TramoOutlierKind>(row["type"].cast<int>());
             variable.position = row["position"].cast<int>();
             variable.coefficient = row["coefficient"].cast<double>();
             fit.variables.push_back(variable);

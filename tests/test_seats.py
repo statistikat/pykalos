@@ -135,7 +135,8 @@ class SeatsOracle(unittest.TestCase):
             pykalos.seats_extract_wk([-1.]*96, 1, log=True)
         options = fitted_arguments(grouped_records("bridge.txt")[0][1])
         for changes, reason in ((dict(ssq=0), "likelihood"), (dict(effective=1), "likelihood"),
-                                (dict(outliers=[dict(type="TC", position=0, coefficient=1.)]), "AO or LS"),
+                                (dict(outliers=[dict(type="SO", position=0, coefficient=1.)]), "AO, LS or TC"),
+                                (dict(outliers=[dict(type="TC", position=0, coefficient=1., decay=0.8)]), "fields"),
                                 (dict(outliers=[dict(type="AO", position=-1, coefficient=1.)]), "position")):
             with self.subTest(changes=changes), self.assertRaisesRegex(ValueError, reason):
                 pykalos.seats_from_tramo(**(options | changes))

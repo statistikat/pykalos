@@ -689,7 +689,7 @@ PYBIND11_MODULE(_kalos, m) {
         py::dict rsa1("modes"_a=py::make_tuple("additive", "multiplicative"), "series_forecast_stdev"_a=false,
                       "residuals"_a=py::make_tuple("tsres"));
         rsa1["restored_outliers_by_mode"] = py::dict(
-            "additive"_a=py::tuple(), "multiplicative"_a=py::make_tuple("AO", "LS"));
+            "additive"_a=py::make_tuple("AO", "LS", "TC"), "multiplicative"_a=py::make_tuple("AO", "LS", "TC"));
         result["tramo_seats_fit"] = py::dict(
             "entry_point"_a="pykalos.tramoseats_fit", "templates"_a=py::make_tuple("RSA0", "RSA1"),
             "frequency"_a=12, "complete_series_only"_a=true, "mode"_a="template_dependent",
