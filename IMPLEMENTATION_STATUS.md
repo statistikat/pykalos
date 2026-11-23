@@ -1159,3 +1159,7 @@ The Python snapshot advances to core `854703c`, including the monthly working-da
 ### M5 monthly working-day and trading-day selection
 
 `tramo_calendar_f_test` fits both calendar candidate models to dated complete monthly observations with explicit mean, significance and numerical precision. Across the four JVM input regimes and 14 comparisons, all candidate sums of squares, mean squares and lower-tail probabilities matched bit-for-bit. The degrees of freedom, three possible selections and strict/inclusive threshold decisions matched exactly. Negative tests covered calendar domains, input types, residual count and invalid numerical controls. All 88 targeted installed-wheel tests passed. [Calendar qualification](tests/test_tramo_calendar.py)
+
+### Full numerical replay after monthly SEATS retry integration
+
+The repaired macOS ARM64 wheel at core `c5bcf97` passed the complete 111-test discovery run with NumPy. All 4,353 automatic X-13 checks and all 1,287 extended-horizon checks passed. The 849.1-second run also covered the 27 fixed-order estimation controls, fitted and ordinary TRAMO/SEATS, public residual independence, wheel-provider coexistence and Java-free adjustment.
