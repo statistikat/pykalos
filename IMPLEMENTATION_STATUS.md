@@ -1026,3 +1026,7 @@ Datable hygiene: no dated external data involved — nothing to pin.
 ### M5 fitted-model and ordinary RSA0 checkpoint
 
 The export advances to core `fa7edeae3c68862e163633c7debce3d102248223`, which includes typed WK component rows, the fitted TRAMO deterministic-effects merge, and the ordinary monthly TR0 estimator and RSA0 product pipeline. The SEATS extraction and bridge evidence now ship alongside the preceding Python corpora, including the direct raw-series RSA0 oracle. Offline verification covered all 194 core files and 46 evidence files. Python binding and installed-wheel qualification for these contracts follow this integration commit.
+
+### M5 fixed-model WK extraction and fitted TRAMO decomposition
+
+Python now exposes `seats_extract_wk` for fixed monthly models and `seats_from_tramo` for fitted likelihoods and deterministic AO/LS effects. Both return owned, dated rows and preserve the core’s status and refusal reasons. The installed wheel replayed all 36 WK cases (1,055 rows, 55,812 values). The fitted bridge replayed all six requests, including four successful merges (8,160 values) and both approximation refusals. Dates, ordering, lengths and binary64 values, including signed zeros, matched the frozen oracles. [Installed-wheel replay](tests/test_seats.py)

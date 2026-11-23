@@ -13,6 +13,15 @@ choice, both branch readouts and the effective seasonal model. The series must
 contain at least 24 finite monthly observations. Robust AO/LS pre-correction and
 a full TRAMO/SEATS fit remain outside these operations.
 
+For a fixed monthly SEATS model, `seats_extract_wk(series, innovation_variance, ...)`
+takes the fitted SARIMA coefficients and returns ordered `initial` and `final`
+component rows. Each row includes a component, information type, start year,
+one-based start month and values. `seats_from_tramo(series, ssq, effective,
+estimated, ...)` also restores fitted deterministic effects into `merged`
+rows. Supply AO/LS effects as mappings with `type`, zero-based observation
+`position` and `coefficient`. Both operations use negative horizons for
+years and positive horizons for periods. The default forecast is two years.
+
 For a fixed quarterly or monthly model, call `x13_fit` with explicit seasonal
 filters and Henderson length. The result includes the captured preadjustment
 tables, the X-11 tables consumed by the restore, all nine finals and the

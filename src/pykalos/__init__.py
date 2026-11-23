@@ -13,6 +13,7 @@ Available operations:
 * the fixed-coefficient quarterly/monthly X-13 fit, ``x13_fit``;
 * the 23-B TRAMO critical value, seasonality and log/level preprocessing decisions.
 """
+from math import isfinite as _isfinite
 from operator import index as _index
 
 from . import _kalos
@@ -20,7 +21,7 @@ from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
 __all__ = ["capabilities", "convolve", "core_version", "x13_automatic",
            "x13_automatic_fit", "x13_fit", "tramo_critical_value", "tramo_seasonality",
-           "tramo_transform_decision"]
+           "tramo_transform_decision", "seats_extract_wk", "seats_from_tramo"]
 __version__ = "0.1.0"
 
 # Decoder-pinned module scalars of the qualified envelope (docs/contracts/
@@ -232,10 +233,10 @@ def _request_series(values, name, operation="x13_automatic", *, allow_boolean=Tr
     return out
 
 
-def _fixed_integer(value, field):
-    value = _request_int(value, field, "x13_fit")
+def _fixed_integer(value, field, operation="x13_fit"):
+    value = _request_int(value, field, operation)
     if not -2**31 <= value < 2**31:
-        raise ValueError(f"x13_fit: {field} is outside the supported integer range")
+        raise ValueError(f"{operation}: {field} is outside the supported integer range")
     return value
 
 
@@ -521,3 +522,108 @@ def x13_automatic(series, *, frequency=12, start_year=1970, start_period=1,
         "legacy (default)" if sigma is None else f"{policy} (explicit)")
     result["available"] = result["status"] == "available"
     return result
+
+
+def _finite_number(value, field, operation):
+    if getattr(value, "ndim", 0) or isinstance(value, complex):
+        raise TypeError(f"{operation}: {field} must be a finite real scalar")
+    value = _request_float(value, field, operation)
+    if not _isfinite(value):
+        raise ValueError(f"{operation}: {field} must be finite")
+    return value
+
+
+def _finite_vector(values, field, operation):
+    if hasattr(values, "__len__") and len(values) >= 2**31:
+        raise ValueError(f"{operation}: {field} exceeds the native index range")
+    result = _request_series(values, field, operation, allow_boolean=False)
+    if not all(_isfinite(value) for value in result):
+        raise ValueError(f"{operation}: {field} must contain only finite values")
+    return result
+
+
+def _seats_domain(series, spec, operation):
+    data = _finite_vector(series, "series", operation)
+    for key in ("frequency", "start_year", "start_month", "forecast", "backcast"):
+        spec[key] = _fixed_integer(spec[key], key, operation)
+    frequency = spec["frequency"]
+    if frequency not in (4, 12) or not 1 <= spec["start_month"] <= frequency:
+        raise ValueError(f"{operation}: expected frequency 4 or 12 and a start period within the year")
+    counts = (spec["backcast"], spec["forecast"])
+    extended = len(data) + sum(count if count >= 0 else -frequency * count for count in counts)
+    if extended >= 2**31:
+        raise ValueError(f"{operation}: SEATS horizons exceed the native index range")
+    return data
+
+
+def _seats_model(series, spec, operation):
+    data = _seats_domain(series, spec, operation)
+    for key in ("d", "bd"):
+        spec[key] = _fixed_integer(spec[key], key, operation)
+    if min(spec["d"], spec["bd"]) < 0 or spec["d"] + spec["frequency"] * spec["bd"] >= len(data):
+        raise ValueError(f"{operation}: differencing must leave observations")
+    for key in ("phi", "bphi", "theta", "btheta"):
+        spec[key] = _finite_vector(spec[key], key, operation)
+    for key in ("log", "mean_correction"):
+        spec[key] = _request_flag(spec[key], key, operation)
+    if spec["log"] and any(x <= 0 for x in data):
+        raise ValueError(f"{operation}: log transformation requires positive observations")
+    return data
+
+
+def seats_extract_wk(series, innovation_variance, *, frequency=12, start_year=1990, start_month=1,
+                     d=0, bd=0, phi=(), theta=(), bphi=(), btheta=(), log=False,
+                     mean_correction=True, forecast=-2, backcast=0, approximation="legacy",
+                     method="burman", bias="legacy", xl=0.95, epsphi=2.0, rmod=0.5,
+                     smod=0.8, smod_pi=0.8):
+    """Extract dated initial and final WK rows for a fixed monthly SARIMA model.
+
+    Each row carries component, information, one-based start month, start year,
+    and owned values. Negative horizons are in years. The core reports its
+    named refusals for unsupported models, estimators and approximation paths.
+    """
+    spec = locals().copy()
+    data = _seats_model(spec.pop("series"), spec, "seats_extract_wk")
+    for key in ("innovation_variance", "xl", "epsphi", "rmod", "smod", "smod_pi"):
+        spec[key] = _finite_number(spec[key], key, "seats_extract_wk")
+    if spec["innovation_variance"] < 0:
+        raise ValueError("seats_extract_wk: innovation variance must be nonnegative")
+    for key, choices in (("approximation", ("none", "legacy", "noisy")),
+                          ("method", ("burman", "kalman_smoother")), ("bias", ("none", "legacy"))):
+        if not isinstance(spec[key], str) or spec[key] not in choices:
+            raise ValueError(f"seats_extract_wk: {key} must be one of {choices}")
+    return _kalos._seats_extract_wk(data, spec)
+
+
+def seats_from_tramo(series, ssq, effective, estimated, *, frequency=12, start_year=1990,
+                     start_month=1, d=0, bd=0, phi=(), theta=(), bphi=(), btheta=(),
+                     log=False, mean_correction=True, outliers=(), forecast=-2, backcast=0):
+    """Decompose an already fitted monthly TRAMO model and restore its effects.
+
+    Pass the interpolated original-scale observations, fitted residual sum of
+    squares, effective observations and number of estimated parameters. Each
+    outlier mapping contains type (AO or LS), zero-based observed position
+    and coefficient. The result includes initial, final WK and merged rows.
+    """
+    spec = locals().copy()
+    data = _seats_model(spec.pop("series"), spec, "seats_from_tramo")
+    spec["ssq"] = _finite_number(ssq, "ssq", "seats_from_tramo")
+    for key in ("estimated", "effective"):
+        spec[key] = _fixed_integer(spec[key], key, "seats_from_tramo")
+    if spec["ssq"] <= 0 or not 0 <= spec["estimated"] < spec["effective"] <= len(data):
+        raise ValueError("seats_from_tramo: likelihood requires positive ssq and 0 <= estimated < effective <= length")
+    if isinstance(outliers, (_TEXT_TYPES, set, frozenset)) or hasattr(outliers, "keys"):
+        raise TypeError("seats_from_tramo: outliers must be an ordered iterable of mappings")
+    spec["outliers"] = []
+    for row in outliers:
+        if not hasattr(row, "keys") or set(row.keys()) != {"type", "position", "coefficient"}:
+            raise ValueError("seats_from_tramo: outlier fields must be type, position and coefficient")
+        kind = row["type"]
+        if not isinstance(kind, str) or kind not in ("AO", "LS"):
+            raise ValueError("seats_from_tramo: outlier type must be AO or LS")
+        position = _fixed_integer(row["position"], "position", "seats_from_tramo")
+        if not 0 <= position < len(data):
+            raise ValueError("seats_from_tramo: outlier position is outside the observations")
+        coefficient = _finite_number(row["coefficient"], "coefficient", "seats_from_tramo")
+        spec["outliers"].append(dict(type=kind, position=position, coefficient=coefficient))
+    return _kalos._seats_from_tramo(data, spec)
