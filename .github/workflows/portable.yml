@@ -67,3 +67,80 @@ jobs:
           name: ${{ runner.os }}-bundled-wheel
           path: pykalos/wheelhouse/*.whl
           if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: pykalos
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Record native CPython and the pinned provider tooling
+        id: core
+        shell: pwsh
+        run: |
+          "PYKALOS_CPYTHON=$(python -c 'import sys; print(sys.executable)')" >> $env:GITHUB_ENV
+          python -c 'import json; print("revision=" + json.load(open("pykalos/core.lock.json"))["commit"])' >> $env:GITHUB_OUTPUT
+      - uses: actions/checkout@v5
+        with:
+          repository: statistikat/kalos
+          ref: ${{ steps.core.outputs.revision }}
+          path: core-build-tools
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            make perl python
+            mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-gcc-fortran
+            mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+      - name: Build with UCRT64 against the native CPython ABI and repair the DLLs
+        shell: msys2 {0}
+        working-directory: pykalos
+        run: |
+          set -euo pipefail
+          python_exe=$(cygpath -u "$PYKALOS_CPYTHON")
+          "$python_exe" -m pip install build delvewheel
+          /usr/bin/python ../core-build-tools/tools/build-openblas.py --prefix "$PWD/build/openblas" --jobs 2
+          licenses="$PWD/build/runtime-licenses"
+          mkdir -p "$licenses"
+          for dll in /ucrt64/bin/libwinpthread-1.dll /ucrt64/bin/libgfortran-*.dll /ucrt64/bin/libstdc++-6.dll; do
+            owner=$(pacman -Qqo "$dll")
+            mkdir -p "$licenses/$owner"
+            pacman -Qlq "$owner" | while IFS= read -r notice; do
+              case "$notice" in
+                */share/licenses/*) if [ -f "$notice" ]; then cp "$notice" "$licenses/$owner/"; fi ;;
+              esac
+            done
+          done
+          test -n "$(find "$licenses" -type f -print -quit)"
+          export CXX=g++ CMAKE_GENERATOR=Ninja
+          export CMAKE_ARGS="-DPYKALOS_BUNDLE_OPENBLAS=ON -DOpenBLAS_ROOT=$(cygpath -m "$PWD/build/openblas") -DPYKALOS_MINGW_LICENSE_DIR=$(cygpath -m "$licenses")"
+          "$python_exe" -m build
+          "$python_exe" -m delvewheel repair --add-path "$(cygpath -w /ucrt64/bin)" -w wheelhouse dist/*.whl
+      - name: Test the installed Windows wheel outside the build toolchain
+        shell: pwsh
+        working-directory: pykalos
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          KALOS_NUM_THREADS: '1'
+        run: |
+          python -m venv "$env:RUNNER_TEMP/test-env"
+          $python = "$env:RUNNER_TEMP/test-env/Scripts/python.exe"
+          $wheel = (Get-ChildItem wheelhouse/*.whl).FullName
+          & $python -m pip install --no-deps $wheel
+          & $python -m pip install pefile
+          & $python tools/check-wheel-provider.py --bundled
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $env:PYTHONPATH = "tests"
+          & $python -m unittest -v test_smoke test_x13_fixed test_tramo_transform test_seats test_tramoseats_fit
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & $python -m pip install numpy
+          & $python -m unittest -v test_numpy_interop test_provider_import_order
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Windows-bundled-wheel
+          path: pykalos/wheelhouse/*.whl
+          if-no-files-found: error

@@ -22,6 +22,9 @@ if(PYKALOS_BUNDLE_OPENBLAS)
                 vendor/kalos/dependencies/lapack-netlib-LICENSE.txt
                 licenses/GPL-3.0.txt licenses/GCC-Runtime-Library-Exception.txt licenses/LGPL-2.1.txt
                 licenses/LLVM-runtime.txt DESTINATION pykalos/licenses)
+  if(MINGW AND PYKALOS_MINGW_LICENSE_DIR)
+    install(DIRECTORY "${PYKALOS_MINGW_LICENSE_DIR}/" DESTINATION pykalos/licenses/mingw)
+  endif()
 elseif(UNIX AND NOT APPLE)
   # Linux: embed the resolved OpenBLAS library directory as an install RPATH so
   # the extension loads the same LP64 CBLAS/LAPACKE provider it was linked and

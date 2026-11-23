@@ -1,4 +1,4 @@
-"""Verify and log the OpenBLAS library used by an installed POSIX test wheel."""
+"""Verify and log the OpenBLAS library used by an installed test wheel."""
 import argparse
 import ctypes
 import hashlib
@@ -30,10 +30,14 @@ def private_provider(image_path, extension, info):
         if hasattr(extension, symbol):
             raise RuntimeError(f"The wheel exposes an unqualified numerical symbol: {symbol}")
     if sys.platform == "darwin":
-        deps = subprocess.check_output(["otool", "-L", str(image_path)], text=True)
+        deps = "\n".join(subprocess.check_output(["otool", "-L", str(image_path)], text=True).splitlines()[1:])
+    elif sys.platform == "win32":
+        import pefile
+        with pefile.PE(str(image_path)) as binary:
+            deps = "\n".join(entry.dll.decode() for entry in binary.DIRECTORY_ENTRY_IMPORT)
     else:
         deps = subprocess.check_output(["readelf", "-d", str(image_path)], text=True)
-    if "libopenblas" in deps.lower():
+    if "openblas" in deps.lower():
         raise RuntimeError(f"The private extension dynamically loads OpenBLAS: {deps}")
     return image_path
 

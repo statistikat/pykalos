@@ -1054,3 +1054,7 @@ The core pin advances to `2fe3d8e8c8b6bfeae9fa4224517e9e0c12228fe8`. It supplies
 ### Python real-valued input qualification
 
 NumPy complex scalars previously reached real-valued series, parameter and convolution slots through scalar conversion, which discarded their imaginary parts. The product and raw automatic-fit boundaries now reject complex scalars explicitly, and convolution checks each coefficient while copying it into the owned vector. The regression reproduced the loss on the preceding wheel. All 78 targeted tests passed on the repaired private wheel with NumPy, including the complex64, complex128 and extended-precision cases, strided/memoryview inputs and large-array timing checks. [Boundary tests](tests/test_numpy_interop.py)
+
+### M6 Windows wheel qualification job
+
+The Windows lane builds the same private LP64 archive under UCRT64, links against the native CPython ABI, gathers compiler-runtime notices and repairs dependent DLLs with delvewheel. A separate PowerShell step installs the wheel outside the build shell, checks the PE import table, replays the component fixtures and exercises both NumPy import orders. The macOS private build and checker still pass. Local PE parsing accepted a control executable and rejected an OpenBLAS DLL import. The Windows runner must complete the actual build, clean install and tests before Windows portability can be claimed. [Windows job](.github/workflows/portable.yml)
