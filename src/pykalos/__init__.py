@@ -507,8 +507,8 @@ def tramoseats_fit(series, *, template="RSA0", frequency=12, start_year=1990, st
 
     RSA0 fits the additive airline with a mean. RSA1 chooses the transformation
     and detects outliers before fitting and decomposing the model. Each returns
-    observed finals, dated component rows and the fitted preprocessing residuals.
-    RSA0 also returns original-series forecast errors and residual diagnostics.
+    observed finals, dated component rows, fitted preprocessing residuals and
+    diagnostics, and original-series forecast errors from the fitted model.
     Horizon counts are periods when nonnegative and years when negative.
     """
     presets = {"TR0": "RSA0", "RSA0": "RSA0", "TR1": "RSA1", "RSA1": "RSA1"}
@@ -527,8 +527,6 @@ def tramoseats_fit(series, *, template="RSA0", frequency=12, start_year=1990, st
         result = _kalos._tramoseats_rsa0(data, spec["start_year"], spec["start_month"], *months)
     else:
         result = _kalos._tramoseats_rsa1(data, spec["start_year"], spec["start_month"], *months)
-        result["series_forecast_stdev_status"] = "unavailable" if months[1] else "no_requested_predictions"
-        result["series_forecast_stdev"] = []
     first_year, first_period = divmod(12 * spec["start_year"] + spec["start_month"] - 1 + len(data), 12)
     result["series_forecast_domain"] = dict(start_year=first_year, start_month=first_period + 1, length=months[1])
     mode = "multiplicative" if result["model"]["log"] else "additive"

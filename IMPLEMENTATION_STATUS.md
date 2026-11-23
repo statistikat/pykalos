@@ -1,6 +1,6 @@
 # pykalos implementation status
 
-Current Python operations at the 2026-11-24 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0/RSA1 fitting. Both templates provide preprocessing residual diagnostics. RSA0 also provides preprocessing forecast errors. The dated entries retain the earlier qualification results.
+Current Python operations at the 2026-11-24 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0/RSA1 fitting. Both templates provide preprocessing residual diagnostics. Both templates provide original-series preprocessing forecast errors. The dated entries retain the earlier qualification results.
 
 ## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
 
@@ -1256,3 +1256,7 @@ The independent JVM benchmark measured Python at 1627.418 and 961.084 ms for the
 ### M5 raw RSA3 and public RSA1 forecast integration checkpoint
 
 The Python snapshot advances to Kalos `5a72228`, containing the TR3 automatic identification route, monthly RSA3 decomposition and the original-scale RSA1 forecast covariance. Offline verification checked 201 source and 74 evidence files. The forecast binding gate covers 12 public JVM fits and the RSA3 gate covers the six inputs supported at this pin. Three additional RSA3 fixtures are present for the subsequent restart implementation.
+
+### M5 original-series RSA1 forecast errors
+
+The repaired macOS ARM64 wheel returns the public preprocessing forecast standard errors on both original scales, accounting for estimated drift and stock AO, LS and TC effects. Twelve public RSA1 fits passed all 288 24-month comparisons at the core’s 2e-8 scaled tolerance. The separate WK forecast errors reproduced all 288 reference values bit-for-bit. All 12 zero- and seven-month checks returned the expected dated domains, statuses and lengths. All 22 targeted tests passed, including the raw and fixed routes, calendar module, estimation and Java-free checks. [Forecast replay](tests/test_tramo_automatic.py)

@@ -31,6 +31,13 @@ def check_preprocessing(test, result, records):
     return len(tsres["tsres"])
 
 
+def rsa1_reference_inputs():
+    corpora = {"": "rsa1", "level_": "rsa1-level-effects",
+               "level_tc_": "rsa1-level-tc", "log_tc_": "rsa1-log-tc"}
+    return {prefix + cid: rows for prefix, corpus in corpora.items()
+            for cid, rows in grouped_records(corpus + "-x86_64.txt")}
+
+
 class PublicTr1(unittest.TestCase):
     def test_captured_preprocessing(self):
         cases = grouped_records("rsa1-x86_64.txt")
@@ -66,11 +73,11 @@ class PublicTr1(unittest.TestCase):
                                        ("finalSeasonal", "Seasonal"), ("finalIrregular", "Irregular")):
                     row, = [r for r in rows if r[1:3] == [component, "Value"]]
                     self.assertEqual(bits(fit[key]), bytes.fromhex("".join(row[6:])))
-                self.assertEqual(fit["series_forecast_stdev_status"], "unavailable")
+                self.assertEqual(fit["series_forecast_stdev_status"], "available")
         self.assertEqual((len(cases), *totals), (6, 570, 60, 3960))
         capability = pykalos.capabilities()["tramo_seats_fit"]["by_template"]
         self.assertTrue(capability["RSA0"]["series_forecast_stdev"])
-        self.assertFalse(capability["RSA1"]["series_forecast_stdev"])
+        self.assertTrue(capability["RSA1"]["series_forecast_stdev"])
 
     def test_rsa1_outlier_restoration(self):
         scope = pykalos.capabilities()["tramo_seats_fit"]["by_template"]["RSA1"]["restored_outliers_by_mode"]
@@ -102,10 +109,7 @@ class PublicTr1(unittest.TestCase):
         self.assertEqual((cases, residuals, values), (6, 498, 3600))
 
     def test_public_rsa1_residual_diagnostics(self):
-        corpora = {"": "rsa1", "level_": "rsa1-level-effects",
-                   "level_tc_": "rsa1-level-tc", "log_tc_": "rsa1-log-tc"}
-        inputs = {prefix + cid: rows for prefix, corpus in corpora.items()
-                  for cid, rows in grouped_records(corpus + "-x86_64.txt")}
+        inputs = rsa1_reference_inputs()
         diagnostics = dict(grouped_records("rsa1-residual-diagnostics-x86_64.txt"))
         self.assertEqual(set(diagnostics), set(inputs))
         self.assertEqual(len(inputs), 12)
@@ -127,6 +131,32 @@ class PublicTr1(unittest.TestCase):
                                          bytes.fromhex("".join(facts["residuals." + key][:2])))
         templates = pykalos.capabilities()["tramo_seats_fit"]["by_template"]
         self.assertEqual(templates["RSA1"]["residuals"], ("tsres", "ser", "lb", "doornikhansen"))
+
+    def test_raw_rsa1_public_forecast_errors(self):
+        inputs = rsa1_reference_inputs()
+        forecasts = dict(grouped_records("rsa1-forecast-errors-x86_64.txt"))
+        self.assertEqual(set(inputs), set(forecasts))
+        for cid, records in inputs.items():
+            _, year, month, _, *data = records[1]
+            series = list(map(from_hex, data))
+            facts = {r[0]: r for r in forecasts[cid]}
+            public = facts["y_ef"]
+            wk = facts["wk_series_stdev_forecast"]
+            for count in (0, 7, -2):
+                with self.subTest(case=cid, forecast=count):
+                    fit = pykalos.tramoseats_fit(series, template="RSA1", start_year=int(year),
+                                                start_month=int(month), forecast=count)
+                    length = 24 if count == -2 else count
+                    self.assertEqual(fit["series_forecast_domain"],
+                                     dict(start_year=int(public[1]), start_month=int(public[2]), length=length))
+                    self.assertEqual(fit["series_forecast_stdev_status"], "available" if count else "no_requested_predictions")
+                    errors = fit["series_forecast_stdev"]
+                    self.assertEqual(len(errors), length)
+                    for actual, expected in zip(errors, map(from_hex, public[4:])):
+                        self.assertLessEqual(abs(actual - expected), 2e-8 * (1 + abs(expected)))
+                    if count == -2:
+                        row, = [r for r in fit["final"] if (r["component"], r["information"]) == ("Series", "StdevForecast")]
+                        self.assertEqual(bits(row["values"]), bytes.fromhex("".join(wk[4:])))
 
     def test_rsa1_horizons(self):
         records = dict(grouped_records("rsa1-x86_64.txt"))["fit_noout"]
