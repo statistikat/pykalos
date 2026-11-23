@@ -34,6 +34,12 @@ The installed wheel exports `tramo_critical_value`, `tramo_seasonality` and `tra
 
 All 29 frozen cases passed on macOS ARM64 with the installed wheel and checksum-pinned OpenBLAS 0.3.34. They cover ten critical-value grid points, five detector series, ten transform decisions and four robust refusals. The replay compares the available floating-point fields and differenced observations at binary64 precision, including signed zero, and checks NaN classification. Shape, scalar, frequency, oversize, ownership and capability checks passed. [Python replay](tests/test_tramo_transform.py)
 
+### M6 NumPy and Kalos provider coexistence
+
+A subprocess regression now loads NumPy before pykalos and then pykalos before NumPy in a fresh interpreter. Each library runs a numerical operation before and after the second import. NumPy solves a linear system. Kalos checks the frozen `tr_gs` transform choice and binary64 log, level and correction values. Both final outputs and the reported provider configuration must agree across orders. The hosted NumPy lane runs this regression and the TRAMO corpus. [Import-order test](tests/test_provider_import_order.py) · [Workflow](.github/workflows/smoke.yml)
+
+On macOS ARM64, the OpenBLAS 0.3.34 wheel and NumPy 2.5.5 (Apple Accelerate) passed both import orders. All 68 NumPy-lane tests passed. In an environment without NumPy, the smoke and TRAMO tests passed and the coexistence test skipped. This verifies the external-provider wheel on this host. Bundling and hosted Linux wheel qualification remain open.
+
 ## Initial scaffold (2026-11-14)
 
 ## Implemented
