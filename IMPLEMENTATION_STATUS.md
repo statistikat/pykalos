@@ -1440,3 +1440,67 @@ estimation 2, interrupt 1, java_free 1, numpy_interop 10, preparation 3,
 provider_import_order 1, request_validation 54, seats 3, smoke 3,
 tramo_automatic 14, tramo_calendar 4, tramoseats_fit 5, tramo_transform 2,
 x13_automatic 15, x13_automatic_horizon 3, x13_estimated 5, x13_fixed 2.
+
+## M6: pin advanced to a7d4b12 — Complex.cart-normalized factorizer chain — 2026-11-24
+
+Pin `b4f2e1d1…` → **`a7d4b12a7b7f7e1aa335d4e2bcd849b52df10e5a`** (upstream
+`970a857` routes every ported `api.math.Complex` arithmetic mirror through
+the `Complex.cart` singleton normalization — `cart(-2.0, -0.0)` answers
+`NEG_TWO`, `(-2.0, +0.0)` — so a leaked `-0.0` imaginary part no longer
+flips the square-root branch of the parabola root inside the robust
+factorizer's symmetric Muller-Newton solver, and the `c_inv`, `c_div` and
+`c_sqrt` branch tests were corrected to the bytecode `dcmpl`/`dcmpg` jump
+flavors; `c1d7f36` froze the two adversarial corpus filters (144 and 304)
+from four independent JVM runs and `a7d4b12` records the gate — both now
+match the JVM bit-for-bit, upstream 94/94 CTests and the full JVM corpus
+replay bit-exact). Manifest pre-check: the upstream `tools/source-files.json`
+**core** section is unchanged (207 entries; the vendor snapshot carries 208
+including the generated `revision.hpp`); the **evidence** section gained one
+entry (`seats-wk-factorizer-tiers/muller-adversarial-x86_64.txt`), outside
+the pykalos evidence allowlist, so the vendored evidence snapshot stays at
+110 files. The lock `version` tracks the upstream manifest (`0.1.0`
+unchanged); like every prior sync this commit bumps no package version.
+
+**Vendor churn `b4f2e1d…` → `a7d4b12…`: four tracked files, zero vendor
+additions or removals** — `core.lock.json` (commit, manifest sha256 and
+three file hashes), the regenerated `include/kalos/revision.hpp`, and the
+two upstream-changed headers: `include/kalos/detail/seats_ucarima_model.hpp`
+(+29/−24: `c_add` and the solver-local `compute_*` helpers and
+`ComplexMath.sqrt` now apply the `@0-77` singleton decision tree, with the
+NaN comparison flavors corrected) and `include/kalos/detail/ucarima_engine.hpp`
+(+41/−31: `c_cart` moved above first use and applied to `c_conj`, `c_neg`,
+`c_minus`, `c_times`, `c_scale`, `c_div_d` and `c_inv`). Both vendored
+headers are byte-identical to their upstream blobs at `a7d4b12`. `--verify`
+PASS on both sides: 208 source and 110 evidence files at `b4f2e1d` and at
+`a7d4b12`.
+
+**The Python seam is behaviour-unchanged at this pin.** The cart fix only
+renormalizes components that round to a signed zero, observable so far in
+the robust-tier factorizations the fuzz campaign's filters 144 and 304 hit
+natively, not in any vendored Python corpus. Every WK, RSA0/RSA1/RSA3/
+RSAfull, bridge and X-13 replay passed at the existing tolerances with no
+fixture, test or tolerance change.
+
+**Fresh venv and provider.** Fresh venv `SCRATCH/m6-pykalos/venv2` (CPython
+3.12 from pyenv `3.12.12`, pip 25.0.1, pytest 9.2.0, numpy 2.5.5). Wheel
+built per the README (`env -u LD_LIBRARY_PATH`, bare
+`-DOpenBLAS_ROOT=/data/home/kowa/seasonaladjustment/tmp_opencode/openblas`):
+`pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`69f45a2973e1c0a6795c08b2b6e16bf3c85089eac1c718108a9f780f31c98111`, zero
+compiler warnings. `tools/check-wheel-provider.py SCRATCH/openblas`:
+`commit` = full `a7d4b12…`, `blas_integer_bits` = 32, external linkage,
+`OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING SkylakeX
+SINGLE_THREADED`, library `SCRATCH/openblas/lib/libopenblas-r0.3.34.so`
+(sha256 `84de4eab95a0f3e056b6efee2e7fd7c3731a9bec2f4552401f2b1fdf90420ae3`,
+unchanged), source archive `cd7e129868320cc2d033afa920e31202dfe0b8066a5b66661900ccc0f197dfed`.
+
+**Installed-wheel suite: 132 passed, 748 subtests passed, 0 failed, none
+skipped, in 245.49s** (`LD_LIBRARY_PATH=SCRATCH/openblas/lib`, first run of
+the full `tests/` tree in this venv) — totals and per-file counts identical
+to the `b4f2e1d` baseline. The sensitive files ran first: `test_seats.py`,
+`test_provider_import_order.py` and `test_numpy_interop.py` gave 14 passed
+plus 79 subtests in 1.28s. Per-file passes: combined_seasonality 4,
+estimation 2, interrupt 1, java_free 1, numpy_interop 10, preparation 3,
+provider_import_order 1, request_validation 54, seats 3, smoke 3,
+tramo_automatic 14, tramo_calendar 4, tramoseats_fit 5, tramo_transform 2,
+x13_automatic 15, x13_automatic_horizon 3, x13_estimated 5, x13_fixed 2.
