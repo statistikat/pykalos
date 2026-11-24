@@ -87,6 +87,12 @@ years and positive horizons for periods. The default forecast is two years.
 Legacy approximation covers the monthly airline retry and the mean-free
 (2,1,0)(1,1,0) seasonal re-estimation used in the mixed AO/LS fitted models.
 
+For the stock estimated monthly X-13 model, call `x13_estimated(series,
+template="RSA0", start_year=1949, start_month=1)`. The result includes
+estimated airline coefficients, likelihood, selected Henderson lengths and
+MSR filter, eight extended X-11 tables, observation-domain final components,
+and one year of original-series, adjusted and trend forecasts.
+
 For a fixed quarterly or monthly model, call `x13_fit` with explicit seasonal
 filters and Henderson length. The result includes the captured preadjustment
 tables, the X-11 tables consumed by the restore, all nine finals and the

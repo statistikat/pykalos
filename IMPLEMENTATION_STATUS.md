@@ -1330,3 +1330,7 @@ The raw monthly RSAfull product returns observed and forecast calendar effects o
 ### Stock estimated-template X-13 core checkpoint
 
 The source lock now pins Kalos `1ff084f3e561fd4b16fce520f8e255a234ec5209`, including the stock monthly estimated RSA0 and public dated X-13 product references. Offline verification checked 204 source and 99 evidence files.
+
+### M5b stock estimated X-13 RSA0
+
+`x13_estimated` fits the stock monthly RSA0 template with estimated airline coefficients, X-11 selection, dated observed products and one year of forecasts. On the installed arm64 wheel, all three public models had exact parameters and selection decisions; all 42 dated rows from the public X-11, observed final, original-series forecast and adjusted-component forecast surfaces passed their 1e-8 tolerance. The legacy fixed-coefficient qualification and capability-inventory tests passed alongside the new stock product and request checks. The native stock result at this checkpoint publishes likelihood and effective sample size; the raw fitted residual vector is tracked separately. [Stock fit replay](tests/test_x13_estimated.py)

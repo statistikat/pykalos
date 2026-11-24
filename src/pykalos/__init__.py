@@ -24,7 +24,7 @@ from ._validation import (
 from ._kalos import capabilities, convolve, core_version, x13_automatic_fit
 
 __all__ = ["capabilities", "convolve", "core_version", "x13_automatic",
-           "x13_automatic_fit", "x13_fit", "tramo_critical_value", "tramo_seasonality",
+           "x13_automatic_fit", "x13_fit", "x13_estimated", "tramo_critical_value", "tramo_seasonality",
            "tramo_transform_decision", "tramo_calendar_f_test", "tramo_full_initial_calendar", "tramo_residual_trading_days", "estimate_tramo_tr1", "estimate_tramo_tr3", "estimate_tramo_trfull", "seats_extract_wk", "seats_from_tramo", "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed"]
 __version__ = "0.1.0"
 
@@ -204,6 +204,27 @@ def tramo_residual_trading_days(residuals, *, estimation_start_year, estimation_
     return _kalos._tramo_residual_trading_days(
         *arguments, _fixed_integer(estimation_length, "estimation_length", operation),
         _finite_number(significance, "significance", operation))
+
+
+def x13_estimated(series, *, template="RSA0", start_year, start_month, frequency=12):
+    """Estimate a stock monthly X-13 model and return fitted components and one year of forecasts.
+
+    RSA0 estimates the additive airline model. The eight X-11 tables include
+    the forecast interval. Final components cover the observation interval.
+    """
+    if not isinstance(template, str) or template.upper() != "RSA0":
+        raise ValueError("x13_estimated supports the monthly RSA0 template")
+    data, year, month = _calendar_domain(series, start_year, start_month, frequency, "x13_estimated")
+    if not 1 <= month <= 12:
+        raise ValueError("x13_estimated start_month must be between 1 and 12")
+    result = _kalos._x13_estimated_rsa0(data, year, month)
+    result["template"] = "RSA0"
+    if result["status"] == "available":
+        forecast_year, forecast_position = divmod(12 * year + month - 1 + len(data), 12)
+        result["domain"] = dict(start_year=year, start_month=month, length=len(data))
+        result["forecast_domain"] = dict(start_year=forecast_year, start_month=forecast_position + 1,
+                                         length=len(result["forecast"]["series"]))
+    return result
 
 
 def estimate_tramo_tr1(series, *, start_year, start_month, frequency=12):

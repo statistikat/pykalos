@@ -94,7 +94,7 @@ class TramoTransformTest(unittest.TestCase):
     def test_scope_and_refusals(self):
         caps = pykalos.capabilities()
         self.assertFalse(caps["fit"])
-        self.assertEqual(caps["primitives"], ("convolve", "x13_automatic", "x13_fit", "tramo_critical_value",
+        self.assertEqual(caps["primitives"], ("convolve", "x13_automatic", "x13_fit", "x13_estimated", "tramo_critical_value",
                                               "tramo_seasonality", "tramo_transform_decision", "tramo_calendar_f_test",
                                               "tramo_full_initial_calendar", "tramo_residual_trading_days", "estimate_tramo_tr1", "estimate_tramo_tr3", "estimate_tramo_trfull",
                                               "seats_extract_wk", "seats_from_tramo", "tramoseats_fit",

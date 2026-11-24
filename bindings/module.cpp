@@ -589,7 +589,7 @@ py::dict chain_entry_dict(const kalos::AutoDecisionRecord& e) {
     return o;
 }
 
-py::dict automatic_result_dict(const kalos::X13AutomaticFitResult& res) {
+py::dict estimated_model_dict(const kalos::X13AutomaticFitResult& res) {
     using namespace kalos;
     py::dict o;
     o["status"] = res.status;
@@ -612,6 +612,12 @@ py::dict automatic_result_dict(const kalos::X13AutomaticFitResult& res) {
     o["log_likelihood"] = res.log_likelihood;
     o["aicc"] = res.aicc;
     o["effective_observations"] = res.effective_observations;
+    return o;
+}
+
+py::dict automatic_result_dict(const kalos::X13AutomaticFitResult& res) {
+    using namespace kalos;
+    auto o = estimated_model_dict(res);
     py::list chain;
     for (const auto& e : res.chain) chain.append(chain_entry_dict(e));
     o["chain"] = chain;
@@ -638,6 +644,26 @@ py::dict automatic_result_dict(const kalos::X13AutomaticFitResult& res) {
     fit["finals_status"] = f.finals.status;
     o["fit"] = fit;
     return o;
+}
+
+py::dict estimated_stock_dict(const kalos::X13AutomaticFitResult& result) {
+    using namespace pybind11::literals;
+    auto out = estimated_model_dict(result);
+    const auto& f = result.fit;
+    if (result.status != "available") return out;
+    out["mode"] = mode_name(f.mode_effective);
+    out["sigma"] = sigma_name(f.sigma);
+    const auto& selection = f.selection;
+    out["selection"] = py::dict("d7_henderson"_a=selection.d7.length, "final_henderson"_a=selection.final.length,
+                                "msr_filter"_a=selection.msr.selected_filter);
+    out["tables"] = py::dict("b1"_a=f.preadjustment.out, "b7"_a=selection.b.b7.values,
+                             "c7"_a=selection.c.c7.values, "d7"_a=selection.d.d7.values,
+                             "d10"_a=f.d10, "d11"_a=f.d11, "d12"_a=f.d12, "d13"_a=f.d13);
+    out["finalSA"] = f.finalSA;
+    out["finalTrend"] = f.finalTrend;
+    out["finalIrregular"] = f.finalIrregular;
+    out["forecast"] = py::dict("series"_a=f.preadjustment.a1a, "sa"_a=f.finals.d11a, "trend"_a=f.finals.d12a);
+    return out;
 }
 
 }  // namespace
@@ -667,7 +693,7 @@ PYBIND11_MODULE(_kalos, m) {
     m.def("capabilities", [] {
         py::dict result;
         result["fit"] = false;
-        result["primitives"] = py::make_tuple("convolve", "x13_automatic", "x13_fit", "tramo_critical_value",
+        result["primitives"] = py::make_tuple("convolve", "x13_automatic", "x13_fit", "x13_estimated", "tramo_critical_value",
                                               "tramo_seasonality", "tramo_transform_decision", "tramo_calendar_f_test",
                                               "tramo_full_initial_calendar", "tramo_residual_trading_days", "estimate_tramo_tr1", "estimate_tramo_tr3", "estimate_tramo_trfull", "seats_extract_wk", "seats_from_tramo",
                                               "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed");
@@ -684,6 +710,8 @@ PYBIND11_MODULE(_kalos, m) {
         restricted["sigma_policy_default"] = "legacy";
         result["restricted_fit"] = restricted;
         using namespace pybind11::literals;
+        result["estimated_x13"] = py::dict("entry_point"_a="pykalos.x13_estimated",
+            "templates"_a=py::make_tuple("RSA0"), "frequency"_a=12, "forecast_months"_a=12);
         py::dict rsa0("modes"_a=py::make_tuple("additive"), "series_forecast_stdev"_a=true,
                       "residuals"_a=py::make_tuple("tsres", "ser", "lb", "doornikhansen"));
         py::dict rsa1("modes"_a=py::make_tuple("additive", "multiplicative"), "series_forecast_stdev"_a=true,
@@ -751,6 +779,14 @@ PYBIND11_MODULE(_kalos, m) {
         "masked elements to NaN and the core refuses non-finite\n"
         "coefficients. NaN/Inf and empty inputs propagate the core's\n"
         "ValueError policy unchanged. The result is always a Python list.");
+    m.def("_x13_estimated_rsa0", [](const std::vector<double>& series, int year, int month) {
+        kalos::X13AutomaticFitResult result;
+        {
+            py::gil_scoped_release release;
+            result = kalos::x13_estimated_rsa0(series, year, month);
+        }
+        return estimated_stock_dict(result);
+    });
     m.def("x13_automatic_fit", [](py::dict spec) {
         // The raw, explicit automatic-spec entry. Every module scalar is
         // required request data here (the core promotes nothing); the sigma
