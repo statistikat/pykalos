@@ -1,6 +1,6 @@
 # pykalos implementation status
 
-Current Python operations at the 2026-11-24 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0, RSA1 and RSA3 fitting. All three templates provide preprocessing residual diagnostics and original-series forecast errors. RSA3 returns the automatically selected model and dated residuals. The dated entries retain the earlier qualification results.
+The installed Python package provides monthly raw TRAMO/SEATS RSA0, RSA1, RSA3 and RSAfull, including fitted residual diagnostics and original-series forecast uncertainty. RSAfull also returns the selected calendar and observed and forecast effects. Stock estimated monthly X-13 covers RSA0, RSA1 and RSA2c with dated residuals, observed products and one year of forecasts. Fixed-coefficient and explicit automatic X-13, fixed-order SARIMA estimation, transformation and regression preparation, and fixed WK and fitted-model SEATS operations remain available. The public combined SI test is exposed on raw TRAMO and X-13 products. The dated entries below record the scope and evidence for each checkpoint.
 
 ## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
 
@@ -1358,3 +1358,7 @@ The six stock X-13 RSA0/RSA1 fits return complete fitted likelihood dimensions, 
 ### M5b estimated RSA2c source checkpoint
 
 The wheel now vendors Kalos `a32dce69296148d22421c1157272ec4fa08451ca` with the stock monthly working-day/Easter candidate selection, calendar-adjusted transformation, outlier detection and final X-11 products. Offline verification passed on 208 sources and 106 evidence files.
+
+### M5b stock estimated X-13 RSA2c
+
+`x13_estimated(template="RSA2c")` returns the selected working-day flag, Easter duration and named calendar coefficients. On the AirPassengers reference it selected working days and a one-day Easter window, with one AO. The AO-only reference selected its AO and no calendar effects, and the seasonal reference selected neither. All nine raw stock RSA0/RSA1/RSA2c fits reproduce 891 dated residuals, the complete fitted likelihoods, all regression and SARIMA coefficients and the selected filters. The 126 dated observed, extended and forecast rows (12,276 values) passed the 1e-8 product tolerance. All four stock tests passed in 8.908 seconds on an installed wheel with no R, Rscript or Java executable visible and no R/JVM shared library loaded among 411 process images. [Stock X-13 replay](tests/test_x13_estimated.py)

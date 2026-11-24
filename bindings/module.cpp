@@ -654,6 +654,14 @@ py::dict estimated_stock_dict(const kalos::X13AutomaticFitResult& result) {
     const auto& f = result.fit;
     out["diagnostics"] = pykalos_diagnostics::seasonality(kalos::x13_si_seasonality(f));
     if (result.status != "available") return out;
+    if (result.stock_calendar) {
+        const auto& calendar = *result.stock_calendar;
+        py::dict coefficients;
+        for (std::size_t i = 0; i < calendar.names.size(); ++i)
+            coefficients[py::str(calendar.names[i])] = calendar.coefficients.at(i);
+        out["calendar"] = py::dict("working_days"_a=calendar.selection.working_days,
+            "easter_duration"_a=calendar.selection.easter_duration, "coefficients"_a=coefficients);
+    }
     const auto& likelihood = result.stock_likelihood.value();
     out["likelihood"] = py::dict("log_likelihood"_a=result.log_likelihood, "ssq"_a=likelihood.residual_ssq,
         "effective"_a=result.effective_observations, "estimated"_a=likelihood.estimated_parameters);
@@ -721,7 +729,7 @@ PYBIND11_MODULE(_kalos, m) {
             "minimum_years"_a=3, "raw_tramoseats"_a=true, "restricted_x13_fit"_a=true,
             "automatic_x13_fit"_a=true);
         result["estimated_x13"] = py::dict("entry_point"_a="pykalos.x13_estimated",
-            "templates"_a=py::make_tuple("RSA0", "RSA1"), "frequency"_a=12, "forecast_months"_a=12);
+            "templates"_a=py::make_tuple("RSA0", "RSA1", "RSA2c"), "frequency"_a=12, "forecast_months"_a=12);
         py::dict rsa0("modes"_a=py::make_tuple("additive"), "series_forecast_stdev"_a=true,
                       "residuals"_a=py::make_tuple("tsres", "ser", "lb", "doornikhansen"));
         py::dict rsa1("modes"_a=py::make_tuple("additive", "multiplicative"), "series_forecast_stdev"_a=true,
@@ -795,6 +803,7 @@ PYBIND11_MODULE(_kalos, m) {
             py::gil_scoped_release release;
             if (preset == "RSA0") result = kalos::x13_estimated_rsa0(series, year, month);
             else if (preset == "RSA1") result = kalos::x13_estimated_rsa1(series, year, month);
+            else if (preset == "RSA2c") result = kalos::x13_estimated_rsa2c(series, year, month);
             else throw std::invalid_argument("unknown stock X-13 template");
         }
         return estimated_stock_dict(result);

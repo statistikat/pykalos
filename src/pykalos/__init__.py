@@ -210,16 +210,19 @@ def x13_estimated(series, *, template="RSA0", start_year, start_month, frequency
     """Estimate a stock monthly X-13 model and return fitted components and one year of forecasts.
 
     RSA0 estimates the additive airline model. RSA1 selects the log/level
-    transformation and detects stock outliers. The eight X-11 tables include
+    transformation and detects stock outliers. RSA2c also selects working
+    days and the Easter window. The eight X-11 tables include
     the forecast interval. Final components cover the observation interval.
     """
-    if not isinstance(template, str) or template.upper() not in ("RSA0", "RSA1"):
-        raise ValueError("x13_estimated supports the monthly RSA0 and RSA1 templates")
+    presets = {"RSA0": "RSA0", "RSA1": "RSA1", "RSA2C": "RSA2c"}
+    if not isinstance(template, str) or template.upper() not in presets:
+        raise ValueError("x13_estimated supports the monthly RSA0, RSA1 and RSA2c templates")
+    preset = presets[template.upper()]
     data, year, month = _calendar_domain(series, start_year, start_month, frequency, "x13_estimated")
     if not 1 <= month <= 12:
         raise ValueError("x13_estimated start_month must be between 1 and 12")
-    result = _kalos._x13_estimated(data, year, month, template.upper())
-    result["template"] = template.upper()
+    result = _kalos._x13_estimated(data, year, month, preset)
+    result["template"] = preset
     if result["status"] == "available":
         forecast_year, forecast_position = divmod(12 * year + month - 1 + len(data), 12)
         result["domain"] = dict(start_year=year, start_month=month, length=len(data))
