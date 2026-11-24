@@ -63,7 +63,7 @@ std::vector<Row> merge(const std::vector<double>& original, const std::vector<Tr
     const int first_month = static_cast<int>((first_ext % 12 + 12) % 12) + 1;
     const calendar_domain extended{static_cast<int>((first_ext - (first_month - 1)) / 12), first_month,
                                    12, static_cast<int>(n + nf + nb)};
-    auto seasonal = tramo_stock_calendar_effect(calendar, extended);
+    auto seasonal = tramo_stock_calendar_effect_original_scale(calendar, extended, model.log);
     std::vector<double> trend(n + nf + nb), irregular(trend.size());
     for (const auto& var : variables) {
         const bool ls = var.type == TramoOutlierKind::Ls;
@@ -74,7 +74,6 @@ std::vector<Row> merge(const std::vector<double>& original, const std::vector<Tr
         for (std::size_t i = 0; i < column.size(); ++i) target[i] += column[i] * var.coefficient;
     }
     if (model.log) {
-        for (double& x : seasonal) x = detail::fdlibm_exp(x);
         for (double& x : trend) x = detail::fdlibm_exp(x);
         for (double& x : irregular) x = detail::fdlibm_exp(x);
     }
