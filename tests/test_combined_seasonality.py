@@ -72,3 +72,21 @@ class CombinedSi(unittest.TestCase):
                     tcrate=c["tcrate"], mixed=c["mixed"], balanced=c["balanced"], ljung_box_limit=c["ljung_box_limit"],
                     reduce_va=c["reduce_va"])
                 self.check_diagnostic(fit, facts)
+
+    def test_all_stock_calendar_and_estimated_products(self):
+        inputs = dict(grouped_records("rsafull-x86_64.txt") + grouped_records("rsafull-late-calendar-x86_64.txt"))
+        cases = panel("stock") + panel("stock-rsa2c")
+        self.assertEqual(len(cases), 38)
+        for case, _, _, facts in cases:
+            with self.subTest(case=case):
+                if case.startswith("rsafull_"):
+                    _, cid = case.split("_", 1)
+                    _, y, m, _, *data = inputs[cid][1]
+                    result = pykalos.tramoseats_fit(list(map(from_hex, data)), template="RSAfull",
+                                                    start_year=int(y), start_month=int(m))
+                else:
+                    _, preset, cid = case.split("_")
+                    first, *data = (EVIDENCE / "x13-refusal-jvm-profiles" / (cid + ".csv")).read_text().splitlines()
+                    y, m = map(int, first.split(","))
+                    result = pykalos.x13_estimated(list(map(float, data)), template=preset, start_year=y, start_month=m)
+                self.check_diagnostic(result, facts)
