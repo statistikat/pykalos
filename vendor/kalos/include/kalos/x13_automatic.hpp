@@ -222,6 +222,13 @@ struct AutoVariableRecord {
     double coefficient=0.;
     std::vector<double> column;   // the factory column over the model span
 };
+// The public RegArimaModel likelihood and innovations for a stock estimated template.
+struct X13StockLikelihood {
+    double residual_ssq = 0.;
+    std::size_t estimated_parameters = 0;
+    std::vector<double> full_residuals; // starts after d + 12*bd observations
+};
+
 // The result of one automatic-spec fit.
 struct X13AutomaticFitResult {
     // "available" | "unsupported:<...>" (fail-closed matrix) |
@@ -241,6 +248,7 @@ struct X13AutomaticFitResult {
     std::string estimation_status;
     double log_likelihood=0., aicc=0.;
     std::size_t effective_observations=0;
+    std::optional<X13StockLikelihood> stock_likelihood;
     // The decision chain, in pinned execution order (provenance of the
     // whole run: "the final description plus the chain is the full
     // regeneration recipe of the fit").

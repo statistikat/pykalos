@@ -290,7 +290,7 @@ class AutomaticPipeline {
       stage_ = "final estimation";
       estimate_final_parameters();
       stage_ = "final";
-      build_result();
+      build_result(true);
       return;
     }
 
@@ -347,7 +347,7 @@ class AutomaticPipeline {
       stage_ = "final estimation";
       estimate_final_parameters();
       stage_ = "final";
-      build_result();
+      build_result(true);
       return;
     }
     stage_ = "estimation";
@@ -1789,7 +1789,53 @@ class AutomaticPipeline {
 
   // ---- the final description + downstream composition ------------------------------
 
-  void build_result() {
+  // The public model differences the regression-adjusted series, then runs
+  // FastKalmanFilter on the stationary ARMA. Its residuals have one value
+  // per stationary observation even when GLS estimates regression terms.
+  std::vector<double> stock_regression() {
+    ensure_domain();
+    const auto design = build_raw_design();
+    const auto& desc = model_.desc;
+    const auto point = raw_point();
+    std::vector<std::vector<double>> columns;
+    if (desc.mean) columns.emplace_back(yd_.size(), 1.);
+    for (std::size_t j = 0; j < design.columns; ++j) {
+      const auto begin = design.values.begin() + j * y_.size();
+      columns.push_back(diff_column(std::vector<double>(begin, begin + y_.size())));
+    }
+    detail::PinnedRegressionDiagnostics diagnostics;
+    const auto fit = detail::pinned_deviances_evaluate_multi(
+        yd_, desc.p, desc.bp, desc.q, desc.bq, kAnnualFrequency, columns, point,
+        detail::PinnedComputerShape::Full, &diagnostics);
+    if (!fit || fit->b.size() != columns.size())
+      throw std::runtime_error("stock X-13 final likelihood unavailable");
+
+    auto residuals = std::move(diagnostics.qr_residuals);
+    if (!columns.empty()) {
+      auto adjusted = y_;
+      for (std::size_t j = 0; j < design.columns; ++j) {
+        const double coefficient = fit->b[j + desc.mean];
+        for (std::size_t i = 0; i < adjusted.size(); ++i)
+          adjusted[i] += -coefficient * design.values[j * adjusted.size() + i];
+      }
+      auto stationary = diff_column(std::move(adjusted));
+      if (desc.mean)
+        for (auto& value : stationary) value -= fit->b.front();
+      auto innovations = detail::pinned_fast_kalman_residuals(
+          stationary, desc.p, desc.bp, desc.q, desc.bq, kAnnualFrequency, point);
+      if (!innovations)
+        throw std::runtime_error("stock X-13 final residuals unavailable");
+      residuals = std::move(*innovations);
+    }
+    if (residuals.size() != yd_.size())
+      throw std::runtime_error("invalid stock X-13 residual length");
+    result_.stock_likelihood = X13StockLikelihood{
+        fit->ssq_err, 1 + columns.size() + point.size(), std::move(residuals)};
+    result_.log_likelihood = fit->log_likelihood;
+    return fit->b;
+  }
+
+  void build_result(bool stock = false) {
     X13AutomaticFitResult& out = result_;
     out.log = model_.desc.log;
     out.mean = model_.desc.mean;
@@ -1819,9 +1865,14 @@ class AutomaticPipeline {
 
     // The landing composition at the final point (the G2 recipe; never
     // bit-claimed): the outlier coefficients and the AICC echo.
-    RegressionLikelihood fit = landing_fit();
-    if (fit.status != "available") {
-      throw std::runtime_error("final likelihood unavailable: " + fit.status);
+    std::vector<double> regression;
+    if (stock) {
+      regression = stock_regression();
+    } else {
+      auto fit = landing_fit();
+      if (fit.status != "available")
+        throw std::runtime_error("final likelihood unavailable: " + fit.status);
+      regression = std::move(fit.coefficients);
     }
     std::size_t col = 0;
     if (model_.desc.mean) {
@@ -1834,7 +1885,7 @@ class AutomaticPipeline {
       record.regeffect = component_name(variable.effect);
       record.position = variable.position;
       record.coefficient =
-          col < fit.coefficients.size() ? fit.coefficients[col] : 0.;
+          col < regression.size() ? regression[col] : 0.;
       record.column = outlier_column(variable);
       out.variables.push_back(std::move(record));
       ++col;
@@ -1843,7 +1894,7 @@ class AutomaticPipeline {
       const double neff = static_cast<double>(out.effective_observations);
       const double parameters =
           static_cast<double>(arma_dim_of(estimation.coefficients) +
-                              fit.coefficients.size() + 1);
+                              regression.size() + 1);
       // AICC rides the ADJUSTED log-likelihood (LikelihoodStatistics.calc
       // reads adjustedLogLikelihood; the Builder adds the transformation
       // Jacobian): in log mode the JVM subtracts sum(log y_t) over the

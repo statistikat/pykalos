@@ -21,6 +21,14 @@ struct X13Rsa2cCalendarCandidate {
     double aicc = 0;
 };
 
+struct X13Rsa2cScale {
+    bool log = false;
+    bool compared = false;
+    X13Rsa2cCalendarCandidate level, logarithm;
+};
+
+X13Rsa2cScale x13_rsa2c_scale(const std::vector<double>& observations, int start_year, int start_month);
+
 struct X13Rsa2cCalendarTest {
     X13Rsa2cCalendar selected;
     std::vector<double> transformed; // selected estimation-scale observations
