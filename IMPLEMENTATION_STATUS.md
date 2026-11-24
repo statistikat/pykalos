@@ -1282,3 +1282,7 @@ The repaired wheel at `a4dc93f` reproduced the four public fourth-pass models, i
 ### M5 public selected-model RSA3 residual diagnostics
 
 Standalone TR3 preprocessing and raw RSA3 now both return the residual scale, 24-lag Ljung–Box and Doornik–Hansen tests. Across 13 public fits both routes reproduced all 65 numerical values bit-for-bit and the model-specific degrees of freedom (21, 22 or 23 for independence; 2 for normality). All 25 targeted installed-wheel tests passed. [Both public routes](tests/test_tramo_automatic.py)
+
+### M5 raw RSA3 forecast integration checkpoint
+
+Kalos `5547b34` adds conditional forecast covariance and the reference observations for 13 raw RSA3 fits. The Python gate compares the public original-series uncertainties, their dates and the separate WK uncertainties at the default and custom horizons.
