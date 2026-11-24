@@ -290,10 +290,14 @@ if(KALOS_BUILD_TESTS)
     if(test_name STREQUAL "test_tramo_selected_model")
       add_test(NAME test_tramo_trfull_reference COMMAND ${test_name}
         "${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-reference-x86_64.txt")
-      set_tests_properties(test_tramo_trfull_reference PROPERTIES ENVIRONMENT
+      add_test(NAME test_tramo_seats_rsafull COMMAND ${test_name} automatic)
+      add_test(NAME test_tramo_rsafull_late_calendar COMMAND ${test_name} automatic
+        "${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-late-calendar-x86_64.txt")
+      set_tests_properties(test_tramo_trfull_reference test_tramo_seats_rsafull test_tramo_rsafull_late_calendar PROPERTIES ENVIRONMENT
         "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1")
       target_compile_definitions(${test_name} PRIVATE
         KALOS_SELECTED_FORECAST_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-forecast-errors-x86_64.txt"
+        KALOS_LATE_WK_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-late-wk-x86_64.txt"
         KALOS_SELECTED_WK_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-calendar-wk-x86_64.txt"
         KALOS_SELECTED_CALENDAR_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsafull-x86_64.txt")
     endif()

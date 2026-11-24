@@ -1306,3 +1306,7 @@ At `dd95f13` the seasonal-only AR retry reproduces the public WK components. The
 ### M5 all twenty public RSA3 products
 
 The repaired macOS ARM64 wheel at `dd95f13` reproduced the remaining seasonal-only AR retry. All 20 fits now match the public 13,980 observed and forecast component values and 2,105 fitted residuals bit-for-bit. The 480 original-series forecast standard errors passed their published tolerance and all 480 separate WK errors matched bit-for-bit. All 28 targeted installed-wheel tests passed in 19.875 seconds. [Full retry panel](tests/test_tramo_automatic.py)
+
+### Raw stock RSAfull source checkpoint
+
+The Python source and JVM evidence snapshots now pin Kalos `73115f7f4e8f419a6ddd2a0abbaeffa648a86a0e`. It provides automatic monthly TRfull preprocessing and RSAfull decomposition on 29 independent raw series. The offline verifier checked all 202 source files and 90 evidence files.

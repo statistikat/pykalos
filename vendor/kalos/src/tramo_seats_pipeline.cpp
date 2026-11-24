@@ -174,4 +174,11 @@ tramo_seats_automatic_result run_tramo_seats_rsa3(const std::vector<double>& ser
     return {std::move(fit), std::move(decomposition)};
 }
 
+tramo_seats_automatic_result run_tramo_seats_rsafull(const std::vector<double>& series,
+    int start_year, int start_month, int backcast_count, int forecast_count) {
+    auto fit = estimate_tramo_trfull(series, start_year, start_month);
+    auto decomposition = run_tramo_seats_pipeline(fit, backcast_count, forecast_count);
+    return {std::move(fit), std::move(decomposition)};
+}
+
 }  // namespace kalos
