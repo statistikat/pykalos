@@ -1290,3 +1290,7 @@ Kalos `5547b34` adds conditional forecast covariance and the reference observati
 ### M5 selected-model RSA3 original-series forecast uncertainty
 
 The installed wheel returns RSA3 original-series standard errors from the selected fitted model, including estimated drift and outliers. All 312 reference errors passed the 2e-8 scaled threshold on 13 original monthly series, and the 312 separate WK errors matched bit-for-bit. All zero- and seven-month checks returned the reference start dates, lengths and statuses. The repaired macOS ARM64 wheel at `5547b34` passed all 128 tests in 446.896 seconds with NumPy and a single execution thread, including all 4,353 automatic X-13 and 1,287 extended-horizon comparisons. [Installed forecast replay](tests/test_tramo_automatic.py)
+
+### M5 TR3 reference retries and nonseasonal components checkpoint
+
+At `da398f8` the public TR3 preprocessing module supports the seven reference-retry inputs in addition to the preceding 13 models. The Python gate checks their standalone diagnostics and the six newly qualified raw seasonal-adjustment products. The seasonal-only AR retry still has an open WK extraction comparison.
