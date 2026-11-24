@@ -206,13 +206,16 @@ def tramo_residual_trading_days(residuals, *, estimation_start_year, estimation_
         _finite_number(significance, "significance", operation))
 
 
-def x13_estimated(series, *, template="RSA0", start_year, start_month, frequency=12):
+def x13_estimated(series, *, template="RSA0", start_year, start_month, frequency=12, forecast_error_months=12):
     """Estimate a stock monthly X-13 model and return fitted components and one year of forecasts.
 
     RSA0 estimates the additive airline model. RSA1 selects the log/level
     transformation and detects stock outliers. RSA2c also selects working
     days and the Easter window. The eight X-11 tables include
     the forecast interval. Final components cover the observation interval.
+    Residuals include their standard error, Ljung–Box and Doornik–Hansen tests.
+    Original-series forecast standard errors start immediately after the sample.
+    Their nonnegative horizon is independent of the stock one-year point forecasts.
     """
     presets = {"RSA0": "RSA0", "RSA1": "RSA1", "RSA2C": "RSA2c"}
     if not isinstance(template, str) or template.upper() not in presets:
@@ -221,7 +224,10 @@ def x13_estimated(series, *, template="RSA0", start_year, start_month, frequency
     data, year, month = _calendar_domain(series, start_year, start_month, frequency, "x13_estimated")
     if not 1 <= month <= 12:
         raise ValueError("x13_estimated start_month must be between 1 and 12")
-    result = _kalos._x13_estimated(data, year, month, preset)
+    error_months = _fixed_integer(forecast_error_months, "forecast_error_months", "x13_estimated")
+    if error_months < 0:
+        raise ValueError("x13_estimated forecast_error_months must be nonnegative")
+    result = _kalos._x13_estimated(data, year, month, preset, error_months)
     result["template"] = preset
     if result["status"] == "available":
         forecast_year, forecast_position = divmod(12 * year + month - 1 + len(data), 12)
@@ -229,6 +235,8 @@ def x13_estimated(series, *, template="RSA0", start_year, start_month, frequency
         first_residual = 12 * year + month - 1 + result["d"] + 12 * result["bd"]
         residual_year, residual_position = divmod(first_residual, 12)
         result["residuals"].update(start_year=residual_year, start_month=residual_position + 1)
+        result["series_forecast_stdev_domain"] = dict(start_year=forecast_year, start_month=forecast_position + 1,
+                                                     length=len(result["series_forecast_stdev"]))
         result["forecast_domain"] = dict(start_year=forecast_year, start_month=forecast_position + 1,
                                          length=len(result["forecast"]["series"]))
     return result

@@ -5,9 +5,9 @@ import pykalos
 from test_seats import EVIDENCE, bits, from_hex
 
 
-def stock_cases(template):
+def stock_cases(template, filename="templates-x86_64.txt"):
     cases = {}
-    for line in (EVIDENCE / "x13-estimated-templates" / "templates-x86_64.txt").read_text().splitlines():
+    for line in (EVIDENCE / "x13-estimated-templates" / filename).read_text().splitlines():
         key, *fields = line.split()
         if key == "case":
             preset, cid = fields
@@ -86,11 +86,45 @@ class StockX13(unittest.TestCase):
     def test_public_rsa2c_model_and_products(self):
         self.check_model_and_products("rsa2c")
 
+    def test_public_stock_residual_diagnostics_and_forecast_uncertainty(self):
+        fields = forecasts = 0
+        for preset in ("rsa0", "rsa1", "rsa2c"):
+            for cid, records in stock_cases(preset, "diagnostics-x86_64.txt").items():
+                first, *raw = (EVIDENCE / "x13-refusal-jvm-profiles" / (cid + ".csv")).read_text().splitlines()
+                year, month = map(int, first.split(","))
+                args = dict(template=preset, start_year=year, start_month=month)
+                values = list(map(float, raw))
+                for horizon in (1, 7, 12, 24):
+                    with self.subTest(case=cid, template=preset, horizon=horizon):
+                        options = {} if horizon == 12 else dict(forecast_error_months=horizon)
+                        fit = pykalos.x13_estimated(values, **args, **options)
+                        y, m, count, *expected = records["y_ef_" + str(horizon)]
+                        self.assertEqual(fit["series_forecast_stdev_status"], "available")
+                        self.assertEqual(fit["series_forecast_stdev_domain"],
+                                         dict(start_year=int(y), start_month=int(m), length=int(count)))
+                        self.assertEqual(fit["forecast_domain"]["length"], 12)
+                        for value, ref in zip(fit["series_forecast_stdev"], map(from_hex, expected), strict=True):
+                            self.assertLessEqual(abs(value - ref), 2e-8 * (1 + abs(ref)))
+                            forecasts += 1
+                        if horizon == 12:
+                            residuals = fit["residuals"]
+                            self.assertEqual(residuals["ser"], from_hex(records["residuals.ser"][0]))
+                            for stat, df in (("lb", 22), ("doornikhansen", 2)):
+                                ref = records["residuals." + stat]
+                                self.assertEqual((residuals[stat]["value"], residuals[stat]["pvalue"],
+                                                  residuals[stat]["df"]), (from_hex(ref[0]), from_hex(ref[1]), df))
+                            self.assertEqual(residuals["lb"]["lags"], 24)
+                            fields += 5
+        self.assertEqual((fields, forecasts), (45, 396))
+        empty = pykalos.x13_estimated(values, **args, forecast_error_months=0)
+        self.assertEqual((empty["series_forecast_stdev_status"], empty["series_forecast_stdev"]),
+                         ("no_requested_predictions", []))
+
     def test_stock_monthly_scope(self):
         capability = pykalos.capabilities()["estimated_x13"]
         self.assertEqual(capability["templates"], ("RSA0", "RSA1", "RSA2c"))
         self.assertEqual((capability["frequency"], capability["forecast_months"]), (12, 12))
         base = dict(series=[1.] * 60, start_year=2000, start_month=1)
-        for change in ({"template": "RSA5c"}, {"frequency": 4}, {"start_month": 13}, {"series": [float("nan")]}):
+        for change in ({"forecast_error_months": -1}, {"template": "RSA5c"}, {"frequency": 4}, {"start_month": 13}, {"series": [float("nan")]}):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 pykalos.x13_estimated(**(base | change))

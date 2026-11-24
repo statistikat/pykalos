@@ -648,7 +648,7 @@ py::dict automatic_result_dict(const kalos::X13AutomaticFitResult& res) {
     return o;
 }
 
-py::dict estimated_stock_dict(const kalos::X13AutomaticFitResult& result) {
+py::dict estimated_stock_dict(const kalos::X13AutomaticFitResult& result, int error_months) {
     using namespace pybind11::literals;
     auto out = estimated_model_dict(result);
     const auto& f = result.fit;
@@ -665,7 +665,24 @@ py::dict estimated_stock_dict(const kalos::X13AutomaticFitResult& result) {
     const auto& likelihood = result.stock_likelihood.value();
     out["likelihood"] = py::dict("log_likelihood"_a=result.log_likelihood, "ssq"_a=likelihood.residual_ssq,
         "effective"_a=result.effective_observations, "estimated"_a=likelihood.estimated_parameters);
-    out["residuals"] = py::dict("tsres"_a=likelihood.full_residuals);
+    kalos::X13StockResidualDiagnostics diagnostics;
+    kalos::X13StockForecastErrors errors;
+    {
+        py::gil_scoped_release release;
+        diagnostics = kalos::x13_stock_residual_diagnostics(result);
+        errors = kalos::x13_stock_forecast_errors(result, error_months);
+    }
+    const auto& lb = diagnostics.ljung_box;
+    py::object normality = py::none();
+    if (diagnostics.normality) {
+        const auto& dh = *diagnostics.normality;
+        normality = py::dict("value"_a=dh.value, "pvalue"_a=dh.p, "df"_a=dh.df);
+    }
+    out["residuals"] = py::dict("tsres"_a=likelihood.full_residuals, "ser"_a=diagnostics.standard_error,
+                                "lb"_a=py::dict("value"_a=lb.value, "pvalue"_a=lb.p, "df"_a=lb.df, "lags"_a=24),
+                                "doornikhansen"_a=normality);
+    out["series_forecast_stdev"] = errors.standard_errors;
+    out["series_forecast_stdev_status"] = errors.status;
     out["mode"] = mode_name(f.mode_effective);
     out["sigma"] = sigma_name(f.sigma);
     const auto& selection = f.selection;
@@ -729,7 +746,8 @@ PYBIND11_MODULE(_kalos, m) {
             "minimum_years"_a=3, "raw_tramoseats"_a=true, "restricted_x13_fit"_a=true,
             "automatic_x13_fit"_a=true);
         result["estimated_x13"] = py::dict("entry_point"_a="pykalos.x13_estimated",
-            "templates"_a=py::make_tuple("RSA0", "RSA1", "RSA2c"), "frequency"_a=12, "forecast_months"_a=12);
+            "templates"_a=py::make_tuple("RSA0", "RSA1", "RSA2c"), "frequency"_a=12, "forecast_months"_a=12,
+            "series_forecast_stdev"_a=true, "residuals"_a=py::make_tuple("tsres", "ser", "lb", "doornikhansen"));
         py::dict rsa0("modes"_a=py::make_tuple("additive"), "series_forecast_stdev"_a=true,
                       "residuals"_a=py::make_tuple("tsres", "ser", "lb", "doornikhansen"));
         py::dict rsa1("modes"_a=py::make_tuple("additive", "multiplicative"), "series_forecast_stdev"_a=true,
@@ -797,7 +815,7 @@ PYBIND11_MODULE(_kalos, m) {
         "masked elements to NaN and the core refuses non-finite\n"
         "coefficients. NaN/Inf and empty inputs propagate the core's\n"
         "ValueError policy unchanged. The result is always a Python list.");
-    m.def("_x13_estimated", [](const std::vector<double>& series, int year, int month, const std::string& preset) {
+    m.def("_x13_estimated", [](const std::vector<double>& series, int year, int month, const std::string& preset, int error_months) {
         kalos::X13AutomaticFitResult result;
         {
             py::gil_scoped_release release;
@@ -806,7 +824,7 @@ PYBIND11_MODULE(_kalos, m) {
             else if (preset == "RSA2c") result = kalos::x13_estimated_rsa2c(series, year, month);
             else throw std::invalid_argument("unknown stock X-13 template");
         }
-        return estimated_stock_dict(result);
+        return estimated_stock_dict(result, error_months);
     });
     m.def("x13_automatic_fit", [](py::dict spec) {
         // The raw, explicit automatic-spec entry. Every module scalar is
