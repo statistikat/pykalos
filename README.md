@@ -67,6 +67,12 @@ selected model and its estimated regression effects. The log-mode uncertainty
 uses the lognormal transformation back to the observation scale.
 Model selection outside the supported controller rounds raises `ValueError`.
 
+`estimate_tramo_trfull(series, start_year=..., start_month=...)` fits the stock
+monthly TRfull preprocessing model. `tramoseats_fit(series, template="RSAfull", ...)`
+also returns SEATS components and original-series forecast errors.
+Both report the selected trading-day, leap-year and Easter terms in
+`model["calendar"]`, with coefficients named in JVM order.
+
 For a fixed monthly SEATS model, `seats_extract_wk(series, innovation_variance, ...)`
 takes the fitted SARIMA coefficients and returns ordered `initial` and `final`
 component rows. Each row includes a component, information type, start year,

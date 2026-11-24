@@ -134,5 +134,5 @@ class Rsa0Fit(unittest.TestCase):
                              (dict(forecast=1.), "integer"), (dict(backcast=-(2**30)), "range")):
             with self.subTest(args=args), self.assertRaisesRegex((ValueError, TypeError), reason):
                 pykalos.tramoseats_fit(**(dict(series=data) | args))
-        self.assertEqual(pykalos.capabilities()["tramo_seats_fit"]["templates"], ("RSA0", "RSA1", "RSA3"))
+        self.assertEqual(pykalos.capabilities()["tramo_seats_fit"]["templates"], ("RSA0", "RSA1", "RSA3", "RSAfull"))
         self.assertFalse(pykalos.capabilities()["fit"])

@@ -48,7 +48,31 @@ py::dict residuals(int year, int month, const std::vector<double>& values, doubl
                     "lb"_a=py::dict("value"_a=lb.value, "pvalue"_a=lb.p, "df"_a=lb.df, "lags"_a=24));
 }
 
-py::dict preprocessing(const kalos::TramoFitResult& fit) {
+py::dict calendar(const kalos::TramoFittedCalendar& fitted, py::list& variables) {
+    const auto& selected = fitted.selection;
+    const auto td = selected.trading_days;
+    std::vector<std::string> names;
+    const char* trading_days = "none";
+    if (td == kalos::TramoTradingDays::WorkingDays) {
+        trading_days = "working_days";
+        names.emplace_back("td");
+    } else if (td == kalos::TramoTradingDays::TradingDays) {
+        trading_days = "trading_days";
+        for (int i = 0; i < 6; ++i) names.push_back("td[" + std::to_string(i) + "]");
+    }
+    if (selected.leap_year) names.emplace_back("lp");
+    if (selected.easter) names.emplace_back("easter");
+    if (names.size() != fitted.coefficients.size()) throw std::logic_error("incomplete fitted TRAMO calendar");
+    py::dict coefficients;
+    for (std::size_t i = 0; i < names.size(); ++i) {
+        coefficients[py::str(names[i])] = fitted.coefficients[i];
+        variables.append(py::dict("name"_a=names[i], "coefficient"_a=fitted.coefficients[i]));
+    }
+    return py::dict("trading_days"_a=trading_days, "leap_year"_a=selected.leap_year,
+                    "easter"_a=selected.easter, "coefficients"_a=coefficients);
+}
+
+py::dict preprocessing(const kalos::TramoFitResult& fit, bool include_calendar) {
     py::dict result("status"_a=fit.status);
     if (fit.status != "available") {
         result["refusal_note"] = fit.refusal_note;
@@ -67,15 +91,17 @@ py::dict preprocessing(const kalos::TramoFitResult& fit) {
         offset += length;
     }
     if (offset != fit.parameters.size()) throw std::logic_error("unexpected fitted TRAMO parameters");
-    result["model"] = std::move(model);
     py::list variables;
     static constexpr const char* types[] = {"AO", "LS", "TC", "SO"};
     if (fit.mean) variables.append(py::dict("name"_a="const", "coefficient"_a=fit.regression_coefficients.at(0)));
+    if (include_calendar) model["calendar"] = calendar(fit.calendar, variables);
+    result["model"] = std::move(model);
+    const std::size_t outlier_offset = fit.mean + fit.calendar.coefficients.size();
     for (std::size_t i = 0; i < fit.variables.size(); ++i) {
         const auto& variable = fit.variables[i];
         variables.append(py::dict("name"_a=variable.name, "type"_a=types[static_cast<int>(variable.type)],
                                   "position"_a=variable.position,
-                                  "coefficient"_a=fit.regression_coefficients.at(i + static_cast<std::size_t>(fit.mean))));
+                                  "coefficient"_a=fit.regression_coefficients.at(outlier_offset + i)));
     }
     result["variables"] = std::move(variables);
     result["likelihood"] = py::dict("log_likelihood"_a=fit.ls_ll, "transformation_adjustment"_a=fit.ls_tadj,
@@ -110,18 +136,19 @@ kalos::tramo_seats_model_request model(std::vector<double> series, const py::dic
 }
 
 void bind_seats(py::module_& module) {
-    auto bind_preprocessor = [&](const char* name, auto estimate) {
-        module.def(name, [estimate](const std::vector<double>& series, int year, int month) {
+    auto bind_preprocessor = [&](const char* name, auto estimate, bool include_calendar = false) {
+        module.def(name, [estimate, include_calendar](const std::vector<double>& series, int year, int month) {
             kalos::TramoFitResult fit;
             {
                 py::gil_scoped_release release;
                 fit = estimate(series, year, month);
             }
-            return preprocessing(fit);
+            return preprocessing(fit, include_calendar);
         });
     };
     bind_preprocessor("_estimate_tramo_tr1", kalos::estimate_tramo_tr1);
     bind_preprocessor("_estimate_tramo_tr3", kalos::estimate_tramo_tr3);
+    bind_preprocessor("_estimate_tramo_trfull", kalos::estimate_tramo_trfull, true);
     module.def("_seats_extract_wk", [](std::vector<double> series, const py::dict& spec) {
         auto request = model(std::move(series), spec);
         request.innovation_variance = spec["innovation_variance"].cast<double>();
@@ -184,8 +211,8 @@ void bind_seats(py::module_& module) {
         }
         return decomposition(result);
     });
-    auto bind_automatic = [&](const char* name, auto fit, auto forecast_errors) {
-        module.def(name, [fit, forecast_errors](const std::vector<double>& series, int year, int month,
+    auto bind_automatic = [&](const char* name, auto fit, auto forecast_errors, bool include_calendar = false) {
+        module.def(name, [fit, forecast_errors, include_calendar](const std::vector<double>& series, int year, int month,
                                         int backcast, int forecast) {
             kalos::tramo_seats_automatic_result output;
             kalos::tramo_tr0_forecast_errors_result errors;
@@ -194,7 +221,7 @@ void bind_seats(py::module_& module) {
                 output = fit(series, year, month, backcast, forecast);
                 errors = forecast_errors(output.preprocessing, forecast);
             }
-            auto result = preprocessing(output.preprocessing);
+            auto result = preprocessing(output.preprocessing, include_calendar);
             result["series_forecast_stdev_status"] = errors.status;
             result["series_forecast_stdev"] = errors.standard_errors;
             result["preprocessing_status"] = result["status"];
@@ -205,6 +232,7 @@ void bind_seats(py::module_& module) {
     };
     bind_automatic("_tramoseats_rsa1", kalos::run_tramo_seats_rsa1, kalos::tramo_tr1_forecast_errors);
     bind_automatic("_tramoseats_rsa3", kalos::run_tramo_seats_rsa3, kalos::tramo_tr3_forecast_errors);
+    bind_automatic("_tramoseats_rsafull", kalos::run_tramo_seats_rsafull, kalos::tramo_selected_forecast_errors, true);
     module.def("_tramoseats_rsa0", [](const std::vector<double>& series, int year, int month,
                                       int backcast, int forecast) {
         kalos::tramo_seats_rsa0_result output;

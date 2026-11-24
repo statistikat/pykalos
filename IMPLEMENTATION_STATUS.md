@@ -1310,3 +1310,9 @@ The repaired macOS ARM64 wheel at `dd95f13` reproduced the remaining seasonal-on
 ### Raw stock RSAfull source checkpoint
 
 The Python source and JVM evidence snapshots now pin Kalos `73115f7f4e8f419a6ddd2a0abbaeffa648a86a0e`. It provides automatic monthly TRfull preprocessing and RSAfull decomposition on 29 independent raw series. The offline verifier checked all 202 source files and 90 evidence files.
+
+### Stock monthly TRfull and RSAfull Python entry points
+
+`estimate_tramo_trfull` and `tramoseats_fit(template="RSAfull")` now fit original monthly observations. The standalone and full-product entries return the selected calendar, ordered coefficients and outliers, SARIMA parameters, likelihood and dated residual diagnostics. The full fit also returns the merged components and preprocessing original-series forecast uncertainty.
+
+On an installed arm64 wheel all 29 independently captured public fits matched the model, regression estimates, likelihood, 4,165 residuals and 26,160 observed or forecast component values bit-for-bit. The original 26 models also matched all 130 residual diagnostic fields and 624 WK forecast errors exactly. All 624 independent original-series forecast errors passed their existing scaled tolerance of 2e-8. The three additional late-calendar models have separate supplemental diagnostic and error panels under upstream qualification. The 22 TRAMO preprocessing, full-product and WK tests passed in 10.038 seconds. [Installed-wheel tests](tests/test_tramo_automatic.py)

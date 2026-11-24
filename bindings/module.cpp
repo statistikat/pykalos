@@ -669,7 +669,7 @@ PYBIND11_MODULE(_kalos, m) {
         result["fit"] = false;
         result["primitives"] = py::make_tuple("convolve", "x13_automatic", "x13_fit", "tramo_critical_value",
                                               "tramo_seasonality", "tramo_transform_decision", "tramo_calendar_f_test",
-                                              "tramo_full_initial_calendar", "tramo_residual_trading_days", "estimate_tramo_tr1", "estimate_tramo_tr3", "seats_extract_wk", "seats_from_tramo",
+                                              "tramo_full_initial_calendar", "tramo_residual_trading_days", "estimate_tramo_tr1", "estimate_tramo_tr3", "estimate_tramo_trfull", "seats_extract_wk", "seats_from_tramo",
                                               "tramoseats_fit", "prepare_regression", "prepare_series", "estimate_sarima_fixed");
         result["status"] = "minimal_binding";
         py::dict restricted;
@@ -692,10 +692,12 @@ PYBIND11_MODULE(_kalos, m) {
             "additive"_a=py::make_tuple("AO", "LS", "TC"), "multiplicative"_a=py::make_tuple("AO", "LS", "TC"));
         py::dict rsa3("modes"_a=py::make_tuple("additive", "multiplicative"), "series_forecast_stdev"_a=true,
                       "automatic_identification"_a=true, "residuals"_a=py::make_tuple("tsres", "ser", "lb", "doornikhansen"));
+        py::dict rsafull = rsa3.attr("copy")().cast<py::dict>();
+        rsafull["automatic_calendar"] = true;
         result["tramo_seats_fit"] = py::dict(
-            "entry_point"_a="pykalos.tramoseats_fit", "templates"_a=py::make_tuple("RSA0", "RSA1", "RSA3"),
+            "entry_point"_a="pykalos.tramoseats_fit", "templates"_a=py::make_tuple("RSA0", "RSA1", "RSA3", "RSAfull"),
             "frequency"_a=12, "complete_series_only"_a=true, "mode"_a="template_dependent",
-            "by_template"_a=py::dict("RSA0"_a=rsa0, "RSA1"_a=rsa1, "RSA3"_a=rsa3),
+            "by_template"_a=py::dict("RSA0"_a=rsa0, "RSA1"_a=rsa1, "RSA3"_a=rsa3, "RSAfull"_a=rsafull),
             "approximation_retry"_a=true, "approximation_policy"_a="monthly_airline_legacy",
             "series_forecast_stdev"_a=true, "residuals"_a=true,
             "residual_ljung_box"_a=true, "residual_doornik_hansen"_a=true);

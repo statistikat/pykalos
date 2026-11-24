@@ -25,7 +25,7 @@ def check_preprocessing(test, result, records):
     for variable, row in zip(result["variables"], variables):
         test.assertEqual(variable["name"], " ".join(row[1:-1]))
         test.assertEqual(bits([variable["coefficient"]]), bytes.fromhex(row[-1]))
-        if row[1] != "const":
+        if row[1] in ("AO", "LS", "TC", "SO"):
             y, m, _ = map(int, row[2].strip("()").split("-"))
             test.assertEqual((variable["type"], variable["position"]), (row[1], 12*(y-domain_year)+m-domain_month))
     return len(tsres["tsres"])
@@ -300,3 +300,51 @@ class PublicTr3(unittest.TestCase):
                 values += check_hex_rows(self, raw["merged"], expected)
         self.assertEqual((len(inputs), rows, values), (7, 70, 5640))
         check_forecast_errors(self, "RSA3", inputs, forecasts)
+
+class PublicTrFull(unittest.TestCase):
+    def test_stock_calendar_preprocessing_and_products(self):
+        inputs = dict(case for name in ("rsafull", "rsafull-late-calendar")
+                      for case in grouped_records(name + "-x86_64.txt"))
+        diagnostics = dict(grouped_records("rsafull-residual-diagnostics-x86_64.txt"))
+        forecasts = dict(grouped_records("rsafull-forecast-errors-x86_64.txt"))
+        residuals = components = errors = 0
+        for cid, rows in inputs.items():
+            with self.subTest(case=cid):
+                _, year, month, _, *data = rows[1]
+                series = list(map(from_hex, data))
+                domain = dict(start_year=int(year), start_month=int(month))
+                fit = pykalos.estimate_tramo_trfull(series, **domain)
+                residuals += check_preprocessing(self, fit, rows)
+                raw = pykalos.tramoseats_fit(series, template="trfull", **domain)
+                self.assertEqual((raw["status"], raw["template"]), ("ok", "RSAfull"))
+                self.assertEqual(raw["model"], fit["model"])
+                self.assertEqual(raw["variables"], fit["variables"])
+                self.assertEqual(raw["likelihood"], fit["likelihood"])
+                self.assertEqual(raw["residuals"], fit["residuals"])
+                effects = {r[1]: from_hex(r[-1]) for r in rows if r[0] == "variable"
+                           and (r[1].startswith("td") or r[1] in ("lp", "easter"))}
+                trading_days = "trading_days" if "td[0]" in effects else "working_days" if "td" in effects else "none"
+                self.assertEqual(fit["model"]["calendar"], dict(trading_days=trading_days,
+                                 leap_year="lp" in effects, easter="easter" in effects, coefficients=effects))
+                product, = (r for r in rows if r[0] == "product")
+                self.assertEqual(raw["model_changed"], product[3] == "true")
+                merged = [r for r in rows if r[0] == "merged"]
+                components += check_hex_rows(self, raw["merged"], merged)
+                for key, component in (("finalSA", "SeasonallyAdjusted"), ("finalTrend", "Trend"),
+                                       ("finalSeasonal", "Seasonal"), ("finalIrregular", "Irregular")):
+                    row, = (r for r in merged if r[1:3] == [component, "Value"])
+                    self.assertEqual(bits(raw[key]), bytes.fromhex("".join(row[6:])))
+                if cid in diagnostics:
+                    check_public_diagnostics(self, fit["residuals"], diagnostics[cid])
+                    facts = {r[0]: r for r in forecasts[cid]}
+                    public, wk = facts["y_ef"], facts["wk_series_stdev_forecast"]
+                    self.assertEqual(raw["series_forecast_domain"],
+                                     dict(start_year=int(public[1]), start_month=int(public[2]), length=int(public[3])))
+                    self.assertEqual(raw["series_forecast_stdev_status"], "available")
+                    for value, ref in zip(raw["series_forecast_stdev"], map(from_hex, public[4:]), strict=True):
+                        self.assertLessEqual(abs(value - ref), 2e-8 * (1 + abs(ref)))
+                        errors += 1
+                    row, = (r for r in raw["final"] if (r["component"], r["information"]) == ("Series", "StdevForecast"))
+                    self.assertEqual(bits(row["values"]), bytes.fromhex("".join(wk[4:])))
+        self.assertEqual((len(inputs), residuals, components, errors), (29, 4165, 26160, 624))
+        self.assertTrue(pykalos.capabilities()["tramo_seats_fit"]["by_template"]["RSAfull"]["automatic_calendar"])
