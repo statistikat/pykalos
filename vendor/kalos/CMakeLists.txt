@@ -184,6 +184,7 @@ if(KALOS_BUILD_TESTS)
   foreach(test_name IN ITEMS
     test_arma_diagnostics
     test_combined_seasonality
+    test_adjusted_seasonality
     test_arma_identification
     test_arma_information
     test_arma_objective
@@ -298,6 +299,11 @@ if(KALOS_BUILD_TESTS)
       target_compile_definitions(${test_name} PRIVATE
         KALOS_SPECTRUM_COS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/spectrum-cos-x86_64.txt")
     endif()
+    if(test_name STREQUAL "test_adjusted_seasonality")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_ADJUSTED_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles"
+        KALOS_ADJUSTED_SEASONALITY_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/adjusted-seasonality/public-x86_64.txt")
+    endif()
     if(test_name STREQUAL "test_combined_seasonality")
       target_compile_definitions(${test_name} PRIVATE
         KALOS_COMBINED_RSA2C="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/stock-rsa2c-x86_64.txt"
@@ -363,6 +369,7 @@ if(KALOS_BUILD_TESTS)
     if(test_name STREQUAL "test_x13_estimated_templates")
       target_compile_definitions(${test_name} PRIVATE
         KALOS_X13_TEMPLATE_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles"
+        KALOS_X13_DIAGNOSTIC_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/diagnostics-x86_64.txt"
         KALOS_X13_TEMPLATE_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-estimated-templates/templates-x86_64.txt")
     endif()
     add_test(NAME ${test_name} COMMAND ${test_name})

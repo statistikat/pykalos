@@ -1372,3 +1372,7 @@ Python now vendors Kalos `3f6b798663d9ea2a6276bd781388675a3e765219`, including t
 ### M6 complete published stock combined SI dashboard
 
 All 29 raw RSAfull models and nine stock estimated X-13 RSA0/RSA1/RSA2c models produced the public combined SI verdict and six statistical fields from their ordinary Python entry points. Across these 38 additional fits and the earlier 30, all 68 dashboard verdicts matched, and all 408 statistical fields passed the scaled 1e-12 tolerance. The full installed-wheel run passed 139 tests in 221.089 seconds, including the R/Java-independent subprocess checks and both complete automatic X-13 corpora. [Installed product replay](tests/test_combined_seasonality.py)
+
+### M6 stock diagnostic source checkpoint
+
+The wheel vendors published Kalos `a21f0f75ce3346b1ff91a827450b26af15c9af79`, which implements stock X-13 preprocessing forecast uncertainty and residual diagnostics and the monthly adjusted-series Qs and seasonal F dashboard tests. The offline lock verifier checked 208 source files and 110 evidence files.
