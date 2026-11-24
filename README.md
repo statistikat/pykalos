@@ -174,3 +174,10 @@ The `pinned_levenberg_marquardt` solver accepts the core's fully free block
 envelope. Control decisions, pass likelihoods, evaluation counts and the
 retained coefficients are available even when the optimizer reports a
 non-converged point.
+
+The raw TRAMO/SEATS fit and fixed and automatic X-13 fits return the public
+all-years combined SI seasonality test under
+`result["diagnostics"]["combined_seasonality"]`. Its `summary` is `Present`,
+`ProbablyNone` or `None`; `stable`, `moving` and `kruskal_wallis` each
+include `value` and `pvalue`. A missing public test is represented by Python
+`None`.

@@ -1,3 +1,4 @@
+#include "combined_seasonality.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <kalos/tramo_seats_pipeline.hpp>
@@ -229,6 +230,8 @@ void bind_seats(py::module_& module) {
             result["preprocessing_status"] = result["status"];
             result.attr("update")(decomposition(output.decomposition));
             result["model_changed"] = output.decomposition.extraction.model_changed;
+            result["diagnostics"] = pykalos_diagnostics::seasonality(kalos::seats_si_seasonality(
+                output.decomposition.extraction.final_components(), 12, output.preprocessing.log));
             if (include_calendar) {
                 result["calendar_effect_forecast"] = py::list();
                 for (const auto& row : output.decomposition.finals) {
@@ -266,6 +269,8 @@ void bind_seats(py::module_& module) {
         result["series_forecast_stdev"] = errors.standard_errors;
         const auto& fit = output.preprocessing;
         const auto& model = fit.model;
+        result["diagnostics"] = pykalos_diagnostics::seasonality(kalos::seats_si_seasonality(
+            output.decomposition.extraction.final_components(), 12, model.log));
         const auto& observed = fit.residuals;
         result["residuals"] = residuals(observed.start_year, observed.start_month, observed.values, observed.standard_error, 2);
         result["model"] = py::dict(

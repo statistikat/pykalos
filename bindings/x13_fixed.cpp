@@ -1,3 +1,4 @@
+#include "combined_seasonality.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
@@ -72,6 +73,7 @@ py::dict fit_result(const kalos::X13FitResult& result) {
                  "lower_sigma"_a=result.lower_sigma, "upper_sigma"_a=result.upper_sigma,
                  "msr_policy"_a=msr_policy_name(result.msr_policy),
                  "backcast"_a=result.backcast, "forecast"_a=result.forecast);
+    out["diagnostics"] = pykalos_diagnostics::seasonality(kalos::x13_si_seasonality(result));
     const auto& p = result.preadjustment;
     if (!p.status.empty()) {
         out["preadjustment"] = py::dict(

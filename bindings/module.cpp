@@ -1,3 +1,4 @@
+#include "combined_seasonality.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <algorithm>
@@ -642,6 +643,7 @@ py::dict automatic_result_dict(const kalos::X13AutomaticFitResult& res) {
     fit["d11final"] = f.finals.d11final;
     fit["e11"] = f.finals.e11;
     fit["finals_status"] = f.finals.status;
+    o["diagnostics"] = pykalos_diagnostics::seasonality(kalos::x13_si_seasonality(f));
     o["fit"] = fit;
     return o;
 }
@@ -650,6 +652,7 @@ py::dict estimated_stock_dict(const kalos::X13AutomaticFitResult& result) {
     using namespace pybind11::literals;
     auto out = estimated_model_dict(result);
     const auto& f = result.fit;
+    out["diagnostics"] = pykalos_diagnostics::seasonality(kalos::x13_si_seasonality(f));
     if (result.status != "available") return out;
     out["mode"] = mode_name(f.mode_effective);
     out["sigma"] = sigma_name(f.sigma);
@@ -710,6 +713,9 @@ PYBIND11_MODULE(_kalos, m) {
         restricted["sigma_policy_default"] = "legacy";
         result["restricted_fit"] = restricted;
         using namespace pybind11::literals;
+        result["combined_seasonality"] = py::dict("getter"_a="diagnostics.seas-si-combined",
+            "minimum_years"_a=3, "raw_tramoseats"_a=true, "restricted_x13_fit"_a=true,
+            "automatic_x13_fit"_a=true);
         result["estimated_x13"] = py::dict("entry_point"_a="pykalos.x13_estimated",
             "templates"_a=py::make_tuple("RSA0"), "frequency"_a=12, "forecast_months"_a=12);
         py::dict rsa0("modes"_a=py::make_tuple("additive"), "series_forecast_stdev"_a=true,

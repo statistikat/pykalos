@@ -1338,3 +1338,7 @@ The source lock now pins Kalos `1ff084f3e561fd4b16fce520f8e255a234ec5209`, inclu
 ### M5b estimated RSA1 and M6 combined seasonality source checkpoint
 
 Python vendors Kalos `ae0ba26949c8e1cf0232a177ac58c324457608c2` with stock estimated RSA1 and the public combined SI products. The offline verifier checked 208 sources and 105 evidence files. The evidence includes decoder-equivalent automatic X-13 fits and the non-log pseudo-additive mode captures.
+
+### M6 public combined SI diagnostics in installed Python fits
+
+Raw TRAMO/SEATS, restricted fixed X-13, estimated stock X-13 and decoder-equivalent automatic X-13 expose the `combined_seasonality` dashboard result under `diagnostics`. Its public verdict and three statistic/probability pairs follow the pinned Kalos diagnostic. The installed wheel reproduced all 30 public fixtures for raw RSA0/RSA1/RSA3, fixed X-13 across four modes, and automatic X-13 across six mode/horizon combinations, including the two WK fits with an irregular component alone. All 180 statistics and probabilities satisfied the 1e-12 scaled envelope. A refused fixed X-13 fit correctly returns Python `None` for this diagnostic. The combined-seasonality, fixed/stock X-13, automatic TRAMO and raw TRAMO product suites passed 26 tests in 29.376 seconds. [Installed-wheel product replay](tests/test_combined_seasonality.py)
