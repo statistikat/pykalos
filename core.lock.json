@@ -1,9 +1,9 @@
 {
   "schema_version": 2,
   "repository": "https://github.com/statistikat/kalos",
-  "commit": "a21f0f75ce3346b1ff91a827450b26af15c9af79",
+  "commit": "b4f2e1d1f5eeac4b819a0a2a7a615aa3732f9a19",
   "version": "0.1.0",
-  "source_manifest_sha256": "bf1e6ccbe658b1f59bc9169340ba696f87e9fbbcd9f51c66c2897d6fb831c34f",
+  "source_manifest_sha256": "6f499b3e641c1217595faf54e4baed6553e06c1ff50cf8bc761e65f333ec8d06",
   "generated_files": [
     "include/kalos/revision.hpp"
   ],
@@ -47,7 +47,7 @@
         "include/kalos/detail/seats_burman_estimates.hpp": "3855a81fbe25eff02a32d48a304c6462200aa2c0550cb9f3083e9f8c1fdd95f9",
         "include/kalos/detail/seats_exact_forecasts.hpp": "0f17e52b6b3def61f6726879dc1c3dcb70b217cd36a441fd5e74f18cdd296207",
         "include/kalos/detail/seats_linear_filters.hpp": "f07126415e921448d3ba65b01a62b3295c7ec10baf766a2dc8678a91ab640446",
-        "include/kalos/detail/seats_ucarima_model.hpp": "d61b5b3fd5556bacc775562538465e2e6683f8ac8734e2a402b6cf0857423bc6",
+        "include/kalos/detail/seats_ucarima_model.hpp": "efb8a1f0d539e3faaeb0418e5260e7bd9cd2752b884180239870eeefa712a9a7",
         "include/kalos/detail/seats_wk_estimators.hpp": "bbc8ec4a5c923a92ffbb611980287af007390f61d3e7db852286f09bc51d3c41",
         "include/kalos/detail/special_functions.hpp": "445413fab0239e1beb0e7f5811257daa92a002f89c3103961d56d2fd329f58ba",
         "include/kalos/detail/ssq_deviances.hpp": "4890a81a91aed27d47365c230506487e3e0dcd91ed57c8ea2cf055392ec813ec",
@@ -77,7 +77,7 @@
         "include/kalos/preparation.hpp": "86d4a4319a5d687854cbe48d53ee7e7312fc45823b676f6aa57fb5dfa7a32161",
         "include/kalos/regression_likelihood.hpp": "70d602b0d7eefae7edfddcfaa404d2a38e29d94ca88dab24b6204a7a3f61ad55",
         "include/kalos/regression_variable_tests.hpp": "a816f8ec79a8183c899703c0b61e5e1955149271be38599d63ca15a6daecf63b",
-        "include/kalos/revision.hpp": "ce07c4d2ff6109322eea3de3fd1e6bc543e0cb0ad5327ef1e0117f742db750b8",
+        "include/kalos/revision.hpp": "14d377c50d794131ed727027dba6bd569733499226b25a2f31828363e0a59fe4",
         "include/kalos/seats_extract_wk.hpp": "e3aca67a4c135b0a979e4d040815b0b08d77d9c3e4b88a8d96cc6108390d3190",
         "include/kalos/sparse_history.hpp": "4a0a34d5f653e6d314fbf2bf72a323c3d72297c18ea39cc3c6f73c98bab13e79",
         "include/kalos/state_space.hpp": "13aa70201814f68da74e82b8b75db8102d51d61ce076b87dd8aa6c1323cd3a5a",

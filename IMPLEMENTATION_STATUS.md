@@ -1376,3 +1376,67 @@ All 29 raw RSAfull models and nine stock estimated X-13 RSA0/RSA1/RSA2c models p
 ### M6 stock diagnostic source checkpoint
 
 The wheel vendors published Kalos `a21f0f75ce3346b1ff91a827450b26af15c9af79`, which implements stock X-13 preprocessing forecast uncertainty and residual diagnostics and the monthly adjusted-series Qs and seasonal F dashboard tests. The offline lock verifier checked 208 source files and 110 evidence files.
+
+## M6: pin advanced to b4f2e1d — completed WK factorizer chain — 2026-11-24
+
+Pin `a21f0f75…` → **`b4f2e1d1f5eeac4b819a0a2a7a615aa3732f9a19`** (upstream
+`e59063f` froze the SEATS WK factorizer tiers and refused-profile finals from
+the pinned JVM; `b4f2e1d` completed the `SymmetricFilter.factorize()` chain
+with the fast `SymmetricFrequencyResponseDecomposer` and the robust
+`RobustSymmetricFrequencyResponseDecomposer` tiers — ev2 → ev1 → fast →
+robust). Manifest pre-check: the upstream `tools/source-files.json` **core**
+section is unchanged (207 entries; the vendor snapshot carries 208 including
+the generated `revision.hpp`); the **evidence** section gained six entries
+(`seats-wk-factorizer-tiers/` ×5 and `x13-automatic-diagnostics/public-x86_64.txt`),
+all outside the pykalos evidence allowlist, so the vendored evidence snapshot
+stays at 110 files. The lock `version` tracks the upstream manifest
+(`0.1.0` unchanged); like every prior sync this commit bumps no package
+version.
+
+**Vendor churn `a21f0f75c…` → `b4f2e1d…`: three tracked files, zero vendor
+additions or removals** — `core.lock.json` (commit, manifest sha256 and two
+file hashes), the regenerated `include/kalos/revision.hpp` and
+`include/kalos/detail/seats_ucarima_model.hpp` (+929/−9): the `ur_solver_run`
+start-degree overload, the jdplus scaled complex division,
+`BackFilter.normalize`, `Polynomial.of(range)` and the full
+`Polynomials.divide` kernels, the symmetric-frequency-response helpers, the
+FAST tier (`SfrDecomp`), the ROBUST tier (`RobustSfrDecomp`) and the
+four-tier `factorize_sf` chain. Upstream-pinned corpus scope: 150 distinct
+symmetric filters — 124 EV2 / 5 EV1 / 1 fast / 20 none; the single fast case
+lives in the validator-refused model `v_airline r c1`, and the
+total-error-variance filter of an RSA3 fit is the first chain member that
+resolves on ROBUST. `--verify` PASS on both sides: 208 source and 110
+evidence files at `a21f0f75c` and at `b4f2e1d`.
+
+**The WK seam is behaviour-unchanged on every gate.** The tiers only extend
+factorizations that previously fell through EV2 → EV1; kalos's own corpus
+replay at this commit is bit-exact (`verify_seats_wk_extraction` 132/132,
+94/94 CTests, upstream record) and every Python WK, RSA0/RSA1/RSA3/RSAfull,
+bridge and X-13 replay passed bit-identically at the existing tolerances with
+no fixture, test or tolerance change. The WK corpus refusals in the Python
+suite are the pinned upstream fail-closed paths, unrelated to this change.
+
+**Fresh venv and provider.** Fresh venv `SCRATCH/m6-pykalos/venv` (CPython
+3.12.3, pip 25.0.1, pytest 9.2.0, numpy 2.5.5). Wheel built per the README
+(`env -u LD_LIBRARY_PATH`, bare
+`-DOpenBLAS_ROOT=/data/home/kowa/seasonaladjustment/tmp_opencode/openblas`):
+`pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`414f57e54743346cabd6d246cbb4f2a016694caaa0a9b3904b24352735e4b383`, zero
+compiler warnings. `tools/check-wheel-provider.py SCRATCH/openblas`:
+`commit` = full `b4f2e1d…`, `blas_integer_bits` = 32, external linkage,
+`OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING SkylakeX
+SINGLE_THREADED`, library `SCRATCH/openblas/lib/libopenblas-r0.3.34.so`
+(sha256 `84de4eab95a0f3e056b6efee2e7fd7c3731a9bec2f4552401f2b1fdf90420ae3`),
+source archive `cd7e129868320cc2d033afa920e31202dfe0b8066a5b66661900ccc0f197dfed`;
+`ldd` with the ambient `LD_LIBRARY_PATH` unset resolves `libopenblas.so.0` →
+the SCRATCH provider plus system `libgomp`.
+
+**Installed-wheel suite: 132 passed, 748 subtests passed, none skipped, in
+245.03s** (`LD_LIBRARY_PATH=SCRATCH/openblas/lib`, first run of the full
+`tests/` tree in this venv). The sensitive files ran first: `test_seats.py`,
+`test_provider_import_order.py` and `test_numpy_interop.py` gave 14 passed
+plus 79 subtests in 1.17s. Per-file passes: combined_seasonality 4,
+estimation 2, interrupt 1, java_free 1, numpy_interop 10, preparation 3,
+provider_import_order 1, request_validation 54, seats 3, smoke 3,
+tramo_automatic 14, tramo_calendar 4, tramoseats_fit 5, tramo_transform 2,
+x13_automatic 15, x13_automatic_horizon 3, x13_estimated 5, x13_fixed 2.
