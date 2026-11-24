@@ -45,8 +45,15 @@ class StockX13(unittest.TestCase):
                 self.assertEqual(fit["selection"], dict(d7_henderson=int(selection[1]), final_henderson=int(selection[2]),
                                                        msr_filter=int(selection[3][3:])))
                 self.assertEqual(fit["effective_observations"], int(records["likelihood"][0]))
-                ll = from_hex(records["likelihood"][2])
-                self.assertLessEqual(abs(fit["log_likelihood"] - ll), 1e-10 * max(1, abs(ll)))
+                effective, estimated, ll, ssq = records["likelihood"]
+                self.assertEqual(fit["likelihood"], dict(effective=int(effective), estimated=int(estimated),
+                                                         log_likelihood=from_hex(ll), ssq=from_hex(ssq)))
+                self.assertEqual(fit["log_likelihood"], from_hex(ll))
+                ry, rm, rn, *residuals = records["residuals"]
+                fitted = fit["residuals"]
+                self.assertEqual((fitted["start_year"], fitted["start_month"], len(fitted["tsres"])),
+                                 (int(ry), int(rm), int(rn)))
+                self.assertEqual(bits(fitted["tsres"]), bytes.fromhex("".join(residuals)))
                 self.assertEqual(fit["domain"], dict(start_year=year, start_month=month, length=len(values)))
                 products = dict(fit["tables"], final_sa=fit["finalSA"], final_trend=fit["finalTrend"],
                                 final_irregular=fit["finalIrregular"], y_f=fit["forecast"]["series"],

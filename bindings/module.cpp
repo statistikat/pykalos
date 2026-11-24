@@ -654,6 +654,10 @@ py::dict estimated_stock_dict(const kalos::X13AutomaticFitResult& result) {
     const auto& f = result.fit;
     out["diagnostics"] = pykalos_diagnostics::seasonality(kalos::x13_si_seasonality(f));
     if (result.status != "available") return out;
+    const auto& likelihood = result.stock_likelihood.value();
+    out["likelihood"] = py::dict("log_likelihood"_a=result.log_likelihood, "ssq"_a=likelihood.residual_ssq,
+        "effective"_a=result.effective_observations, "estimated"_a=likelihood.estimated_parameters);
+    out["residuals"] = py::dict("tsres"_a=likelihood.full_residuals);
     out["mode"] = mode_name(f.mode_effective);
     out["sigma"] = sigma_name(f.sigma);
     const auto& selection = f.selection;

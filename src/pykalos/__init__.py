@@ -223,6 +223,9 @@ def x13_estimated(series, *, template="RSA0", start_year, start_month, frequency
     if result["status"] == "available":
         forecast_year, forecast_position = divmod(12 * year + month - 1 + len(data), 12)
         result["domain"] = dict(start_year=year, start_month=month, length=len(data))
+        first_residual = 12 * year + month - 1 + result["d"] + 12 * result["bd"]
+        residual_year, residual_position = divmod(first_residual, 12)
+        result["residuals"].update(start_year=residual_year, start_month=residual_position + 1)
         result["forecast_domain"] = dict(start_year=forecast_year, start_month=forecast_position + 1,
                                          length=len(result["forecast"]["series"]))
     return result
