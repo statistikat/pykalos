@@ -283,7 +283,7 @@ class AutomaticPipeline {
   const std::string& stage() const { return stage_; }
   int round() const { return round_; }
 
-  void run() {
+  void run(bool fixed_structure) {
     transitory_rate_ = transitory_change_rate(kAnnualFrequency,
                                              request_.tcrate);
     y_ = request_.input;  // the level domain; log below if chosen
@@ -291,6 +291,16 @@ class AutomaticPipeline {
     // (init) the X13ModelBuilder airline start + the critical-value rule
     // (process(): va0 = options.va > 0 ? va : X13Utility.calcCv(n)).
     model_.desc = Description{};  // log=false, mean=false, (0,1,1)(0,1,1)
+    // Stock RSA0 goes straight from the fixed airline description to the
+    // final estimator. Its outlier factory list and regression design are empty.
+    if (fixed_structure) {
+      stage_ = "final estimation";
+      estimate_final_parameters();
+      stage_ = "final";
+      build_result();
+      return;
+    }
+
     pcr_ = request_.ljung_box_limit;  // clear(): pcr = options.ljungBoxLimit
     va0_ = request_.va > 0. ? request_.va
                             : default_critical_value(y_.size());
@@ -1605,6 +1615,20 @@ class AutomaticPipeline {
     return blocks;
   }
 
+  void estimate_final_parameters() {
+    auto request = base_request(request_.precision,
+                                EstimationStartingPoint::Multiple, false);
+    SarimaEstimationResult fit_result = estimate_sarima_fixed(request);
+    Estimation estimation;
+    estimation.coefficients = fit_result.coefficients;
+    estimation.status = fit_result.status;
+    estimation.log_likelihood = fit_result.log_likelihood;
+    model_.last_coefficients = estimation.coefficients;
+    model_.has_coefficients = true;
+    model_.estimation = std::move(estimation);
+    estimation_has_mean_ = model_.desc.mean;
+  }
+
   bool run_cascade(std::vector<AutoCascadeRoundRecord>& records) {
     for (int cround = 0; cround < kMaxCascadeRounds; ++cround) {
       AutoCascadeRoundRecord record;
@@ -1625,18 +1649,8 @@ class AutomaticPipeline {
         // (base_request), fast_derivatives = false; the recorded solver
         // delta against the JVM's LM minimizer is retired by the ruling.
         stage_ = "final estimation";
-        auto request = base_request(request_.precision,
-                                    EstimationStartingPoint::Multiple, false);
-        SarimaEstimationResult fit_result = estimate_sarima_fixed(request);
-        Estimation estimation;
-        estimation.coefficients = fit_result.coefficients;
-        estimation.status = fit_result.status;
-        estimation.log_likelihood = fit_result.log_likelihood;
-        model_.last_coefficients = estimation.coefficients;
-        model_.has_coefficients = true;
-        model_.estimation = std::move(estimation);
-        estimation_has_mean_ = model_.desc.mean;
-        record.estimation_status = std::move(fit_result.status);
+        estimate_final_parameters();
+        record.estimation_status = model_.estimation->status;
         record.estimation_ok = true;
 
         // FinalEstimator.estimate's dim is desc.mapping().getDim() and
@@ -2041,7 +2055,8 @@ class AutomaticPipeline {
 // The public entry point.
 // ---------------------------------------------------------------------------
 
-X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
+namespace {
+X13AutomaticFitResult fit_monthly(const X13AutomaticRequest& request, bool fixed_structure) {
   X13AutomaticFitResult out;
 
   // Shape validation (throws std::invalid_argument, as the seams below do).
@@ -2114,7 +2129,7 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
 
   AutomaticPipeline pipeline(request, out, static_cast<int>(backcast), static_cast<int>(forecast));
   try {
-    pipeline.run();
+    pipeline.run(fixed_structure);
   } catch (const std::runtime_error& error) {
     // The pinned catch(Exception) -> return null: the failed: status with
     // the chain kept so far (the invalid_argument shape violations of the
@@ -2127,6 +2142,27 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
     out.chain.push_back(std::move(entry));
   }
   return out;
+}
+
+}  // namespace
+
+X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request) {
+  return fit_monthly(request, false);
+}
+
+X13AutomaticFitResult x13_estimated_rsa0(const std::vector<double>& observations, int year, int month) {
+  if (year < 1 || year > 9999)
+    throw std::invalid_argument("estimated X-13 requires a start year between 1 and 9999");
+  X13AutomaticRequest spec{};
+  spec.input = observations;
+  spec.first_year = year;
+  spec.first_period = month;
+  spec.precision = 1e-7;
+  spec.tcrate = 0.7;
+  spec.seasonal.assign(12, X11SeasonalRequest::msr);
+  spec.sigma = X11SigmaPolicy::legacy;
+  spec.forecast = -1;
+  return fit_monthly(spec, true);
 }
 
 }  // namespace kalos
