@@ -184,16 +184,15 @@ void bind_seats(py::module_& module) {
         }
         return decomposition(result);
     });
-    auto bind_automatic = [&](const char* name, auto fit, bool airline) {
-        module.def(name, [fit, airline](const std::vector<double>& series, int year, int month,
+    auto bind_automatic = [&](const char* name, auto fit, auto forecast_errors) {
+        module.def(name, [fit, forecast_errors](const std::vector<double>& series, int year, int month,
                                         int backcast, int forecast) {
             kalos::tramo_seats_automatic_result output;
             kalos::tramo_tr0_forecast_errors_result errors;
             {
                 py::gil_scoped_release release;
                 output = fit(series, year, month, backcast, forecast);
-                if (airline) errors = kalos::tramo_tr1_forecast_errors(output.preprocessing, forecast);
-                else errors.status = forecast == 0 ? "no_requested_predictions" : "unavailable";
+                errors = forecast_errors(output.preprocessing, forecast);
             }
             auto result = preprocessing(output.preprocessing);
             result["series_forecast_stdev_status"] = errors.status;
@@ -204,8 +203,8 @@ void bind_seats(py::module_& module) {
             return result;
         });
     };
-    bind_automatic("_tramoseats_rsa1", kalos::run_tramo_seats_rsa1, true);
-    bind_automatic("_tramoseats_rsa3", kalos::run_tramo_seats_rsa3, false);
+    bind_automatic("_tramoseats_rsa1", kalos::run_tramo_seats_rsa1, kalos::tramo_tr1_forecast_errors);
+    bind_automatic("_tramoseats_rsa3", kalos::run_tramo_seats_rsa3, kalos::tramo_tr3_forecast_errors);
     module.def("_tramoseats_rsa0", [](const std::vector<double>& series, int year, int month,
                                       int backcast, int forecast) {
         kalos::tramo_seats_rsa0_result output;

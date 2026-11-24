@@ -61,8 +61,10 @@ monthly TR3 SARIMA identification, or `tramoseats_fit(series, template="RSA3", .
 for its SEATS decomposition. Both return the chosen orders, coefficients,
 registered effects, likelihood and dated full residuals, including their standard
 error, 24-lag independence test and Doornik–Hansen normality test. The
-independence test uses the fitted ARMA orders for the degrees of freedom. RSA3 reports its
-original-series forecast uncertainty as `unavailable` for a positive horizon.
+independence test uses the fitted ARMA orders for the degrees of freedom.
+RSA3 reports original-series forecast standard errors from the automatically
+selected model and its estimated regression effects. The log-mode uncertainty
+uses the lognormal transformation back to the observation scale.
 Model selection outside the supported controller rounds raises `ValueError`.
 
 For a fixed monthly SEATS model, `seats_extract_wk(series, innovation_variance, ...)`

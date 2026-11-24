@@ -1,6 +1,6 @@
 # pykalos implementation status
 
-Current Python operations at the 2026-11-24 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0, RSA1 and RSA3 fitting. RSA0 and RSA1 provide preprocessing residual diagnostics and original-series forecast errors. RSA3 returns the automatically selected model, dated residuals and their diagnostics. The dated entries retain the earlier qualification results.
+Current Python operations at the 2026-11-24 checkpoint include convolution, dated regression and transformation preparation, explicit fixed-order SARIMA estimation, fixed-coefficient and automatic X-13, TRAMO seasonality, transform and monthly calendar preprocessing decisions, fixed WK extraction, fitted-model decomposition and public monthly RSA0, RSA1 and RSA3 fitting. All three templates provide preprocessing residual diagnostics and original-series forecast errors. RSA3 returns the automatically selected model and dated residuals. The dated entries retain the earlier qualification results.
 
 ## M5 checkpoint after the TRAMO preprocessing assembly (2026-11-23)
 
@@ -1286,3 +1286,7 @@ Standalone TR3 preprocessing and raw RSA3 now both return the residual scale, 24
 ### M5 raw RSA3 forecast integration checkpoint
 
 Kalos `5547b34` adds conditional forecast covariance and the reference observations for 13 raw RSA3 fits. The Python gate compares the public original-series uncertainties, their dates and the separate WK uncertainties at the default and custom horizons.
+
+### M5 selected-model RSA3 original-series forecast uncertainty
+
+The installed wheel returns RSA3 original-series standard errors from the selected fitted model, including estimated drift and outliers. All 312 reference errors passed the 2e-8 scaled threshold on 13 original monthly series, and the 312 separate WK errors matched bit-for-bit. All zero- and seven-month checks returned the reference start dates, lengths and statuses. The repaired macOS ARM64 wheel at `5547b34` passed all 128 tests in 446.896 seconds with NumPy and a single execution thread, including all 4,353 automatic X-13 and 1,287 extended-horizon comparisons. [Installed forecast replay](tests/test_tramo_automatic.py)

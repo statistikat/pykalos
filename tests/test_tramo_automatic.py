@@ -38,6 +38,36 @@ def rsa1_reference_inputs():
             for cid, rows in grouped_records(corpus + "-x86_64.txt")}
 
 
+def rsa3_reference_inputs():
+    return dict(case for corpus in ("rsa3", "rsa3-additional", "rsa3-mean-retry")
+                for case in grouped_records(corpus + "-x86_64.txt"))
+
+
+def check_forecast_errors(test, template, inputs, forecasts):
+    test.assertEqual(set(inputs), set(forecasts))
+    for cid, records in inputs.items():
+        _, year, month, _, *data = records[1]
+        series = list(map(from_hex, data))
+        facts = {r[0]: r for r in forecasts[cid]}
+        public = facts["y_ef"]
+        wk = facts["wk_series_stdev_forecast"]
+        for count in (0, 7, -2):
+            with test.subTest(case=cid, forecast=count):
+                fit = pykalos.tramoseats_fit(series, template=template, start_year=int(year),
+                                            start_month=int(month), forecast=count)
+                length = 24 if count == -2 else count
+                test.assertEqual(fit["series_forecast_domain"],
+                                 dict(start_year=int(public[1]), start_month=int(public[2]), length=length))
+                test.assertEqual(fit["series_forecast_stdev_status"], "available" if count else "no_requested_predictions")
+                errors = fit["series_forecast_stdev"]
+                test.assertEqual(len(errors), length)
+                for actual, expected in zip(errors, map(from_hex, public[4:])):
+                    test.assertLessEqual(abs(actual - expected), 2e-8 * (1 + abs(expected)))
+                if count == -2:
+                    row, = [r for r in fit["final"] if (r["component"], r["information"]) == ("Series", "StdevForecast")]
+                    test.assertEqual(bits(row["values"]), bytes.fromhex("".join(wk[4:])))
+
+
 class PublicTr1(unittest.TestCase):
     def test_captured_preprocessing(self):
         cases = grouped_records("rsa1-x86_64.txt")
@@ -133,30 +163,8 @@ class PublicTr1(unittest.TestCase):
         self.assertEqual(templates["RSA1"]["residuals"], ("tsres", "ser", "lb", "doornikhansen"))
 
     def test_raw_rsa1_public_forecast_errors(self):
-        inputs = rsa1_reference_inputs()
-        forecasts = dict(grouped_records("rsa1-forecast-errors-x86_64.txt"))
-        self.assertEqual(set(inputs), set(forecasts))
-        for cid, records in inputs.items():
-            _, year, month, _, *data = records[1]
-            series = list(map(from_hex, data))
-            facts = {r[0]: r for r in forecasts[cid]}
-            public = facts["y_ef"]
-            wk = facts["wk_series_stdev_forecast"]
-            for count in (0, 7, -2):
-                with self.subTest(case=cid, forecast=count):
-                    fit = pykalos.tramoseats_fit(series, template="RSA1", start_year=int(year),
-                                                start_month=int(month), forecast=count)
-                    length = 24 if count == -2 else count
-                    self.assertEqual(fit["series_forecast_domain"],
-                                     dict(start_year=int(public[1]), start_month=int(public[2]), length=length))
-                    self.assertEqual(fit["series_forecast_stdev_status"], "available" if count else "no_requested_predictions")
-                    errors = fit["series_forecast_stdev"]
-                    self.assertEqual(len(errors), length)
-                    for actual, expected in zip(errors, map(from_hex, public[4:])):
-                        self.assertLessEqual(abs(actual - expected), 2e-8 * (1 + abs(expected)))
-                    if count == -2:
-                        row, = [r for r in fit["final"] if (r["component"], r["information"]) == ("Series", "StdevForecast")]
-                        self.assertEqual(bits(row["values"]), bytes.fromhex("".join(wk[4:])))
+        check_forecast_errors(self, "RSA1", rsa1_reference_inputs(),
+                              dict(grouped_records("rsa1-forecast-errors-x86_64.txt")))
 
     def test_rsa1_horizons(self):
         records = dict(grouped_records("rsa1-x86_64.txt"))["fit_noout"]
@@ -182,8 +190,7 @@ class PublicTr1(unittest.TestCase):
 
 class PublicTr3(unittest.TestCase):
     def test_raw_rsa3_product(self):
-        cases = [case for corpus in ("rsa3", "rsa3-additional", "rsa3-mean-retry")
-                 for case in grouped_records(corpus + "-x86_64.txt")]
+        cases = rsa3_reference_inputs().items()
         residuals = rows = values = 0
         for cid, records in cases:
             with self.subTest(case=cid):
@@ -208,7 +215,7 @@ class PublicTr3(unittest.TestCase):
                                        ("finalSeasonal", "Seasonal"), ("finalIrregular", "Irregular")):
                     row, = (r for r in expected if r[1:3] == [component, "Value"])
                     self.assertEqual(bits(raw[key]), bytes.fromhex("".join(row[6:])))
-                self.assertEqual((raw["series_forecast_stdev_status"], raw["series_forecast_stdev"]), ("unavailable", []))
+                self.assertEqual(raw["series_forecast_stdev_status"], "available")
         self.assertEqual((len(cases), residuals, rows, values), (13, 1196, 130, 8340))
 
     def test_horizons_and_capabilities(self):
@@ -224,18 +231,17 @@ class PublicTr3(unittest.TestCase):
                     forecast = rows["Forecast"]
                     self.assertEqual((12*forecast["start_year"] + forecast["start_month"]-1, len(forecast["values"])),
                                      (start + int(n), horizon))
-                self.assertEqual(fit["series_forecast_stdev_status"], "unavailable" if horizon else "no_requested_predictions")
+                self.assertEqual(fit["series_forecast_stdev_status"], "available" if horizon else "no_requested_predictions")
         cap = pykalos.capabilities()["tramo_seats_fit"]["by_template"]["RSA3"]
         self.assertEqual(cap["residuals"], ("tsres", "ser", "lb", "doornikhansen"))
         self.assertTrue(cap["automatic_identification"])
-        self.assertFalse(cap["series_forecast_stdev"])
+        self.assertTrue(cap["series_forecast_stdev"])
         for extra in (dict(series=[1.]*23), dict(series=[float("nan")]*36), dict(start_month=13), dict(frequency=4)):
             with self.subTest(extra=extra), self.assertRaises((ValueError, TypeError)):
                 pykalos.estimate_tramo_tr3(**(dict(series=[1.]*48) | domain | extra))
 
     def test_public_residual_diagnostics(self):
-        inputs = dict(case for corpus in ("rsa3", "rsa3-additional", "rsa3-mean-retry")
-                      for case in grouped_records(corpus + "-x86_64.txt"))
+        inputs = rsa3_reference_inputs()
         tests = dict(case for corpus in ("rsa3-residual-diagnostics", "rsa3-mean-retry-diagnostics")
                      for case in grouped_records(corpus + "-x86_64.txt"))
         self.assertEqual(set(tests), set(inputs))
@@ -256,3 +262,7 @@ class PublicTr3(unittest.TestCase):
                         self.assertEqual(actual[key]["df"], float(fact[4]))
                         self.assertEqual(bits([actual[key]["value"], actual[key]["pvalue"]]),
                                          bytes.fromhex("".join(fact[:2])))
+
+    def test_raw_rsa3_public_forecast_errors(self):
+        check_forecast_errors(self, "RSA3", rsa3_reference_inputs(),
+                              dict(grouped_records("rsa3-forecast-errors-x86_64.txt")))
