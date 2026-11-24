@@ -717,7 +717,7 @@ PYBIND11_MODULE(_kalos, m) {
             "minimum_years"_a=3, "raw_tramoseats"_a=true, "restricted_x13_fit"_a=true,
             "automatic_x13_fit"_a=true);
         result["estimated_x13"] = py::dict("entry_point"_a="pykalos.x13_estimated",
-            "templates"_a=py::make_tuple("RSA0"), "frequency"_a=12, "forecast_months"_a=12);
+            "templates"_a=py::make_tuple("RSA0", "RSA1"), "frequency"_a=12, "forecast_months"_a=12);
         py::dict rsa0("modes"_a=py::make_tuple("additive"), "series_forecast_stdev"_a=true,
                       "residuals"_a=py::make_tuple("tsres", "ser", "lb", "doornikhansen"));
         py::dict rsa1("modes"_a=py::make_tuple("additive", "multiplicative"), "series_forecast_stdev"_a=true,
@@ -785,11 +785,13 @@ PYBIND11_MODULE(_kalos, m) {
         "masked elements to NaN and the core refuses non-finite\n"
         "coefficients. NaN/Inf and empty inputs propagate the core's\n"
         "ValueError policy unchanged. The result is always a Python list.");
-    m.def("_x13_estimated_rsa0", [](const std::vector<double>& series, int year, int month) {
+    m.def("_x13_estimated", [](const std::vector<double>& series, int year, int month, const std::string& preset) {
         kalos::X13AutomaticFitResult result;
         {
             py::gil_scoped_release release;
-            result = kalos::x13_estimated_rsa0(series, year, month);
+            if (preset == "RSA0") result = kalos::x13_estimated_rsa0(series, year, month);
+            else if (preset == "RSA1") result = kalos::x13_estimated_rsa1(series, year, month);
+            else throw std::invalid_argument("unknown stock X-13 template");
         }
         return estimated_stock_dict(result);
     });

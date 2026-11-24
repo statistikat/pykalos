@@ -19,22 +19,28 @@ def stock_cases(template):
 
 
 class StockX13(unittest.TestCase):
-    def test_public_rsa0_model_and_products(self):
-        cases = stock_cases("rsa0")
+    def check_model_and_products(self, preset):
+        cases = stock_cases(preset)
         self.assertEqual(set(cases), {"air", "ao", "seas"})
         rows = 0
         for cid, records in cases.items():
-            with self.subTest(case=cid):
+            with self.subTest(case=cid, template=preset):
                 first, *values = (EVIDENCE / "x13-refusal-jvm-profiles" / (cid + ".csv")).read_text().splitlines()
                 year, month = map(int, first.split(","))
-                fit = pykalos.x13_estimated(list(map(float, values)), template="rsa0", start_year=year, start_month=month)
+                fit = pykalos.x13_estimated(list(map(float, values)), template=preset, start_year=year, start_month=month)
                 self.assertEqual((fit["status"], fit["template"], fit["mode"], fit["sigma"]),
-                                 ("available", "RSA0", "additive", "legacy"))
+                                 ("available", preset.upper(), records["selected"][0].lower(), "legacy"))
                 self.assertEqual([fit["log"], fit["mean"]], [v == "true" for v in records["model"][:2]])
                 self.assertEqual([fit[k] for k in ("p", "d", "q", "bp", "bd", "bq")], list(map(int, records["model"][2:])))
                 self.assertEqual(bits([v for block in fit["coefficients"] for v in block]),
                                  bytes.fromhex("".join(records["arma"])))
-                self.assertEqual((fit["variables"], records["coefficients"]), ([], []))
+                variables = fit["variables"]
+                self.assertEqual(bits([v["coefficient"] for v in variables]), bytes.fromhex("".join(records["coefficients"])))
+                if variables:
+                    self.assertEqual(len(variables), 1)
+                    self.assertEqual(variables[0]["name"], " ".join(records["variable"][:2]))
+                    self.assertEqual((variables[0]["regeffect"], variables[0]["type"]), ("Irregular", 0))
+                    self.assertEqual(variables[0]["position"], 48)
                 selection = records["selected"]
                 self.assertEqual(fit["selection"], dict(d7_henderson=int(selection[1]), final_henderson=int(selection[2]),
                                                        msr_filter=int(selection[3][3:])))
@@ -56,11 +62,17 @@ class StockX13(unittest.TestCase):
                     rows += 1
         self.assertEqual(rows, 42)
 
+    def test_public_rsa0_model_and_products(self):
+        self.check_model_and_products("rsa0")
+
+    def test_public_rsa1_model_and_products(self):
+        self.check_model_and_products("rsa1")
+
     def test_stock_monthly_scope(self):
         capability = pykalos.capabilities()["estimated_x13"]
-        self.assertEqual(capability["templates"], ("RSA0",))
+        self.assertEqual(capability["templates"], ("RSA0", "RSA1"))
         self.assertEqual((capability["frequency"], capability["forecast_months"]), (12, 12))
         base = dict(series=[1.] * 60, start_year=2000, start_month=1)
-        for change in ({"template": "RSA1"}, {"frequency": 4}, {"start_month": 13}, {"series": [float("nan")]}):
+        for change in ({"template": "RSA2c"}, {"frequency": 4}, {"start_month": 13}, {"series": [float("nan")]}):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 pykalos.x13_estimated(**(base | change))

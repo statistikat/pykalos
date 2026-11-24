@@ -209,16 +209,17 @@ def tramo_residual_trading_days(residuals, *, estimation_start_year, estimation_
 def x13_estimated(series, *, template="RSA0", start_year, start_month, frequency=12):
     """Estimate a stock monthly X-13 model and return fitted components and one year of forecasts.
 
-    RSA0 estimates the additive airline model. The eight X-11 tables include
+    RSA0 estimates the additive airline model. RSA1 selects the log/level
+    transformation and detects stock outliers. The eight X-11 tables include
     the forecast interval. Final components cover the observation interval.
     """
-    if not isinstance(template, str) or template.upper() != "RSA0":
-        raise ValueError("x13_estimated supports the monthly RSA0 template")
+    if not isinstance(template, str) or template.upper() not in ("RSA0", "RSA1"):
+        raise ValueError("x13_estimated supports the monthly RSA0 and RSA1 templates")
     data, year, month = _calendar_domain(series, start_year, start_month, frequency, "x13_estimated")
     if not 1 <= month <= 12:
         raise ValueError("x13_estimated start_month must be between 1 and 12")
-    result = _kalos._x13_estimated_rsa0(data, year, month)
-    result["template"] = "RSA0"
+    result = _kalos._x13_estimated(data, year, month, template.upper())
+    result["template"] = template.upper()
     if result["status"] == "available":
         forecast_year, forecast_position = divmod(12 * year + month - 1 + len(data), 12)
         result["domain"] = dict(start_year=year, start_month=month, length=len(data))

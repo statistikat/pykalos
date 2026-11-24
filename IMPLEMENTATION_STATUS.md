@@ -1346,3 +1346,7 @@ Raw TRAMO/SEATS, restricted fixed X-13, estimated stock X-13 and decoder-equival
 ### M5b fitted-likelihood and automatic-diagnostic source checkpoint
 
 The Python source lock now pins Kalos `2ac8f17e63ee2869370975e12ba4137a87a1c08d`, including the complete RSA0/RSA1 fitted likelihood, dated residuals and final automatic-X-13 dashboard replay. Offline verification covered 208 source and 106 evidence files.
+
+### M5b stock estimated X-13 RSA1
+
+`x13_estimated(template="RSA1")` uses the stock transformation and AO/LS/TC detection settings. Its three installed-wheel public fits matched the transformation, coefficient blocks and X-11 decisions exactly, including the detected AO position and coefficient. The six stock RSA0/RSA1 fits together reproduced 84 dated X-11, final and forecast rows (8,184 values) at the existing 1e-8 table tolerance. The stock model, product and refusal tests passed in 4.673 seconds. [Stock template tests](tests/test_x13_estimated.py)

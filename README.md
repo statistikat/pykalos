@@ -88,7 +88,8 @@ Legacy approximation covers the monthly airline retry and the mean-free
 (2,1,0)(1,1,0) seasonal re-estimation used in the mixed AO/LS fitted models.
 
 For the stock estimated monthly X-13 model, call `x13_estimated(series,
-template="RSA0", start_year=1949, start_month=1)`. The result includes
+template="RSA0", start_year=1949, start_month=1)`. Use `template="RSA1"`
+for automatic transformation and outlier detection. The result includes
 estimated airline coefficients, likelihood, selected Henderson lengths and
 MSR filter, eight extended X-11 tables, observation-domain final components,
 and one year of original-series, adjusted and trend forecasts.
