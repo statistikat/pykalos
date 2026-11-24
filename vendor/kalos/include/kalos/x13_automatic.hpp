@@ -259,5 +259,7 @@ X13AutomaticFitResult x13_automatic_fit(const X13AutomaticRequest& request);
 // Stock monthly X-13 RSA0 with estimated airline parameters and a one-year
 // forecast extension. The observed series starts at the given year and month.
 X13AutomaticFitResult x13_estimated_rsa0(const std::vector<double>& observations, int year, int month);
+// Stock RSA1 selects the transformation and detects AO, LS and TC outliers.
+X13AutomaticFitResult x13_estimated_rsa1(const std::vector<double>& observations, int year, int month);
 } // namespace kalos
 #endif
