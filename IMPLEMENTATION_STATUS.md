@@ -1302,3 +1302,7 @@ The installed wheel at `da398f8` reproduced the 909 additional TR3 residuals and
 ### M5 final seven-case RSA3 product integration checkpoint
 
 At `dd95f13` the seasonal-only AR retry reproduces the public WK components. The Python gate now replays the full seven-case input panel as raw products as well as standalone fits.
+
+### M5 all twenty public RSA3 products
+
+The repaired macOS ARM64 wheel at `dd95f13` reproduced the remaining seasonal-only AR retry. All 20 fits now match the public 13,980 observed and forecast component values and 2,105 fitted residuals bit-for-bit. The 480 original-series forecast standard errors passed their published tolerance and all 480 separate WK errors matched bit-for-bit. All 28 targeted installed-wheel tests passed in 19.875 seconds. [Full retry panel](tests/test_tramo_automatic.py)

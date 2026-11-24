@@ -284,8 +284,6 @@ class PublicTr3(unittest.TestCase):
 
     def test_reference_retry_products(self):
         inputs = dict(grouped_records("rsa3-ref-retry-x86_64.txt"))
-        # The seasonal-only AR model still needs its WK extraction qualification.
-        del inputs["fit_ref_retry_18_2"]
         forecasts = dict(grouped_records("rsa3-ref-retry-forecast-errors-x86_64.txt"))
         diagnostics = dict(grouped_records("rsa3-ref-retry-diagnostics-x86_64.txt"))
         values = rows = 0
@@ -300,5 +298,5 @@ class PublicTr3(unittest.TestCase):
                 expected = [r for r in records if r[0] == "merged"]
                 rows += len(expected)
                 values += check_hex_rows(self, raw["merged"], expected)
-        self.assertEqual((len(inputs), rows, values), (6, 60, 4560))
-        check_forecast_errors(self, "RSA3", inputs, {cid: forecasts[cid] for cid in inputs})
+        self.assertEqual((len(inputs), rows, values), (7, 70, 5640))
+        check_forecast_errors(self, "RSA3", inputs, forecasts)
