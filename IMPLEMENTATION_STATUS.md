@@ -1354,3 +1354,7 @@ The Python source lock now pins Kalos `2ac8f17e63ee2869370975e12ba4137a87a1c08d`
 ### M5b complete RSA0/RSA1 fitted likelihood and dated residuals
 
 The six stock X-13 RSA0/RSA1 fits return complete fitted likelihood dimensions, residual sums of squares and full residual vectors with their monthly start dates. All six likelihoods, all 594 dated fitted residuals, and the selected AO coefficient matched the JVM bit-for-bit. The complete installed-wheel suite passed 137 tests in 156.354 seconds, including the existing automatic and horizon cases and the dashboard diagnostics. [Stock X-13 replay](tests/test_x13_estimated.py)
+
+### M5b estimated RSA2c source checkpoint
+
+The wheel now vendors Kalos `a32dce69296148d22421c1157272ec4fa08451ca` with the stock monthly working-day/Easter candidate selection, calendar-adjusted transformation, outlier detection and final X-11 products. Offline verification passed on 208 sources and 106 evidence files.

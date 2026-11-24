@@ -10,6 +10,7 @@ enum class CalendarAirlineProcessor { gls, reg_sarima };
 struct CalendarAirlineLikelihood {
     double log_likelihood;
     double ssq;
+    std::vector<double> ma;
 };
 
 // RegArimaUtility.processor(true, precision), monthly airline without a mean.

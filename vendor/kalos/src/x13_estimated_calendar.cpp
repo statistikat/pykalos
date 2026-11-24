@@ -48,7 +48,7 @@ X13Rsa2cCalendarCandidate fit_candidate(const Input& input, const X13Rsa2cCalend
     const int k = 3 + static_cast<int>(columns.size()); // two moving averages and the variance
     const double aicc = -2 * (fit.log_likelihood + input.adjustment -
                              static_cast<double>(n) * k / (n - k - 1));
-    return {n, k, input.adjustment, fit.log_likelihood, fit.ssq, aicc};
+    return {n, k, input.adjustment, fit.log_likelihood, fit.ssq, aicc, {fit.ma[0], fit.ma[1]}};
 }
 calendar_domain monthly_domain(const std::vector<double>& observations, int start_year, int start_month, bool log) {
     if (start_month < 1 || start_month > 12 || start_year < 1 || start_year > 9999 ||

@@ -181,7 +181,7 @@ detail::CalendarAirlineLikelihood detail::fit_calendar_airline(const std::vector
     const auto filter = pinned_differencing_polynomial(12, 1, 1);
     auto fit = fit_calendar_likelihood(series, pinned_backfilter_apply(filter, series), filter,
                                        columns, false, precision, false, true, processor);
-    return {fit.point.log_likelihood, fit.point.ssq_err};
+    return {fit.point.log_likelihood, fit.point.ssq_err, std::move(fit.ma)};
 }
 
 std::vector<std::vector<double>> tramo_stock_calendar_columns(const TramoStockCalendar& selection,
