@@ -305,9 +305,13 @@ class PublicTrFull(unittest.TestCase):
     def test_stock_calendar_preprocessing_and_products(self):
         inputs = dict(case for name in ("rsafull", "rsafull-late-calendar")
                       for case in grouped_records(name + "-x86_64.txt"))
-        diagnostics = dict(grouped_records("rsafull-residual-diagnostics-x86_64.txt"))
-        forecasts = dict(grouped_records("rsafull-forecast-errors-x86_64.txt"))
-        residuals = components = errors = 0
+        def panel(name):
+            return dict(case for prefix in ("rsafull-", "rsafull-late-")
+                        for case in grouped_records(prefix + name + "-x86_64.txt"))
+        diagnostics, forecasts, calendars = map(panel, ("residual-diagnostics", "forecast-errors", "calendar-effect"))
+        for collection in (diagnostics, forecasts, calendars):
+            self.assertEqual(set(collection), set(inputs))
+        residuals = components = errors = calendar_values = 0
         for cid, rows in inputs.items():
             with self.subTest(case=cid):
                 _, year, month, _, *data = rows[1]
@@ -334,17 +338,30 @@ class PublicTrFull(unittest.TestCase):
                                        ("finalSeasonal", "Seasonal"), ("finalIrregular", "Irregular")):
                     row, = (r for r in merged if r[1:3] == [component, "Value"])
                     self.assertEqual(bits(raw[key]), bytes.fromhex("".join(row[6:])))
-                if cid in diagnostics:
-                    check_public_diagnostics(self, fit["residuals"], diagnostics[cid])
-                    facts = {r[0]: r for r in forecasts[cid]}
-                    public, wk = facts["y_ef"], facts["wk_series_stdev_forecast"]
-                    self.assertEqual(raw["series_forecast_domain"],
-                                     dict(start_year=int(public[1]), start_month=int(public[2]), length=int(public[3])))
-                    self.assertEqual(raw["series_forecast_stdev_status"], "available")
-                    for value, ref in zip(raw["series_forecast_stdev"], map(from_hex, public[4:]), strict=True):
-                        self.assertLessEqual(abs(value - ref), 2e-8 * (1 + abs(ref)))
-                        errors += 1
-                    row, = (r for r in raw["final"] if (r["component"], r["information"]) == ("Series", "StdevForecast"))
-                    self.assertEqual(bits(row["values"]), bytes.fromhex("".join(wk[4:])))
-        self.assertEqual((len(inputs), residuals, components, errors), (29, 4165, 26160, 624))
+                check_public_diagnostics(self, fit["residuals"], diagnostics[cid])
+                facts = {r[0]: r for r in forecasts[cid]}
+                public, wk = facts["y_ef"], facts["wk_series_stdev_forecast"]
+                self.assertEqual(raw["series_forecast_domain"],
+                                 dict(start_year=int(public[1]), start_month=int(public[2]), length=int(public[3])))
+                self.assertEqual(raw["series_forecast_stdev_status"], "available")
+                for value, ref in zip(raw["series_forecast_stdev"], map(from_hex, public[4:]), strict=True):
+                    self.assertLessEqual(abs(value - ref), 2e-8 * (1 + abs(ref)))
+                    errors += 1
+                row, = (r for r in raw["final"] if (r["component"], r["information"]) == ("Series", "StdevForecast"))
+                self.assertEqual(bits(row["values"]), bytes.fromhex("".join(wk[4:])))
+                cal = {r[0]: r for r in calendars[cid]}
+                for key, pub in (("calendar_effect", cal["cal"]), ("calendar_effect_forecast", cal["cal_f"])):
+                    self.assertEqual(len(raw[key]), int(pub[3]))
+                    self.assertEqual(bits(raw[key]), bytes.fromhex("".join(pub[4:])))
+                    calendar_values += len(raw[key])
+                if cid == "fit_tr0_air":
+                    for horizon in (0, 1, 7):
+                        shorter = pykalos.tramoseats_fit(series, template="RSAfull", forecast=horizon, **domain)
+                        self.assertEqual(shorter["calendar_effect"], raw["calendar_effect"])
+                        self.assertEqual(shorter["calendar_effect_forecast"], raw["calendar_effect_forecast"][:horizon])
+                        self.assertEqual(shorter["series_forecast_stdev_status"], "available" if horizon else "no_requested_predictions")
+                        self.assertEqual(len(shorter["series_forecast_stdev"]), horizon)
+                        for value, expected in zip(shorter["series_forecast_stdev"], map(from_hex, public[4:4 + horizon]), strict=True):
+                            self.assertLessEqual(abs(value - expected), 2e-8 * (1 + abs(expected)))
+        self.assertEqual((len(inputs), residuals, components, errors, calendar_values), (29, 4165, 26160, 696, 5232))
         self.assertTrue(pykalos.capabilities()["tramo_seats_fit"]["by_template"]["RSAfull"]["automatic_calendar"])

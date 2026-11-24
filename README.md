@@ -69,7 +69,9 @@ Model selection outside the supported controller rounds raises `ValueError`.
 
 `estimate_tramo_trfull(series, start_year=..., start_month=...)` fits the stock
 monthly TRfull preprocessing model. `tramoseats_fit(series, template="RSAfull", ...)`
-also returns SEATS components and original-series forecast errors.
+also returns SEATS components, original-series forecast errors and the
+original-scale `calendar_effect` and `calendar_effect_forecast` for the
+observation and forecast domains.
 Both report the selected trading-day, leap-year and Easter terms in
 `model["calendar"]`, with coefficients named in JVM order.
 

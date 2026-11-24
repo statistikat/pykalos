@@ -2,8 +2,10 @@
 #include <pybind11/stl.h>
 #include <kalos/tramo_seats_pipeline.hpp>
 #include <kalos/arma_diagnostics.hpp>
+#include <kalos/calendar_generation.hpp>
 #include <kalos/numerics.hpp>
 #include <optional>
+#include <limits>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -227,6 +229,23 @@ void bind_seats(py::module_& module) {
             result["preprocessing_status"] = result["status"];
             result.attr("update")(decomposition(output.decomposition));
             result["model_changed"] = output.decomposition.extraction.model_changed;
+            if (include_calendar) {
+                result["calendar_effect_forecast"] = py::list();
+                for (const auto& row : output.decomposition.finals) {
+                    if (row.component != kalos::seats_component::series ||
+                        (row.information != kalos::seats_information::value &&
+                         row.information != kalos::seats_information::forecast)) continue;
+                    if (row.start_year < std::numeric_limits<int>::min() || row.start_year > std::numeric_limits<int>::max())
+                        throw std::out_of_range("RSAfull calendar year exceeds the native range");
+                    const kalos::calendar_domain domain{static_cast<int>(row.start_year), row.start_month, 12,
+                                                       static_cast<int>(row.values.size())};
+                    const auto& model = output.preprocessing;
+                    auto effects = kalos::tramo_stock_calendar_effect_original_scale(model.calendar, domain, model.log);
+                    const char* key = row.information == kalos::seats_information::value ?
+                        "calendar_effect" : "calendar_effect_forecast";
+                    result[key] = std::move(effects);
+                }
+            }
             return result;
         });
     };

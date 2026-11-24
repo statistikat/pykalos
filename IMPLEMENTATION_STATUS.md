@@ -1322,3 +1322,7 @@ The complete RSAfull wheel replay passed all 131 tests in 94.766 seconds, includ
 ### Complete RSAfull calendar and diagnostic evidence checkpoint
 
 The Python lock now pins Kalos `45e78cff6a2daa573f59cc9301451341cbf5265f`. Offline verification checked 202 source and 94 evidence files, including original-scale calendar effects, forecasts and residual diagnostics from the three late-controller models.
+
+### M5 stock RSAfull calendar effects and forecast uncertainty
+
+The raw monthly RSAfull product returns observed and forecast calendar effects on the original scale, including a zero-length projection when no forecast is requested. Against all 29 stock public fits, the wheel reproduced 5,232 calendar-effect values, 696 conditional WK forecast errors and all 145 residual diagnostics bit-for-bit. The 696 independent original-series forecast errors passed their scaled limit of 2e-8; the zero-, one- and seven-month requests also passed. The full installed-wheel replay passed all 131 tests in 159.507 seconds, including the 4,353 automatic X-13 comparisons and 1,287 horizon comparisons. [RSAfull public oracle replay](tests/test_tramo_automatic.py)
