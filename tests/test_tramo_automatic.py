@@ -38,6 +38,16 @@ def rsa1_reference_inputs():
             for cid, rows in grouped_records(corpus + "-x86_64.txt")}
 
 
+def check_public_diagnostics(test, actual, records):
+    facts = {row[0]: row[1:] for row in records}
+    test.assertEqual(bits([actual["ser"]]), bytes.fromhex(facts["residuals.ser"][0]))
+    test.assertEqual(actual["lb"]["lags"], 24)
+    for key in ("lb", "doornikhansen"):
+        fact = facts["residuals." + key]
+        test.assertEqual(actual[key]["df"], float(fact[4]))
+        test.assertEqual(bits([actual[key]["value"], actual[key]["pvalue"]]), bytes.fromhex("".join(fact[:2])))
+
+
 def rsa3_reference_inputs():
     return dict(case for corpus in ("rsa3", "rsa3-additional", "rsa3-mean-retry")
                 for case in grouped_records(corpus + "-x86_64.txt"))
@@ -250,19 +260,45 @@ class PublicTr3(unittest.TestCase):
             _, year, month, _, *data = records[1]
             domain = dict(start_year=int(year), start_month=int(month))
             series = list(map(from_hex, data))
-            facts = {row[0]: row[1:] for row in tests[cid]}
             for route, options in ((pykalos.estimate_tramo_tr3, domain),
                                    (pykalos.tramoseats_fit, domain | {"template": "RSA3"})):
                 with self.subTest(case=cid, route=route.__name__):
-                    actual = route(series, **options)["residuals"]
-                    self.assertEqual(bits([actual["ser"]]), bytes.fromhex(facts["residuals.ser"][0]))
-                    self.assertEqual(actual["lb"]["lags"], 24)
-                    for key in ("lb", "doornikhansen"):
-                        fact = facts["residuals." + key]
-                        self.assertEqual(actual[key]["df"], float(fact[4]))
-                        self.assertEqual(bits([actual[key]["value"], actual[key]["pvalue"]]),
-                                         bytes.fromhex("".join(fact[:2])))
+                    check_public_diagnostics(self, route(series, **options)["residuals"], tests[cid])
 
     def test_raw_rsa3_public_forecast_errors(self):
         check_forecast_errors(self, "RSA3", rsa3_reference_inputs(),
                               dict(grouped_records("rsa3-forecast-errors-x86_64.txt")))
+
+    def test_standalone_reference_retries(self):
+        cases = dict(grouped_records("rsa3-ref-retry-x86_64.txt"))
+        diagnostics = dict(grouped_records("rsa3-ref-retry-diagnostics-x86_64.txt"))
+        self.assertEqual(set(cases), set(diagnostics))
+        residuals = 0
+        for cid, records in cases.items():
+            with self.subTest(case=cid):
+                _, year, month, _, *data = records[1]
+                fit = pykalos.estimate_tramo_tr3(list(map(from_hex, data)), start_year=int(year), start_month=int(month))
+                residuals += check_preprocessing(self, fit, records)
+                check_public_diagnostics(self, fit["residuals"], diagnostics[cid])
+        self.assertEqual((len(cases), residuals), (7, 909))
+
+    def test_reference_retry_products(self):
+        inputs = dict(grouped_records("rsa3-ref-retry-x86_64.txt"))
+        # The seasonal-only AR model still needs its WK extraction qualification.
+        del inputs["fit_ref_retry_18_2"]
+        forecasts = dict(grouped_records("rsa3-ref-retry-forecast-errors-x86_64.txt"))
+        diagnostics = dict(grouped_records("rsa3-ref-retry-diagnostics-x86_64.txt"))
+        values = rows = 0
+        for cid, records in inputs.items():
+            with self.subTest(case=cid):
+                _, year, month, _, *data = records[1]
+                raw = pykalos.tramoseats_fit(list(map(from_hex, data)), template="RSA3",
+                                            start_year=int(year), start_month=int(month))
+                self.assertEqual(raw["status"], "ok")
+                check_preprocessing(self, raw, records)
+                check_public_diagnostics(self, raw["residuals"], diagnostics[cid])
+                expected = [r for r in records if r[0] == "merged"]
+                rows += len(expected)
+                values += check_hex_rows(self, raw["merged"], expected)
+        self.assertEqual((len(inputs), rows, values), (6, 60, 4560))
+        check_forecast_errors(self, "RSA3", inputs, {cid: forecasts[cid] for cid in inputs})

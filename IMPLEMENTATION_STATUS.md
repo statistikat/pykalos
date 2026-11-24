@@ -1294,3 +1294,7 @@ The installed wheel returns RSA3 original-series standard errors from the select
 ### M5 TR3 reference retries and nonseasonal components checkpoint
 
 At `da398f8` the public TR3 preprocessing module supports the seven reference-retry inputs in addition to the preceding 13 models. The Python gate checks their standalone diagnostics and the six newly qualified raw seasonal-adjustment products. The seasonal-only AR retry still has an open WK extraction comparison.
+
+### M5 Python reference-retry preprocessing and products
+
+The installed wheel at `da398f8` reproduced the 909 additional TR3 residuals and all 35 public diagnostic values on seven reference-retry models, bringing standalone coverage to 20 fits. Six newly qualified RSA3 products reproduced their 4,560 component values, all 144 original-scale forecast uncertainties within the reference tolerance, and the separate WK values bit-for-bit. The public raw product gate now covers 19 fits. The remaining seasonal-only AR model is qualified through preprocessing. All 28 targeted tests passed, including the five Java-free routes. [Reference-retry checks](tests/test_tramo_automatic.py)
