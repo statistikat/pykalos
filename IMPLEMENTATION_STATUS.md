@@ -1602,3 +1602,135 @@ passing. The NumPy-free wheel run gave 111 passed, 21 skipped, 720
 subtests passed, 0 failed in 269.87s: the skips are exactly the documented
 `HAS_NUMPY` gates (10 NumPy-interop, 10 NumPy-typed request-validation and
 1 import-order test).
+
+## M11: pin advanced to ec17543 — SLICOT SB03MD stationary initialization from state order 8 — 2026-11-26
+
+Pin `7c3eefd…` → **`ec175430643caa293e5db24ad3f2ca62e3afc44d`** (upstream
+`de09063`/`ec17543` land the M9-C2 seam: `stationary_initialization` now
+solves the discrete-time Lyapunov equation for state orders **m ≥ 8** with
+the vendored SLICOT `SB03MD` closure (`DICO='D'`, `JOB='B'`) on the Schur
+form `stationary_arma` already computed; m < 8 keeps the qualified QR/
+Kronecker route bit-identical. `KALOS_WITH_SLICOT` defaults ON wherever a
+GNU/Clang Fortran is usable — ON under MSVC is an upstream `FATAL_ERROR` —
+and OFF is a build-time exclusion with QR everywhere, no silent runtime
+fallback. The seam carries the M9-C2 ADOPT-WITH-CONDITIONS qualification
+and passed the M9-C3 R-boundary gate (0 failures in 6 × 1517 fit-matrix
+checks and 4 × 310k tinytest assertions, no pinned decision flipped); the
+same core change re-certified zero-movement at the R boundary (rkalos
+`cd268a9`: tinytest suites byte-identical 310,308 and 310,312 assertions,
+0 failures). Upstream's one shipped test accommodation — the reference-BFGS
+knife-edge status at the `fixed-ar-nearlimit` C++ geometry, maintainer-
+ratified 2026-11-26 — does not surface through the Python boundary: no
+pykalos test asserts a reference-BFGS termination status, so this commit
+makes **no expectation change to the suite at all**, exactly as the
+upstream ledger directs.
+
+Manifest pre-check: the upstream `tools/source-files.json` **core** section
+gained exactly the ten `vendor/slicot/` entries (209 → 219); the
+**fixtures** (112) and **evidence** (416) sections are unchanged, so the
+vendored evidence snapshot stays at 116 files and the evidence allowlist is
+untouched. The lock `version` tracks the upstream manifest (`0.1.0`
+unchanged); like every prior sync this commit bumps no package version.
+
+**Vendor churn `7c3eefd…` → `ec17543…`: four tracked files plus ten vendor
+additions, zero removals** — `core.lock.json` (commit, manifest sha256 and
+the file hashes), the regenerated `include/kalos/revision.hpp`,
+`vendor/kalos/CMakeLists.txt` (+61/−0: the `KALOS_WITH_SLICOT` gate, the
+`enable_language(Fortran)` attach and the PRIVATE define) and
+`vendor/kalos/src/state_space.cpp` (+163/−19: the m ≥ 8 SB03MD dispatch with
+the QR body kept verbatim below) — both byte-identical to their upstream
+blobs — plus the new `vendor/kalos/vendor/slicot/` tree: the link-map-
+computed minimal closure `SB03MD`, `SB03MV`, `SB03MW`, `SB03MX`, `SB03MY`,
+`SB04PX`, `MB01RD`, `select` byte-unmodified from SLICOT 5.9.1-dev @
+`5eeb845d84f5a60f6069754b7819dad468951933` (BSD-3-Clause) with
+`UPSTREAM.md` and the sha256 `MANIFEST.json`, whose ten digests were
+re-checked against the vendored files. No `src/pykalos` or `tests` file
+changed anywhere. `--verify` PASS on both sides: **210** source and **116**
+evidence files at `7c3eefd` before the export, **220** source and **116**
+evidence files at `ec17543` after.
+
+**Fresh venv and provider.** Fresh venvs `SCRATCH/m10-s3/venv` and
+`SCRATCH/m10-s3/venv-nonumpy` (CPython 3.12.3, pip 25.0.1, pytest 9.2.0;
+numpy 2.5.5 in the first only). Wheel built per the README
+(`env -u LD_LIBRARY_PATH`, bare
+`-DOpenBLAS_ROOT=/data/home/kowa/seasonaladjustment/tmp_opencode/openblas`,
+plus `-DCMAKE_VERBOSE_MAKEFILE=ON` purely to record the compile lines in
+the audited build log): `pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`,
+sha256 `e6cd926dbe7f67c983e334625e0d6247be6abe4cac0055ae5957e74dcdf2d36c`,
+zero compiler warnings. The build log enables the Fortran compiler (GNU
+13.3.0), reports `KALOS_WITH_SLICOT=ON: stationary initialization uses the
+vendored SLICOT SB03MD closure for state order >= 8`, and shows all **8**
+vendored Fortran compiles carrying `-ffp-contract=off` (with the upstream
+per-source warning-suppression list); warning-clean. A first, non-verbose
+build of the same tree (`258cc80c…`) is retained: identical member list,
+same flags. `ldd`-level audit of the installed extension: the eight closure
+symbols `sb03md_`, `sb03mv_`, `sb03mw_`, `sb03mx_`, `sb03my_`, `sb04px_`,
+`mb01rd_` and `select_` are `T`-defined; the `.so` carries exactly **21**
+Fortran-named undefined symbols (the closure's BLAS/LAPACK externals) and
+all 21 are defined by the pinned OpenBLAS 0.3.34 provider (set difference
+empty), matching the upstream pre-vendoring verification. `DT_NEEDED` is
+`libopenblas.so.0`, `libgcc_s`, `libm`, `libc`, `ld`, `libgomp`,
+`libstdc++` — with **no direct libgfortran entry**: the eight vendored
+objects compile to zero `_gfortran`-runtime references (verified per object),
+so the toolchain's `--as-needed` drops the FLIBS entry, and
+`libgfortran.so.5` still resolves at runtime as a DT_NEEDED of the pinned
+provider itself. The extension `.so` grew 3,156,824 → 3,197,856 bytes; the
+wheel member list otherwise equals the `c5bacf8` wheel.
+`tools/check-wheel-provider.py SCRATCH/openblas`: the JSON is **byte-
+identical to the `c5bacf8` lane except the `commit` field**
+(`7c3eefd9…` → `ec175430…`): `blas_integer_bits` 32, external linkage,
+`OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING SkylakeX
+SINGLE_THREADED`, library `SCRATCH/openblas/lib/libopenblas-r0.3.34.so`
+(sha256 `84de4eab95a0f3e056b6efee2e7fd7c3731a9bec2f4552401f2b1fdf90420ae3`,
+unchanged), source archive `cd7e129868320cc2d033afa920e31202dfe0b8066a5b66
+661900ccc0f197dfed`, unchanged; the NumPy-free wheel reports the identical
+gate.
+
+**Installed-wheel suite: zero movement.** 132 passed, 748 subtests passed,
+0 failed, none skipped in 169.51s, repeated in 163.04s (`LD_LIBRARY_PATH=
+SCRATCH/openblas/lib`; fresh venv, cache provider off) — totals, the 18-file
+collection and every per-file pass count identical to the `7c3eefd`
+baseline: combined_seasonality 4, estimation 2, interrupt 1, java_free 1,
+numpy_interop 10, preparation 3, provider_import_order 1, request_validation
+54, seats 3, smoke 3, tramo_automatic 14, tramo_calendar 4, tramoseats_fit
+5, tramo_transform 2, x13_automatic 15, x13_automatic_horizon 3,
+x13_estimated 5, x13_fixed 2. The sensitive files ran first: `test_seats.py`,
+`test_provider_import_order.py` and `test_numpy_interop.py` gave 14 passed
+plus 79 subtests in 0.98s. The NumPy-free run gave 111 passed, 21 skipped,
+720 subtests passed, 0 failed in 165.39s — the same documented `HAS_NUMPY`
+skips. (The wall time sits well under the 284.12s/275.81s `7c3eefd`
+baseline; that is consistent with the SB03MD init win on the m ≥ 8 pinned
+fits and carries no numerical content — statuses and evaluation counts are
+route-invariant per the upstream qualification and every pinned replay and
+budget above held unchanged.)
+
+**Spot witness through the installed wheel vs the retained `c5bacf8`
+wheel** (same pinned provider, `SCRATCH/m10-s3/spotfit.py`): the monthly
+airline-class `(0,1,1)(0,1,1)₁₂` fit of log airpass (144 observations,
+period 12, d = D = 1, BFGS, multiple starts) runs the SB03MD route at state
+order m = 14 (`m = max(deg AR, |MA|)` over the expanded polynomials — the
+qualified m = 14 band of the seam dossier), and agrees at the landing: both
+wheels return `converged` with the identical printed log-likelihood `244.69648683286078`
+(binary64 delta 0.0 — observed, not assumed), route-invariant pass
+evaluations 67/9/9, and coefficient movement θ −0.4018231281066091 →
+−0.4018231281033069 (3.3e-12) and seasonal Θ −0.5569365008377055 →
+−0.5569365008397561 (2.1e-12) — some five orders inside the dossier's
+recorded maximum coefficient movement 3.8e-07 and eight inside its 1e-4
+budget. The small-m control (stationary
+ARMA(2,1), m = 2, QR route) is **bit-identical** across the two wheels:
+every printed status, evaluation count, likelihood and coefficient matches
+on the round-trippable repr.
+
+**Hosted cibuildwheel obligations inherited from the upstream ledger.**
+Every wheel-matrix image needs a usable Fortran compiler: the Linux images
+must install gfortran (and keep it available at repair time, since
+libgfortran is a runtime dependency of the ON state through the provider on
+this host and directly on platforms whose provider is Fortran-free), and
+the macOS lane must bundle and relocate the libgfortran runtime via
+delocate. The Windows lane documents the upstream MSVC clause: ON under
+MSVC is a build-time `FATAL_ERROR` (the COFF mixed gfortran ABI is
+unqualified), so a Windows wheel built without Fortran legitimately runs
+the QR route for **every** state order — per the upstream ledger that is
+the qualified OFF state, not a degradation. Hosted results remain tracked
+separately from these Linux x86_64 runs; the wheel stays a local machine-
+bound artifact linking the external pinned provider.
