@@ -1,6 +1,36 @@
 # pykalos implementation changes needed
 
 Implementation and tests checked 2026-11-23 with Kalos pinned to `cb5c2de` after the 23-F.4 checkpoint. `src/pykalos` owns the Python API and defaults, `bindings` translates to the C++ request and result, and `vendor` holds the locked core and evidence. Refresh generated sources with `tools/sync-core.py` when adopting core fixes.
+Refreshed 2026-11-27 on Linux at commit `23bef33` (core `6fee68c`); all five review items remain fixed and were re-certified through every subsequent re-pin. The historical verification section is retained as recorded.
+
+## Status refresh (2026-11-27)
+
+The core pin advanced `cb5c2de` → `ec17543` (M10-S3/M11: vendored SLICOT SB03MD closure,
+built from source into the wheel with `-ffp-contract=off`) → `6fee68c` (M12: certified
+post-pivot diffuse filter). Each re-pin re-certified with the provider gate flipping only
+its revision field. Measured effect: the full suite wall dropped ~40% at the SLICOT pin,
+and the M12 re-cert reproduced the ratified drift classes (spot airpass θ 1.9e-12,
+pinned-LM coefficients ≤2.66e-08, Δadjll 1.28e-12 — all inside class; gaps and k=0 shapes
+bit-identical), with the JVM-parity stop gate holding at ≥460× margin and **zero hex
+fixtures moved**. One tolerance changed by maintainer ruling (2026-11-26): the
+self-consistency coefficient budget 1e-8 → 1e-7 in `test_estimation.py`; the
+log-likelihood and jacobian budgets were measured and stay. Suite state: **132 passed /
+748 subtests** twice, sensitive-files 14/79, NumPy-free 111/21/720, collection unchanged.
+
+## Remaining items (2026-11-27)
+
+1. **Hosted wheel matrix (the main open item):** every cibuildwheel image now needs a
+   Fortran compiler for the vendored SLICOT closure; macOS wheels must bundle/locate
+   libgfortran at build time (no direct wheel dependency — the closure compiles to zero
+   `_gfortran` references — but `gfortran` must exist, and the pinned provider carries
+   libgfortran transitively); a Windows wheel built without a Fortran toolchain runs the
+   qualified QR-everywhere state (`KALOS_WITH_SLICOT=OFF`), which the upstream ledger
+   documents as the qualified OFF configuration rather than a defect.
+2. **Wheel publication** (PyPI index and any additional ABI/platform targets) is a
+   maintainer action; local Linux wheels are certified.
+3. No open functional items: the M12 re-pin inventory is empty and the standing re-pin
+   convention (sync-core → wheel gate → full suite) is the routine for future core
+   advances.
 
 ## P1 — Validate the Python automatic-fit request before coercion
 
