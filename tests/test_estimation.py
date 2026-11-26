@@ -1,5 +1,6 @@
 """JVM qualification of the four explicit fixed-order estimation policies."""
 import csv
+import os
 from pathlib import Path
 import unittest
 
@@ -33,6 +34,46 @@ def request(source, expected):
     return dict(series=data, missing=[i in positions for i in range(1,len(data)+1)],
                 design=dict(columns=columns, coefficients=[0.]*len(columns), fixed=[False]*len(columns)),
                 blocks=blocks, period=12, d=int(source["d"]), seasonal_d=int(source["D"]), control=control)
+
+
+def read_req(path):
+    """Parse a pinned KALOSREQ record into estimate_sarima_fixed kwargs."""
+    spec, columns, jacobian = {}, [], 0.0
+    blocks = {name:dict(initial=[], fixed=[]) for name in BLOCKS}
+    coefficients, fixed = [], []
+    for line in path.read_text().splitlines():
+        fields = line.split()
+        if not fields or fields[0] == "KALOSREQ":
+            continue
+        key, values = fields[0], fields[1:]
+        if key == "series":
+            spec["series"] = list(map(float, values))
+        elif key == "missing":
+            spec["missing"] = [c == "1" for c in values[0]]
+        elif key == "scalar":
+            spec["period"], spec["d"], spec["seasonal_d"] = map(int, values[:3])
+        elif key == "design_column":
+            columns.append(list(map(float, values)))
+        elif key == "design_coefficients":
+            coefficients = list(map(float, values))
+        elif key == "design_fixed":
+            fixed = [c == "1" for c in values]
+        elif key.startswith("block_") and key.endswith("_initial"):
+            blocks[key[len("block_"):-len("_initial")]]["initial"] = list(map(float, values))
+        elif key.startswith("block_") and key.endswith("_fixed"):
+            blocks[key[len("block_"):-len("_fixed")]]["fixed"] = [c == "1" for c in values]
+        elif key == "control":
+            spec["control"] = dict(eps=float(values[0]), feps=float(values[1]),
+                                   maximum_likelihood=values[2] == "1", unit_root_search=values[3] == "1",
+                                   corrected_degrees_of_freedom=values[4] == "1", fast_derivatives=values[5] == "1",
+                                   starting_point=values[6], solver=values[7])
+        elif key == "optimizer":
+            spec["optimizer"] = {pair.split("=")[0]: int(pair.split("=")[1]) for pair in values}
+        elif key == "jacobian":
+            jacobian = float(values[0])
+    spec["design"] = dict(columns=columns, coefficients=coefficients, fixed=fixed)
+    spec["blocks"] = blocks
+    return spec, jacobian
 
 
 class EstimationControl(unittest.TestCase):
@@ -93,10 +134,75 @@ class EstimationControl(unittest.TestCase):
         for fitted, expected in zip(model["ar"] + model["ma"], numbers(reference["params"])):
             self.assertLess(abs(fitted - expected), 1e-8)
         spec["blocks"]["ma"] = dict(initial=[.25], fixed=[True])
-        with self.assertRaisesRegex(ValueError, "fully free blocks"):
-            pykalos.estimate_sarima_fixed(**(spec | {"control": lm}))
+        # The M10-D eligibility widening (upstream a1e62ec/7c3eefd) retires the
+        # "fully free blocks" refusal: a partially fixed request now runs the
+        # SAME pinned LM machine through the reduced free-coordinate seam
+        # (detail::SsqFixedSeam). The fixed slot returns bit-exactly and the
+        # landing agrees with the BFGS route at this test's existing budgets.
+        widened = pykalos.estimate_sarima_fixed(**(spec | {"control": lm}))
         fit = pykalos.estimate_sarima_fixed(**spec)
+        self.assertEqual((widened["status"], widened["converged"]), ("converged", True))
+        self.assertEqual(widened["coefficients"]["ma"], [.25])
+        self.assertLess(abs(widened["log_likelihood"] - fit["log_likelihood"]), 1e-9)
+        self.assertLessEqual(widened["log_likelihood"], float(reference["loglik"]) + 5e-4)
         self.assertEqual(fit["coefficients"]["ma"], [.25])
+        # The widened route's JVM-pinned destinations and eval counts replay
+        # from the lm-fixed-block corpus (pinned inputs and jdplus 3.9.0 x13/
+        # tramo captures transcribed into pins.txt from the qualification
+        # report tmp_opencode/m9-perf/lmext section 4). Budgets are the
+        # qualification budgets of pins.txt: adjustedll 2e-8*(1+|pin|),
+        # coefficients 1e-4*(1+|pin|) on both JVM frontends, with the BFGS
+        # route on the same request as the cross-route witness. The
+        # eval-count fixture of record is live only single-threaded, exactly
+        # as the upstream C++ gate (check_pinned_lm_corpus) pins it.
+        folder = EVIDENCE / "lm-fixed-block"
+        verify_sha256sums(folder)
+        saved = {name: os.environ.pop(name, None) for name in
+                 ("KALOS_NUM_THREADS", "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS")}
+        cases = 0
+        try:
+            for name in saved:
+                os.environ[name] = "1"
+            for record in (folder / "pins.txt").read_text().splitlines():
+                if not record or record.startswith("#"):
+                    continue
+                fields = record.split()
+                case, request_file = fields[0], fields[1]
+                pins = [[float(v) for v in fields[5:8]], [float(v) for v in fields[8:11]]]
+                evaluations, status = int(fields[11]), fields[12]
+                replay, jacobian = read_req(folder / request_file)
+                self.assertLess(abs(float(fields[2]) - jacobian), 1e-9, case)
+                bfgs = pykalos.estimate_sarima_fixed(**replay)
+                self.assertEqual(bfgs["status"], "converged", case)
+                fit_lm = pykalos.estimate_sarima_fixed(**(replay | {
+                    "control": replay["control"] | {"solver": "pinned_levenberg_marquardt"}}))
+                self.assertEqual(fit_lm["status"], status, case)
+                self.assertTrue(fit_lm["converged"], case)
+                passes = fit_lm["passes"]
+                self.assertEqual([p["stage"] for p in passes],
+                                 ["estimate", "ur_regular", "ur_seasonal"], case)
+                self.assertTrue(passes[0]["attempted"] and passes[0]["accepted"], case)
+                self.assertTrue(passes[0]["optimizer_status"].startswith("converged"), case)
+                self.assertEqual(passes[0]["evaluations"], evaluations, case)
+                self.assertLess(passes[0]["evaluations"], bfgs["passes"][0]["evaluations"], case)
+                for outcome in (bfgs, fit_lm):
+                    adjusted = outcome["log_likelihood"] + jacobian
+                    for pin in (float(fields[3]), float(fields[4])):
+                        self.assertLess(abs(adjusted - pin), 2e-8 * (1 + abs(pin)), case)
+                coefficients = [fit_lm["coefficients"][block][0]
+                                for block in ("ar", "ma", "seasonal_ma")]
+                for pin in pins:
+                    for actual, target in zip(coefficients, pin):
+                        self.assertLess(abs(actual - target), 1e-4 * (1 + abs(target)), case)
+                self.assertEqual(coefficients[1], .2, case)
+                cases += 1
+        finally:
+            for name, value in saved.items():
+                if value is None:
+                    os.environ.pop(name, None)
+                else:
+                    os.environ[name] = value
+        self.assertEqual(cases, 4)
         for options in (dict(d=1.), dict(period=True), dict(optimizer={"typo":2}),
                         dict(control=spec["control"]|{"starting_point":"unknown"}),
                         dict(control=spec["control"]|{"maximum_likelihood":False}),

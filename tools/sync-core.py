@@ -28,7 +28,10 @@ def sha(data):
 # boundary-qualification tests. Keep this list minimal: every entry is test
 # data pinned by provenance, never a core input. The x13-horizon captures
 # (item 21-H.4 JVM horizon corpus) entered the allowlist with the pin advance
-# to f500162, qualified by tests/test_x13_automatic_horizon.py.
+# to f500162, qualified by tests/test_x13_automatic_horizon.py. The
+# lm-fixed-block corpus (the 21-D.2 eligibility-widening fixed-coefficient
+# requests with their JVM pins) entered with the pin advance to 7c3eefd,
+# qualified by tests/test_estimation.py.
 EVIDENCE_ALLOWLIST = ("validation/evidence/native/x13-automatic/",
                       "validation/evidence/native/x13-horizon/",
                       "validation/evidence/native/x13-allocation/",
@@ -45,7 +48,8 @@ EVIDENCE_ALLOWLIST = ("validation/evidence/native/x13-automatic/",
                       "validation/evidence/native/tramo-seats-bridge/",
                       "validation/evidence/native/estimation-control/",
                       "validation/evidence/native/estimation-control-hr/",
-                      "validation/evidence/native/tramo-calendar-ftest/")
+                      "validation/evidence/native/tramo-calendar-ftest/",
+                      "validation/evidence/native/lm-fixed-block/")
 
 
 def safe_path(value):

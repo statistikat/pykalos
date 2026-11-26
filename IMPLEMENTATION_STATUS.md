@@ -1504,3 +1504,101 @@ estimation 2, interrupt 1, java_free 1, numpy_interop 10, preparation 3,
 provider_import_order 1, request_validation 54, seats 3, smoke 3,
 tramo_automatic 14, tramo_calendar 4, tramoseats_fit 5, tramo_transform 2,
 x13_automatic 15, x13_automatic_horizon 3, x13_estimated 5, x13_fixed 2.
+
+## M10: pin advanced to 7c3eefd — fixed-coefficient sum-of-squares eligibility widening — 2026-11-26
+
+Pin `a7d4b12…` → **`7c3eefd9652fa13d53e798f14bb8e2fe8fe4828a`** (upstream
+`a1e62ec`/`7c3eefd` land 21-D.2: the pinned sum-of-squares
+Levenberg-Marquardt route of `estimate_sarima_fixed` accepts per-entry
+fixed coefficient blocks and runs the SAME qualified pinned machine over
+the reduced free-coordinate seam (`detail::SsqFixedSeam`, the pinned
+`SarimaFixedMapping` semantics) instead of meeting the retired eligibility
+rejection; the range also carries the item 27 residual trading-day F-tests
+(`kalos::residual_trading_days_tests`, no Python surface) and the ledgers
+and roadmap entries around them. This discharges the recorded follow-up
+"pykalos core re-pin at next surface change" — the surface change is the
+widening itself, which moves exactly one downstream expectation, below).
+
+Manifest pre-check: the upstream `tools/source-files.json` **core** section
+gained two entries (`include/kalos/residual_trading_days_tests.hpp`,
+`src/residual_trading_days_tests.cpp`): 207 → 209, the **fixtures** section
+is unchanged (112) and the **evidence** section gained exactly the six
+`lm-fixed-block/` files (410 → 416). This commit admits `lm-fixed-block/`
+to the `tools/sync-core.py` evidence allowlist (the JVM-pinned fixed-
+coefficient corpus the migrated assertion now replays, per the established
+advance-with-qualification precedent), so the vendored evidence snapshot
+grows 110 → **116** files; every other upstream evidence entry stays
+outside the allowlist. The lock `version` tracks the upstream manifest
+(`0.1.0` unchanged); like every prior sync this commit bumps no package
+version.
+
+**Vendor churn `a7d4b12…` → `7c3eefd…`: thirteen vendor files (eleven
+updates plus two new core sources) plus six new evidence files** —
+`core.lock.json` (commit, manifest sha256 and the
+file hashes), the regenerated `include/kalos/revision.hpp`, the nine
+upstream-changed core files (`CMakeLists.txt`,
+`detail/calendar_airline_likelihood.hpp`, `detail/ssq_levmar.hpp`,
+`estimation_control.hpp`, `x13_automatic.hpp`, `estimation_control.cpp`,
+`ssq_levmar.cpp`, `tramo_calendar_f_test.cpp`, `x13_automatic.cpp`) and the
+two new `residual_trading_days_tests` files. `--verify` PASS on both sides:
+208 source and 110 evidence files at `a7d4b12` before the export, 210
+source and 116 evidence files at `7c3eefd` after.
+
+**One expectation moves: the `fully free blocks` refusal is now a landing.**
+`tests/test_estimation.py::test_fixed_coordinate_and_refusals` asserted
+`ValueError("fully free blocks")` for `pinned_levenberg_marquardt` on the
+`zero_r11` request with the MA slot fixed at 0.25. That request now lands:
+status `converged`, the fixed slot returns `[.25]` bit-exactly, the
+constrained likelihood stays under the free reference at this suite's 5e-4
+budget and the route agrees with the BFGS fit at 5.1e-11 inside the
+existing 1e-9 log-likelihood budget. The landing then replays the vendored
+`lm-fixed-block` corpus through the Python surface — the four pinned
+mixed-factor requests against the JVM destinations of `pins.txt` (both
+frontends, adjustedll `2e-8·(1+|pin|)`, coefficients `1e-4·(1+|pin|)`, the
+qualification budgets) with the LM estimate-pass eval counts pinned at
+15/15/16/16 under `KALOS_NUM_THREADS=1` (restored afterwards), the BFGS
+route as cross-route witness strictly above those counts (66/66/75/75),
+and the fixed MA slot returned bit-exactly (0.2). The observed adjustedll
+deltas to the x13 pins are 8.55e-12/8.67e-12/1.71e-12/1.59e-12 — the
+upstream M10 record (8.555e-12/8.669e-12/1.705e-12/1.592e-12) — four to
+six orders inside the budgets. No subtests are added: the migrated block
+keeps the estimation file at 2 tests / 35 subtests.
+
+**Every other seam is behaviour-unchanged at this pin.** The item 27 and
+calendar-F-test core changes sit behind entries no Python surface calls
+and the widened branch is unreachable for fully free requests; every WK,
+RSA0/RSA1/RSA3/RSAfull, bridge and X-13 replay passed at the existing
+tolerances with no fixture, test or tolerance change.
+
+**Fresh venv and provider.** Fresh venvs `SCRATCH/m10-d-pykalos/venv` and
+`SCRATCH/m10-d-pykalos/venv-nonumpy` (CPython 3.12.3, pip 25.0.1, pytest
+9.2.0; numpy 2.5.5 in the first only). Wheel built per the README
+(`env -u LD_LIBRARY_PATH`, bare
+`-DOpenBLAS_ROOT=/data/home/kowa/seasonaladjustment/tmp_opencode/openblas`):
+`pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`9328135f72f6878e7e7f7072825c23b9feb0ab0bd9a166539bd4fa615afe799b`, zero
+compiler warnings. `tools/check-wheel-provider.py SCRATCH/openblas`:
+`commit` = full `7c3eefd…`, `blas_integer_bits` = 32, external linkage,
+`OpenBLAS 0.3.34 DYNAMIC_ARCH NO_AFFINITY USE_LOCKING SkylakeX
+SINGLE_THREADED`, library `SCRATCH/openblas/lib/libopenblas-r0.3.34.so`
+(sha256 `84de4eab95a0f3e056b6efee2e7fd7c3731a9bec2f4552401f2b1fdf90420ae3`,
+unchanged), source archive `cd7e129868320cc2d033afa920e31202dfe0b8066a5b66
+661900ccc0f197dfed`, unchanged; `ldd` with the ambient `LD_LIBRARY_PATH`
+unset resolves `libopenblas.so.0` → the SCRATCH provider plus system
+`libgomp`.
+
+**Installed-wheel suite: 132 passed, 748 subtests passed, 0 failed, none
+skipped, in 284.12s, repeated in 275.81s** (`LD_LIBRARY_PATH=SCRATCH/
+openblas/lib`; fresh venv, cache provider off). The sensitive files ran
+first: `test_seats.py`, `test_provider_import_order.py` and
+`test_numpy_interop.py` gave 14 passed plus 79 subtests in 1.46s. Per-file
+passes: combined_seasonality 4, estimation 2, interrupt 1, java_free 1,
+numpy_interop 10, preparation 3, provider_import_order 1,
+request_validation 54, seats 3, smoke 3, tramo_automatic 14, tramo_calendar
+4, tramoseats_fit 5, tramo_transform 2, x13_automatic 15,
+x13_automatic_horizon 3, x13_estimated 5, x13_fixed 2 — identical to the
+`a7d4b12` baseline, 18 collected files, with the one migrated assertion
+passing. The NumPy-free wheel run gave 111 passed, 21 skipped, 720
+subtests passed, 0 failed in 269.87s: the skips are exactly the documented
+`HAS_NUMPY` gates (10 NumPy-interop, 10 NumPy-typed request-validation and
+1 import-order test).

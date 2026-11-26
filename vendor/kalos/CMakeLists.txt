@@ -61,6 +61,7 @@ add_library(kalos STATIC
   src/regression_likelihood.cpp
   src/regression_variable_tests.cpp
   src/residual_information.cpp
+  src/residual_trading_days_tests.cpp
   src/sarima_stabilization.cpp
   src/seats_extract_wk.cpp
   src/sparse_history.cpp
@@ -220,9 +221,11 @@ if(KALOS_BUILD_TESTS)
     test_regression_likelihood
     test_regression_variable_tests
     test_residual_information
+    test_residual_trading_days
     test_seats_extract_wk
     test_seats_linear_filters
     test_special_functions
+    test_ssq_fixed_seam
     test_state_space
     test_tramo_arma
     test_tramo_differencing
@@ -304,6 +307,10 @@ if(KALOS_BUILD_TESTS)
         KALOS_ADJUSTED_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles"
         KALOS_ADJUSTED_SEASONALITY_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/adjusted-seasonality/public-x86_64.txt")
     endif()
+    if(test_name STREQUAL "test_residual_trading_days")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_RESIDUAL_TRADING_DAYS_PANEL="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/residual-trading-days/public-x86_64.txt")
+    endif()
     if(test_name STREQUAL "test_combined_seasonality")
       target_compile_definitions(${test_name} PRIVATE
         KALOS_COMBINED_RSA2C="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/combined-seasonality/stock-rsa2c-x86_64.txt"
@@ -337,6 +344,10 @@ if(KALOS_BUILD_TESTS)
         KALOS_RSA0_FACTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-x86_64.txt"
         KALOS_RSA0_ERRORS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-forecast-errors-x86_64.txt"
         KALOS_RSA0_RESIDUALS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/tramo-seats-bridge/rsa0-residuals-x86_64.txt")
+    endif()
+    if(test_name STREQUAL "test_estimation_control")
+      target_compile_definitions(${test_name} PRIVATE
+        KALOS_LM_FIXED_BLOCK_DIR="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/lm-fixed-block")
     endif()
     if(test_name STREQUAL "test_x13_estimated_calendar")
       add_test(NAME test_x13_rsa2c_scale COMMAND ${test_name}
@@ -433,6 +444,23 @@ if(KALOS_BUILD_TESTS)
   add_test(NAME test_x13_automatic_horizon
            COMMAND test_x13_automatic_horizon)
   set_tests_properties(test_x13_automatic_horizon PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
+    TIMEOUT 3600)
+  # M7 (item 27 cutover gap): the nine-case double-JVM automatic X-13 public
+  # residual diagnostics oracle (residual series, residuals.ser,
+  # residuals.lb with the ARMA-count degrees of freedom and
+  # residuals.doornikhansen, all bit claims) over the automatic route's
+  # final-model likelihood surface. The three stock RSA3 blocks reuse the
+  # x13-refusal-jvm-profiles CSVs.
+  add_executable(test_x13_automatic_diagnostics tests/test_x13_automatic_diagnostics.cpp)
+  target_link_libraries(test_x13_automatic_diagnostics PRIVATE kalos::kalos)
+  target_compile_definitions(test_x13_automatic_diagnostics PRIVATE
+    KALOS_X13_AUTOMATIC_DIAGNOSTICS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-automatic-diagnostics/public-x86_64.txt"
+    KALOS_X13_TEMPLATE_INPUTS="${CMAKE_CURRENT_SOURCE_DIR}/validation/evidence/native/x13-refusal-jvm-profiles")
+  add_test(NAME test_x13_automatic_diagnostics
+           COMMAND test_x13_automatic_diagnostics)
+  set_tests_properties(test_x13_automatic_diagnostics PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     ENVIRONMENT "KALOS_NUM_THREADS=2;OMP_NUM_THREADS=2;OPENBLAS_NUM_THREADS=1"
     TIMEOUT 3600)
