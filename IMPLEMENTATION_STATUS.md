@@ -1734,3 +1734,181 @@ the QR route for **every** state order — per the upstream ledger that is
 the qualified OFF state, not a degradation. Hosted results remain tracked
 separately from these Linux x86_64 runs; the wheel stays a local machine-
 bound artifact linking the external pinned provider.
+
+## M12: pin advanced to 6fee68c — certified post-pivot diffuse filter (item 29 D4) — 2026-11-27
+
+Pin `ec17543…` → **`6fee68c0a8d1fbe6816f26c06d7a00dbba0a5b8c`** (code
+`9f8e906` ships the certified post-pivot diffuse filter — at pivot exhaustion
+the exact diffuse filter certifies the `P^+Z = 0` nullity through the
+square-root factor and continues the recursion on the r-wide Householder-
+reduced factor, eligibility being the canonical zero-observation-variance
+SARIMA route only: exact-history certificate, stable-history frames,
+square-root factor, k > 0, h = 0, fully-observed window; everything else —
+gaps, k = 0, non-canonical routes — keeps the exact full-m path
+bit-identically; the ledger tip `6fee68c` adopts item 29 at the measured
+shape with the contract-floor reading). This lane re-certifies under the
+maintainer ruling of 2026-11-26, quoted verbatim:
+
+> 1. Re-pin: hex fixtures moved by the D4 drift (class ≤3.135e-08 coef /
+> ≤4.35e-12 estimate, Δll ≤1.28e-12; gapped/k=0 byte-identical) regenerated
+> from the newly qualified wheel; each regenerated value MUST be within the
+> drift class vs the old fixture (larger = STOP-AND-REPORT: unclassified
+> deviation). Regeneration procedure recorded in the status entry.
+> 2. Tolerance raise, self-consistency only: tests/test_estimation.py
+> coefficient budget `<1e-8` → **1e-7** with a dated in-test comment citing
+> the ruling + the 3.135e-08 class; log-likelihood budget `<1e-9` STAYS
+> (measured Δll 1.28e-12, ~780× margin); jacobian `<1e-9` — measure actual
+> max first, raise ONLY if exceeded, to the smallest clean bound with ≥3×
+> headroom (report the number even if unchanged).
+> 3. FORBIDDEN: touching JVM-parity budgets (the widened-assertion replay
+> budgets at 2e-8·(1+|pin|) adjll / 1e-4·(1+|pin|) coefficients vs JVM pins),
+> anything silent, anything without a measured number.
+
+Manifest pre-check: the upstream `tools/source-files.json` **core** section is
+set-unchanged (**219 → 219**, four content rewrites —
+`include/kalos/diffuse_state_space.hpp`, `include/kalos/finite_state_factor.hpp`,
+`src/diffuse_state_space.cpp`, `src/finite_state_factor.cpp`), **fixtures**
+(112) unchanged, **evidence** 416 → 472: all 56 additions are the frozen
+item-29 `diffuse-steady-state-probe/` probe corpus, which is not on the
+python-kind evidence allowlist, so the vendored evidence snapshot stays at
+116 files. `--verify` PASS on both sides: **220** source and **116** evidence
+files at `ec17543` before the export, **220** source and **116** evidence
+files at `6fee68c` after (`Verified 6fee68c0a8d1fbe6816f26c06d7a00dbba0a5b8c:
+220 files in vendor/kalos, 116 files in vendor/kalos-evidence`) — the vendor
+delta is **220 → 220**: a 222 expectation would have required two new
+core-section entries, and the manifest shows the core set unchanged.
+
+**Vendor churn `ec17543…` → `6fee68c…`: six tracked files, zero additions or
+removals** — `core.lock.json` (commit, manifest sha256 and the five file
+hashes), the regenerated `include/kalos/revision.hpp`, and the four core
+files above (+378/−15 lines in total) — all four **byte-identical to their
+upstream blobs** (verified with `cmp` against `git show 6fee68c:…`). No
+`src/pykalos`, `bindings` or evidence file changed; the single `tests` change
+is the ruling-mandated budget in `tests/test_estimation.py` recorded below.
+
+**Fresh venv and provider.** Fresh venvs `SCRATCH/m12-pykalos/venv` and
+`SCRATCH/m12-pykalos/venv-nonumpy` (CPython 3.12.3, pip 25.0.1, pytest 9.2.0;
+numpy 2.5.5 in the first only), plus a measurement venv holding the retained
+`ec17543` wheel (`e6cd926d…`) as the old-delta witness. Wheel built per the
+m10-s3 README recipe (`env -u LD_LIBRARY_PATH`, bare
+`-DOpenBLAS_ROOT=/data/home/kowa/seasonaladjustment/tmp_opencode/openblas`,
+`-DCMAKE_VERBOSE_MAKEFILE=ON` to record the compile lines, `nice -n 10` at
+`-j4` against the sibling rkalos build):
+`pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`48bf1bc7c99ab719d0fa6a6738ae8cc5047f237b1215dd36df0c37ca2c2180ea` (an
+earlier silent build of the identical tree, `5b69b3a8…`, is retained; the two
+shas differ only by archive timestamps). Zero compiler warnings (`warning:`
+count 0 in the audited log). The build log enables the Fortran compiler (GNU
+13.3.0), reports `KALOS_WITH_SLICOT=ON: stationary initialization uses the
+vendored SLICOT SB03MD closure for state order >= 8`, and shows all **8**
+vendored Fortran compiles (preprocess `-E` plus `-fpreprocessed -c` per
+source) carrying `-ffp-contract=off` with the upstream per-source
+warning-suppression list. `.so` audit of the installed extension: the eight
+closure symbols `sb03md_`, `sb03mv_`, `sb03mw_`, `sb03mx_`, `sb03my_`,
+`sb04px_`, `mb01rd_` and `select_` are `T`-defined; exactly **21**
+Fortran-named undefined symbols (the closure's BLAS/LAPACK externals; the
+C-runtime `__gmon_start__` filtered out of the Fortran-name scan) with an
+empty set difference against the pinned provider's exports; `DT_NEEDED`
+unchanged (`libopenblas.so.0`, `libgcc_s`, `libm`, `libc`, `ld`, `libgomp`,
+`libstdc++`, no direct libgfortran). The extension grew 3,197,856 →
+3,214,272 bytes; the wheel member list is identical to the `ec17543` wheel.
+`tools/check-wheel-provider.py SCRATCH/openblas`: the JSON is **byte-identical
+to the `ec17543` lane except the `commit` field** (`ec175430…` →
+`6fee68c0…`): `blas_integer_bits` 32, external linkage, `OpenBLAS 0.3.34
+DYNAMIC_ARCH NO_AFFINITY USE_LOCKING SkylakeX SINGLE_THREADED`, library
+sha256 `84de4eab…420ae3` and source archive `cd7e1298…7dfed` unchanged; the
+NumPy-free wheel reports the identical gate.
+
+**STOP GATE first — JVM-parity-bearing assertions on the new wheel with the
+OLD fixtures** (`test_estimation.py` + the JVM witnesses `test_x13_automatic.py`,
+`test_x13_automatic_horizon.py`, `test_x13_fixed.py`), run twice through an
+instrumented `assertLess` recorder, old wheel then new wheel: **22 passed,
+82 subtests, 0 failed, identical counts, exit 0 both times**; 292 paired
+budget records, all holding. The widened-assertion replay budgets (untouched,
+`2e-8·(1+|pin|)` adjll / `1e-4·(1+|pin|)` coefficients vs the jdplus 3.9.0
+x13/tramo pins) per case — max pin-delta per case across BFGS and pinned-LM
+routes and both JVM frontends, old wheel → new wheel:
+
+| case (lm-fixed-block) | adjll budget | max old Δadjll | max new Δadjll | min new margin |
+|---|---|---|---|---|
+| 12-mixed_factors-complete-log | 3.619e-06 | 1.103e-11 | 1.103e-11 | 3.28e+05× |
+| 12-mixed_factors-complete-none | 2.565e-06 | 1.094e-11 | 1.094e-11 | 2.34e+05× |
+| 12-mixed_factors-gaps-log | 3.528e-06 | 3.581e-12 | 3.581e-12 | 9.85e+05× |
+| 12-mixed_factors-gaps-none | 2.441e-06 | 3.681e-12 | 3.681e-12 | 6.63e+05× |
+
+| case | coef budgets | max old Δcoef | max new Δcoef | min new margin |
+|---|---|---|---|---|
+| complete-log / complete-none | 1.2e-04 (fixed slot, both 0.0) · 1.285e-04 · 1.480e-04 | 2.529e-07 | 2.795e-07 | 4.60e+02× |
+| gaps-log | 1.2e-04 (0.0) · 1.233e-04 · 1.451e-04 | 1.032e-07 | 1.032e-07 | 1.19e+03× |
+| gaps-none | 1.2e-04 (0.0) · 1.233e-04 · 1.451e-04 | 8.063e-08 | 8.063e-08 | 1.53e+03× |
+
+Both gapped cases hold **bit-identically old → new** (the gap guard keeps
+them on the full path, matching the ruling's gapped/k = 0 clause). The
+`test_x13_fixed` JVM tier budgets are unchanged to the bit (max delta
+2.097e-16 at the 1e-15 tier; 4.491e-16 at 1e-12 and 1e-9); the
+`test_x13_automatic` decision bits and transcribed bands replay with
+identical subtests on both wheels. **No exceedance anywhere — gate PASS.**
+
+**Drift-class witness (wheel vs wheel, same fixtures).** `SCRATCH/m12-pykalos/
+ab_witness.py` + the retained m10-s3 `spotfit.py`, run through both wheels:
+the three probed RSA0 bridge fits (`fit_ao`, `fit_ls`, `fit_multi` — model
+coefficients, likelihood, ssq, `ser` and the final-component heads) are
+**bit-identical across the wheels**, as is the small-m ARMA(2,1) control;
+only the canonical `estimate_sarima_fixed` landings move, exactly where the
+D4 eligibility says they may: spot airpass θ −0.4018231281033069 →
+−0.4018231281052367 (1.93e-12) and Θ −0.5569365008397561 →
+−0.5569365008385264 (1.23e-12) at a bit-identical landing
+`244.69648683286078`; the `complete-log` LM replay pin-deltas move by
+≤2.66e-08 (coefficients) and 1.28e-12 (adjll) — inside the ratified
+3.135e-08 / 4.35e-12 / 1.28e-12 classes, and the gapped replays move by
+0.0.
+
+**Re-pin inventory: EMPTY — no hex fixture moved.** Identification per the
+ruling was run against the newly qualified wheel before any expectation
+change: the byte-exact corpora suites (`test_tramoseats_fit.py`,
+`test_tramo_automatic.py`, `test_x13_estimated.py`, `test_tramo_calendar.py`,
+`test_tramo_transform.py`, `test_combined_seasonality.py`, `test_seats.py`)
+gave **37 passed, 567 subtests, 0 failed** with the OLD fixtures, and the
+complete 18-file installed-wheel suite (below) passed with them; the direct
+byte-level A/B above confirms the mechanism — every pykalos capture is
+produced on routes that keep the exact full-m path (the TR0/TR1/TR3/RSAfull
+estimators inside the bridge, the gapped and k = 0 shapes), so the corpus
+`bits()`-compared bytes — model, likelihood, residuals, merged components,
+diagnostics, calendar F-test and forecast-error fields — reproduce exactly.
+The regeneration procedure (rewriting hex tokens per corpus from the qualified
+wheel's outputs with per-token class verification and lock/`SHA256SUMS.csv`
+digest updates) was therefore **not exercised**: zero fixture bytes
+regenerated, zero digests re-pinned in `SHA256SUMS.csv` or `core.lock.json`,
+zero assertion-count changes.
+
+**Tolerance edit per ruling §2 (self-consistency only).** The fixed-
+coefficient budget in `tests/test_estimation.py` moves `<1e-8` → **1e-7** with
+the dated in-test comment citing this ruling and the 3.135e-08 class; its
+measured delta on `zero_r11` (a QR-route geometry) is **0.0 on both wheels**,
+so the raised bound is headroom the current corpus never uses — it absorbs
+the ratified class with >3× margin for any future canonical-route landing in
+this budget. The three `<1e-9` log-likelihood budgets **STAY** (measured
+deltas: `zero_r11` pinned-LM vs JVM pin 0.0; widened-vs-BFGS cross-route
+5.134e-11; `guard_` cases 1.421e-14; the class Δll 1.28e-12 sits at ~780×
+margin as the ruling records). The jacobian `<1e-9` budget: measured actual
+max **1.137e-13** across the four `lm-fixed-block` replays (margin 8.8e+03×) —
+**not exceeded, budget unchanged**. The JVM-parity budgets of §3 were not
+touched (measured tables above).
+
+**Installed-wheel suite: zero movement.** 132 passed, 748 subtests passed,
+0 failed, none skipped in 91.66s, repeated in 97.24s (`LD_LIBRARY_PATH=
+SCRATCH/openblas/lib`; fresh venv) — totals, the 18-file collection and every
+per-file count identical to the `ec17543` baseline: combined_seasonality 4,
+estimation 2, interrupt 1, java_free 1, numpy_interop 10, preparation 3,
+provider_import_order 1, request_validation 54, seats 3, smoke 3,
+tramo_automatic 14, tramo_calendar 4, tramoseats_fit 5, tramo_transform 2,
+x13_automatic 15, x13_automatic_horizon 3, x13_estimated 5, x13_fixed 2. The
+sensitive files ran first: `test_seats.py`, `test_provider_import_order.py`
+and `test_numpy_interop.py` gave 14 passed plus 79 subtests in 1.10s. The
+NumPy-free run gave 111 passed, 21 skipped, 720 subtests passed, 0 failed in
+97.07s — the same documented `HAS_NUMPY` skips. (Wall time continues the
+SB03MD-era speed level, 91.66s/97.24s vs the `ec17543` 169.51s/163.04s —
+consistent with the r-wide post-pivot recursion on the qualifying pinned
+fits; statuses and evaluation counts are route-invariant and every budget
+above held unchanged, so the speed carries no numerical content.) Final
+`tools/sync-core.py --verify`: PASS at `6fee68c`, 220 + 116 files.

@@ -132,7 +132,14 @@ class EstimationControl(unittest.TestCase):
         self.assertLess(abs(pinned["log_likelihood"] - float(reference["loglik"])), 1e-9)
         model = pinned["coefficients"]
         for fitted, expected in zip(model["ar"] + model["ma"], numbers(reference["params"])):
-            self.assertLess(abs(fitted - expected), 1e-8)
+            # 2026-11-26 maintainer ruling (M12): the D4 post-pivot diffuse filter
+            # (upstream 9f8e906) moves canonical-route estimation landings by at
+            # most 3.135e-08 in coefficients (the ratified item-29 drift class).
+            # This SELF-CONSISTENCY coefficient budget therefore moves 1e-8 -> 1e-7
+            # (>3x headroom over the class; zero_r11 itself stays on the QR route
+            # and measures a delta of 0.0). The 1e-9 log-likelihood budgets and the
+            # JVM-parity replay budgets in this file are deliberately untouched.
+            self.assertLess(abs(fitted - expected), 1e-7)
         spec["blocks"]["ma"] = dict(initial=[.25], fixed=[True])
         # The M10-D eligibility widening (upstream a1e62ec/7c3eefd) retires the
         # "fully free blocks" refusal: a partially fixed request now runs the
