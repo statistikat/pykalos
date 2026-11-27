@@ -1912,3 +1912,110 @@ consistent with the r-wide post-pivot recursion on the qualifying pinned
 fits; statuses and evaluation counts are route-invariant and every budget
 above held unchanged, so the speed carries no numerical content.) Final
 `tools/sync-core.py --verify`: PASS at `6fee68c`, 220 + 116 files.
+
+## M13: pin advanced to 69f83be — batched stale-likelihood fix + additive forecast-errors API — 2026-11-27
+
+Pin `6fee68c…` → **`69f83bed575d578467c2d6ce1449d11b854246c0`** (code
+`33c6c8a` closes the stale-likelihood leak — an estimation result that retains
+no candidate, the `initial_unavailable` chain, now reports the missing
+likelihood explicitly in `estimate_sarima_fixed` and `optimize_sarima_from`
+instead of leaving the field unwritten and carrying whatever the reused slot
+last held, the M13 repro where a failed chain echoed the process's last-computed
+likelihood bit-for-bit; upstream pins both entry points in
+`tests/test_estimation_failure_likelihood.cpp`. `69f83be` adds the public entry
+`kalos::x13_automatic_forecast_errors` — JVM `RegArimaForecasts.calcForecast`
+semantics on the final-model likelihood, the M13-P5 dual-capture engine, the
+nine-case y_ef panel replaying within 1.9e-14 — purely additively: a new
+struct field, a new entry, no existing signature touched). The two commits are
+re-pinned as one batch because neither touches the Python binding surface: the
+fix writes a previously-unwritten field on a core failure path, and the new
+API has no binding (the bindings reference only the pre-existing
+`x13_stock_forecast_errors`). A zero-movement re-certification was expected;
+that is what was measured.
+
+Manifest pre-check: the upstream `tools/source-files.json` **core** section
+gained exactly the two entries `src/sarima_forecast_uncertainty.{cpp,hpp}`
+(**219 → 221**); **fixtures** (112) and **evidence** (472) are unchanged, so
+the vendored evidence snapshot stays at 116 files and the allowlist is
+untouched. `--verify` PASS on both sides: **220** source and **116** evidence
+files at `6fee68c` before the export, **222** source and **116** evidence
+files at `69f83be` after (`Verified 69f83bed…: 222 files in vendor/kalos,
+116 files in vendor/kalos-evidence`) — the vendor delta is **220 → 222**, the
+two new core-section sources exported as expected.
+
+**Vendor churn `6fee68c…` → `69f83be…`: six tracked files, two vendor
+additions, zero removals** — `core.lock.json` (commit, manifest sha256 and
+five file digests rewritten, two entries added), the regenerated
+`include/kalos/revision.hpp`, `CMakeLists.txt` (+2: the two new core sources),
+`include/kalos/x13_automatic.hpp` (+18: the additive `coefficients` field and
+the new entry), `src/estimation_control.cpp` (+11/−2: the two explicit
+`unavailable()` failure writes with their dated comments) and
+`src/x13_automatic.cpp` (+79/−1: the new engine) — every one **byte-identical
+to its upstream blob at `69f83be`** (verified with `cmp`) — plus the new
+`src/sarima_forecast_uncertainty.{cpp,hpp}` (306 + 46 lines). No `src/pykalos`,
+`bindings`, `tests` or evidence file changed; zero fixtures, tests or
+tolerances were touched in this lane.
+
+**Fresh venvs and provider.** Fresh venvs `SCRATCH/m13-pykalos/venv` and
+`SCRATCH/m13-pykalos/venv-nonumpy` (CPython 3.12.3, pip 25.0.1, pytest 9.2.0;
+numpy 2.5.5 in the first only), plus a throwaway venv holding the retained
+`6fee68c` wheel (`48bf1bc7…`) as the witness negative control. Wheel built per
+the m10-s3 README recipe (`env -u LD_LIBRARY_PATH`, bare
+`-DOpenBLAS_ROOT=/data/home/kowa/seasonaladjustment/tmp_opencode/openblas`,
+`-DCMAKE_VERBOSE_MAKEFILE=ON`, `nice -n 10` at `-j4` against the heavier
+sibling rkalos lane): `pykalos-0.1.0-cp312-cp312-linux_x86_64.whl`, sha256
+`e41013cde15077f1b5edfcc71ab31f0a661aecc7557ee7e289cfd7d99d94bb6a` (the
+earlier silent build of the identical tree, `69254007…`, is retained; the two
+shas differ only by archive timestamps). Zero compiler warnings
+(`warning:` count 0 in the audited log). The build log enables the Fortran
+compiler (GNU 13.3.0), reports `KALOS_WITH_SLICOT=ON: stationary initialization
+uses the vendored SLICOT SB03MD closure for state order >= 8`, and shows all
+**8** vendored Fortran compiles (8 preprocesses plus 8 `-fpreprocessed -c`
+passes) carrying `-ffp-contract=off`; the new source compiles as an ordinary
+core TU (targets 118 → 119). `.so` audit of the installed extension: the eight
+closure symbols `sb03md_`, `sb03mv_`, `sb03mw_`, `sb03mx_`, `sb03my_`,
+`sb04px_`, `mb01rd_` and `select_` are `T`-defined; exactly **21**
+Fortran-named undefined symbols — a byte-identical list to the `6fee68c` lane —
+with an empty set difference against the pinned provider's exports;
+`DT_NEEDED` unchanged (`libopenblas.so.0`, `libgcc_s`, `libm`, `libc`, `ld`,
+`libgomp`, `libstdc++`, no direct libgfortran). The extension grew 3,214,272 →
+3,238,888 bytes; the wheel member list is identical to the `6fee68c` wheel.
+`tools/check-wheel-provider.py SCRATCH/openblas`: the JSON is **byte-identical
+to the `6fee68c` lane except the `commit` field** (`6fee68c0…` → `69f83bed…`):
+`blas_integer_bits` 32, external linkage, `OpenBLAS 0.3.34 DYNAMIC_ARCH
+NO_AFFINITY USE_LOCKING SkylakeX SINGLE_THREADED`, library sha256
+`84de4eab…420ae3` and source archive `cd7e1298…7dfed` unchanged; the
+NumPy-free wheel reports the identical gate.
+
+**Installed-wheel suite: zero movement.** 132 passed, 748 subtests passed,
+0 failed, none skipped in 95.22s, repeated in 101.83s (`LD_LIBRARY_PATH=
+SCRATCH/openblas/lib`; fresh venv) — totals, the 18-file collection and every
+per-file pass count identical to the `6fee68c` baseline: combined_seasonality
+4, estimation 2, interrupt 1, java_free 1, numpy_interop 10, preparation 3,
+provider_import_order 1, request_validation 54, seats 3, smoke 3,
+tramo_automatic 14, tramo_calendar 4, tramoseats_fit 5, tramo_transform 2,
+x13_automatic 15, x13_automatic_horizon 3, x13_estimated 5, x13_fixed 2. The
+sensitive files ran first: `test_seats.py`, `test_provider_import_order.py`
+and `test_numpy_interop.py` gave 14 passed plus 79 subtests in 1.07s. The
+NumPy-free run gave 111 passed, 21 skipped, 720 subtests passed, 0 failed in
+97.80s — the same documented `HAS_NUMPY` skips. The zero-movement expectation
+held exactly, so no per-test diff and no fixture regeneration was exercised.
+
+**Stale-likelihood witness through the Python surface.** The core pin's
+geometry IS constructible through the public Python boundary
+(`SCRATCH/m13-pykalos/stalell_witness.py`): two observations under 12-step
+seasonal differencing leave every diffuse state unresolved, so
+`pykalos.estimate_sarima_fixed` answers `initial_unavailable` — and the
+witness mirrors upstream `test_estimation_failure_likelihood.cpp` in running
+the zero_r11 success corpus FIRST (the pinned `-100.76884498726261` is what a
+stale slot could carry), then the failing estimation. On the qualified wheel
+the result reports `initial_unavailable`, `converged=False`, one rejected
+start pass (`stage=estimate`, `evaluations=1`) and a **missing (NaN)**
+log-likelihood at both the result and the pass. On the retained `6fee68c`
+wheel the same call returns the indeterminate `5.44567930453034e-310` — the
+witness discriminates fix from defect through the Python boundary (which
+exact indeterminate value the pre-fix slot holds is process-layout dependent;
+the defect is reporting anything other than the missing marker). The
+warm-start twin `optimize_sarima_from` has no Python entry point; that half
+of the core pin stays core-side. Final `tools/sync-core.py --verify`: PASS at
+`69f83be`, 222 + 116 files.
